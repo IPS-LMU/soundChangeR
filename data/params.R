@@ -3,7 +3,7 @@
 # Please set all obligatory parameters below! You will find possible options   #
 # for each value in the corresponding commentaries. If you need more detailed  #
 # explanations, please refer to param_expl/param_explanations.pdf. If you are  #
-# operating on UNIX and use okular as a pdf reader, you can open that file     #
+# operating on Ubuntu and use okular as a pdf reader, you can open that file   #
 # by typing the following command in your R console:                           #
 #                                                                              #
 # system(paste0('okular param_expl/param_explanations.pdf'))                   #
@@ -13,7 +13,7 @@
 # each parameter can be found in param_expl/param_explanations.pdf.            #
 #                                                                              #
 # After having set all necessary parameters, save this script (Strg + s, or    #
-# Ctrl + s), and then type the following command in your R console in order    #
+# Ctrl + s), and then type the following command in you R console in order     #
 # to initiate the ABM:                                                         #
 #                                                                              #
 # source("Rcmd/master.R")                                                      #
@@ -32,23 +32,23 @@
 
 memoryIntakeStrategy <- "maxPosteriorProb"  # ... or "mahalanobisDistance"
 memoryRemovalStrategy <- "timeDecay"        # ... or "outlierRemoval"
-memorySizeStrategy <- "maxAgent"            # ... or any full positive number, e.g. 50 (without quotes!).
-splitAndMerge <- FALSE                      # ... or TRUE
+memorySizeStrategy <- 410                   # ... or any full positive number, e.g. 500 (without quotes!).
+splitAndMerge <- TRUE                       # ... or FALSE
 
 ##### ABM Options
 
 runMode <- "single"                         # ... or "multiple"
-nrOfSimulations <- 20                       # ... or any full positive number, e.g. 50
-interactionsPerSimulation <- 1000           # ... or any full positive number, e.g. 100
+nrOfSimulations <- 4                       # ... or any full positive number, e.g. 20
+interactionsPerSimulation <- 1000           # ... or any full positive number, e.g. 125
 
 ##### Plotting Options
 
-plotting <- "points"                        # ... or "formants" or "tracks" or "none"
 columnsToPlot <- c("P1", "P2")              # ... or any other combination of two P-columns of input.df
-plotGroupBy <- "group"                      # ... or "speaker"
-plotColor <- "initial"                      # ... or "equivalence"
-plotBeforeABM <- TRUE                       # ... or FALSE
-plotAfterABM <- TRUE                        # ... or FALSE
+plotting <- "points"                        # ... or "tracks" or "formants" or "none"
+plotGroupBy <- "speaker"                    # ... or "group"
+plotColor <- "equivalence"                  # ... or "initial"
+plotBeforeABM <- FALSE                       # or FALSE
+plotAfterABM <- FALSE                        # or FALSE
 
 
 ############################ Expert Options ############################
@@ -63,7 +63,7 @@ img <- paste(logDirDate, "img", sep = "/")
 ##### ABM Options
 
 splitAndMergeInterval <- 100                # ... or any full positive number, e.g. 75
-doSplitAndMergeBeforeABM <- FALSE           # ... or TRUE
+doSplitAndMergeBeforeABM <- TRUE            # ... or FALSE
 mahalanobisThreshold <- 1.5                 # ... or any other full positive number, e.g. 5.0
 multipleABMRuns <- 100                      # ... or any full positive number, e.g. 20
 subsetSpeakers <- NULL                      # ... or a vector of strings, e.g. c("spk01", "spk02", "spk03")

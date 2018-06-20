@@ -350,6 +350,7 @@ phonsplit.sub <- function(param, wordlab, phonlab) {
     if (any(cluster.vec == "1")) {
       temp.1 <- cluster.vec == "1"
       tdat.1 <- train_gaussian_model(param[temp.1,])
+      # tdat.1 <- mclust::mvn("XXX",param[temp.1,])
       # 4.
       flagmult <- T
       if (ncol(param) == 1) {
@@ -357,6 +358,7 @@ phonsplit.sub <- function(param, wordlab, phonlab) {
       }
       if (flagmult) {
         distance.cluster[temp.1] <- distance(param[temp.1,], tdat.1, metric = "bayes")
+        # distance.cluster[temp.1] <- dmvnorm(param[temp.1,], tdat.1$parameters$mean, tdat.1$parameters$variance$Sigma, log = TRUE)
       } else {
         distance.cluster[temp.1] <- log(abs((param[temp.1,] - tdat.1$means)/tdat.1$cov))
       }
@@ -366,8 +368,11 @@ phonsplit.sub <- function(param, wordlab, phonlab) {
     if(any(cluster.vec == "2")) {
       temp.2 <- cluster.vec == "2"
       tdat.2 <- train_gaussian_model(param[temp.2,])
+      # tdat.2 <- mclust::mvn("XXX",param[temp.2,])
       if (flagmult) {
         distance.cluster[temp.2] <- distance(param[temp.2,], tdat.2, metric = "bayes")
+        # distance.cluster[temp.2] <- dmvnorm(param[temp.2,], tdat.2$parameters$mean, tdat.2$parameters$variance$Sigma, log = TRUE)
+        
       } else {
         distance.cluster[temp.2] <- log(abs((param[temp.2,] - tdat.2$means)/tdat.2$cov))
       }
@@ -375,8 +380,11 @@ phonsplit.sub <- function(param, wordlab, phonlab) {
     
     # calculate Bayesian distances to the medoid of the original data of all tokens
     tdat.orig <- train_gaussian_model(param)
+    # tdat.orig <- mclust::mvn("XXX",param)
     if (flagmult) {
       distance.orig <- c(distance(param, tdat.orig, metric = "bayes"))
+      # distance.orig <- dmvnorm(param, tdat.orig$parameters$mean, tdat.orig$parameters$variance$Sigma, log = TRUE)
+      
     } else {
       distance.orig <- c(log(abs((param - tdat.orig$means)/tdat.orig$cov)))
     }
