@@ -16,7 +16,7 @@
 # calculate number of agents, initialize their memories and create the population
 nrOfAgents <- as.numeric(length(unique(input.df$speaker)))
 initMemory <- initialize_memory(input.df)
-population <- create_population(nrOfAgents, initMemory)
+population <- create_population_(nrOfAgents, initMemory)
 
 # run a full split&merge on every agent
 if (splitAndMerge == TRUE & doSplitAndMergeBeforeABM == TRUE) {

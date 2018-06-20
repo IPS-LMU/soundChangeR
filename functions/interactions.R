@@ -62,8 +62,37 @@ initialize_memory <- function(df) {
   return(initMemory)
 }
 
+create_population <- function(df, method = "speaker_is_agent") {
+  population <- list()
+  if (method == "speaker_is_agent") {
+    population$info <- df %>%
+      setDT %>%
+      unique(by = c("speaker", "group")) %>%
+      .[order(speaker), .(speaker, group)] %>%
+      .[, agent := .I] %>%
+      .[]
+    
+    Pcols <- grep("^P[[:digit:]]+$", colnames(df), value = TRUE)
+    cols <- c(Pcols, "word", "labels", "initial", "speaker")
+    population$memory <- lapply(population$info$agent, function(a) {
+      mem <- df %>%
+        setDT %>%
+        .[speaker == population$info[agent == a, speaker], .SD, .SDcols=cols] %>%
+        .[population$info[, .(speaker, agent)], on = "speaker", nomatch = 0] %>%
+        .[, speaker := NULL] %>%
+        setnames("labels", "label") %>%
+        .[]
+      if (nrow(mem) == maxMemorySize) {
+        return(mem)
+      } else {
+        return(rbindlist(list(mem, matrix(nrow = maxMemorySize - nrow(mem), ncol = ncol(mem)) %>% data.table)))
+      }
+    })
+  } 
+  return(population)
+}
 
-create_population <- function(nrOfAgents, initMemory = NULL) {
+create_population_ <- function(nrOfAgents, initMemory = NULL) {
   # This functions initiates the memories of the (chosen) agents. 
   # Function call in coreABM.R.
   # 

@@ -12,6 +12,7 @@
 
 
 Sys.setlocale("LC_COLLATE", "C")
+require("data.table")
 require("plyr")
 require("dplyr")
 require("MASS")
