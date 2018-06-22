@@ -7,8 +7,8 @@
 # - train_gaussian_model(x, lab = rep("x", nrow(x)))                           #
 # - phonmerge(Pdata, wordclass, phonclass)                                     #
 # - phonmerge.sub(param, wordlab, phonlab, threshold = 0.05)                   #
-# - phonsplit(Pdata, wordclass, phonclass)                                     #
-# - phonsplit.sub(param, wordlab, phonlab, threshold = 0.05)                   #
+# - phonsplit_(Pdata, wordclass, phonclass)                                     #
+# - phonsplit_.sub(param, wordlab, phonlab, threshold = 0.05)                   #
 #                                                                              #
 # Developed by Florian Schiel and Jonathan Harrington                          #
 # Adapted by Johanna Cronenberg                                                #
@@ -30,14 +30,14 @@ splitandmergefull <- function(agent) {
   #    - agent: the same except with changed labels, if split&merge occurred
   #
   oldsplitMergeAgentLabel <- agent$memory$label
-  agent$memory$label <- phonsplit(agent$memory$P, agent$memory$word, agent$memory$label)
+  agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
   if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & runMode == "single") {
     cat("Agent", unique(agent$memory$speaker), "did split\n")
   }
   splitMergeAgentTemp <- agent$memory$label != oldsplitMergeAgentLabel
   while (sum(splitMergeAgentTemp) != 0) {
     oldsplitMergeAgentLabel <- agent$memory$label
-    agent$memory$label <- phonsplit(agent$memory$P, agent$memory$word, agent$memory$label)
+    agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
     if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & runMode == "single") {
       cat("Agent", unique(agent$memory$speaker), "did split\n")
     }
@@ -74,7 +74,7 @@ splitandmerge <- function(agent) {
   #    - agent: the same list except with changed labels if split&merge occurred
   #
   oldLabel <- agent$memory$label
-  agent$memory$label <- phonsplit(agent$memory$P, agent$memory$word, agent$memory$label)
+  agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
   if (sum(oldLabel != agent$memory$label) > 0 & runMode == "single") {
     cat("Agent", unique(agent$memory$speaker), "did split\n")
   }
@@ -91,11 +91,11 @@ splitandmerge <- function(agent) {
 
 train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
   # This function builds a Gaussian distribution on the basis of data in x.
-  # Function call in phonmerge.sub() and phonsplit.sub() below.
+  # Function call in phonmerge.sub() and phonsplit_.sub() below.
   #
   # Args:
   #    - x: data to calculate the Gaussian distribution from; see phonmerge.sub() or
-  #      phonsplit.sub() for the kind of data this function can be used with
+  #      phonsplit_.sub() for the kind of data this function can be used with
   #
   # Returns:
   #    - mat: data object that contains the mean, covariance and inverse covariance values
@@ -279,8 +279,75 @@ phonmerge.sub <- function(param, wordlab, phonlab, threshold = 0.05) {
   return(mergecat)
 }
 
+phonsplit <- function(memory, Pcols = NULL) { # agent
+  if (is.null(Pcols)) {
+    Pcols <- grep("^P[[:digit:]]+$", colnames(memory), value = TRUE)
+  }
+  emptyRows <- empty_rows(memory)
+  memory[!emptyRows,
+         cluster := pam(.SD, 2, cluster.only = T),
+         by = label,
+         .SDcols = Pcols
+         ][!emptyRows,
+           cluster := {
+             .SD[, .N, by = cluster][which.max(N), cluster]
+           },
+           by = .(word, label),
+           .SDcols = "cluster"
+         ]
+  
+  splittableLabels <- memory[!emptyRows,
+       .(splittable = cluster %>% uniqueN == 2 &
+           .SD %>% unique %>% .[, .N, by = cluster] %>% .[, all(N > 1)]),
+       .SDcols = c("word", "cluster"),
+       by = label][
+         splittable == TRUE,
+         label]
+  
+  memory[label %in% splittableLabels,
+         metric.cluster := {
+           tdat <- train_gaussian_model(.SD);
+           if (ncol(.SD) == 1) {
+             log(abs((.SD - tdat$means)/tdat$cov))
+           } else {
+           distance(.SD, tdat, metric = "bayes")
+           }
+         },
+         .SDcols = Pcols,
+         by = .(label, cluster)]
+  
+  memory[label %in% splittableLabels,
+         metric.orig := {
+           tdat <- train_gaussian_model(.SD);
+           if (ncol(.SD) == 1) {
+             log(abs((.SD - tdat$means)/tdat$cov))
+           } else {
+             distance(.SD, tdat, metric = "bayes")
+           }
+         },
+         .SDcols = Pcols,
+         by = label]
+  
+  splitLabels <- memory[label %in% splittableLabels,
+                        .(metric = mean(metric.cluster - metric.orig)),
+                        by = .(label, word)
+                        ][,
+                          .(split = t.test(metric)$p.value < 0.05 & mean(metric) > 0),
+                          by = label
+                          ][split == TRUE,
+                            label
+                            ]
+  
+  memory[label %in% splitLabels,
+         label := paste(label, cluster, sep = ".")
+         ]
 
-phonsplit <- function(Pdata, wordclass, phonclass) {
+  memory[,
+         `:=`(cluster = NULL, metric.cluster = NULL, metric.orig = NULL)]  
+  
+}
+
+phonsplit_ <- function(Pdata, wordclass, phonclass) {
   # This function performs the actual split on two phoneme classes.
   # Function calls in splitandmergefull(), and splitandmerge()
   # in this script (see above).
@@ -298,16 +365,16 @@ phonsplit <- function(Pdata, wordclass, phonclass) {
   wordclass <- as.character(wordclass)
   for (j in unique(phonclass)) {
     temp <- phonclass == j
-    phonclass[temp] <- phonsplit.sub(Pdata[temp, ], wordclass[temp], phonclass[temp])
+    phonclass[temp] <- phonsplit_.sub(Pdata[temp, ], wordclass[temp], phonclass[temp])
   }
   return(phonclass)
 }
 
 
-phonsplit.sub <- function(param, wordlab, phonlab) {
+phonsplit_.sub <- function(param, wordlab, phonlab) {
   # This function is part of the split algorithm and tests whether a
   # given phoneme class should split into two clusters.
-  # Function call in phonsplit() in this script (see above).
+  # Function call in phonsplit_() in this script (see above).
   #
   # Args:
   #    - param: a matrix of values (one row per observation),

@@ -223,3 +223,7 @@ inverse_dct <- function(coeffs) {
   return(result)
 }
 
+empty_rows <- function(df) {
+  apply(df, 1, function(x) all(is.na(x))) %>% which
+}
+

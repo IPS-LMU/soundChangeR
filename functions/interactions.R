@@ -64,6 +64,7 @@ initialize_memory <- function(df) {
 
 create_population <- function(df, method = "speaker_is_agent") {
   population <- list()
+  population$Pcols <- grep("^P[[:digit:]]+$", colnames(df), value = TRUE)
   if (method == "speaker_is_agent") {
     population$info <- df %>%
       setDT %>%
@@ -72,8 +73,7 @@ create_population <- function(df, method = "speaker_is_agent") {
       .[, agent := .I] %>%
       .[]
     
-    Pcols <- grep("^P[[:digit:]]+$", colnames(df), value = TRUE)
-    cols <- c(Pcols, "word", "labels", "initial", "speaker")
+    cols <- c(population$Pcols, "word", "labels", "initial", "speaker")
     population$memory <- lapply(population$info$agent, function(a) {
       mem <- df %>%
         setDT %>%
