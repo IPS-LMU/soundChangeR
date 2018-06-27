@@ -5,8 +5,8 @@
 # - splitandmergefull(agent)                                                   #
 # - splitandmerge(agent)                                                       #
 # - train_gaussian_model(x, lab = rep("x", nrow(x)))                           #
-# - phonmerge(Pdata, wordclass, phonclass)                                     #
-# - phonmerge.sub(param, wordlab, phonlab, threshold = 0.05)                   #
+# - phonmerge_(Pdata, wordclass, phonclass)                                     #
+# - phonmerge_.sub(param, wordlab, phonlab, threshold = 0.05)                   #
 # - phonsplit_(Pdata, wordclass, phonclass)                                     #
 # - phonsplit_.sub(param, wordlab, phonlab, threshold = 0.05)                   #
 #                                                                              #
@@ -45,14 +45,14 @@ splitandmergefull <- function(agent) {
   }
   if (length(unique(agent$memory$label)) > 1) {
     oldsplitMergeAgentLabel <- agent$memory$label
-    agent$memory$label <- phonmerge(agent$memory$P, agent$memory$word, agent$memory$label)
+    agent$memory$label <- phonmerge_(agent$memory$P, agent$memory$word, agent$memory$label)
     if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & runMode == "single") {
       cat("Agent", unique(agent$memory$speaker), "did merge\n")
     }
     splitMergeAgentTemp <- agent$memory$label != oldsplitMergeAgentLabel
     while (sum(splitMergeAgentTemp) != 0 && length(unique(agent$memory$label)) > 1) {
       oldsplitMergeAgentLabel <- agent$memory$label
-      agent$memory$label <- phonmerge(agent$memory$P, agent$memory$word, agent$memory$label)
+      agent$memory$label <- phonmerge_(agent$memory$P, agent$memory$word, agent$memory$label)
       if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & runMode == "single") {
         cat("Agent", unique(agent$memory$speaker), "did merge\n")
       }
@@ -73,14 +73,17 @@ splitandmerge <- function(agent) {
   # Returns:
   #    - agent: the same list except with changed labels if split&merge occurred
   #
+  
   oldLabel <- agent$memory$label
   agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
+  
+  
   if (sum(oldLabel != agent$memory$label) > 0 & runMode == "single") {
     cat("Agent", unique(agent$memory$speaker), "did split\n")
   }
   if (length(unique(agent$memory$label)) > 1) {
     oldLabel <- agent$memory$label
-    agent$memory$label <- phonmerge(agent$memory$P, agent$memory$word, agent$memory$label)
+    agent$memory$label <- phonmerge_(agent$memory$P, agent$memory$word, agent$memory$label)
     if (sum(oldLabel != agent$memory$label) > 0 & runMode == "single") {
       cat("Agent", unique(agent$memory$speaker), "did merge\n")
     }
@@ -91,10 +94,10 @@ splitandmerge <- function(agent) {
 
 train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
   # This function builds a Gaussian distribution on the basis of data in x.
-  # Function call in phonmerge.sub() and phonsplit_.sub() below.
+  # Function call in phonmerge_.sub() and phonsplit_.sub() below.
   #
   # Args:
-  #    - x: data to calculate the Gaussian distribution from; see phonmerge.sub() or
+  #    - x: data to calculate the Gaussian distribution from; see phonmerge_.sub() or
   #      phonsplit_.sub() for the kind of data this function can be used with
   #
   # Returns:
@@ -138,7 +141,7 @@ train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
 }
 
 
-phonmerge <- function(Pdata, wordclass, phonclass) {
+phonmerge_ <- function(Pdata, wordclass, phonclass) {
   # This function performs the actual merge on two phoneme classes.
   # Function calls in splitandmergefull(), and splitandmerge()
   # in this script (see above).
@@ -199,7 +202,7 @@ phonmerge <- function(Pdata, wordclass, phonclass) {
         }
         w <- c(word1, word2)
         p <- c(phon1, phon2)
-        if (phonmerge.sub(d, w, p)) {
+        if (phonmerge_.sub(d, w, p)) {
           newclasslab <- paste(sample(letters[1:26])[1:6], collapse = "")
           while (sum(newclasslab == phonclass) != 0) {
             newclasslab <- paste(sample(letters[1:26])[1:6], collapse = "")
@@ -218,11 +221,11 @@ phonmerge <- function(Pdata, wordclass, phonclass) {
 }
 
 
-phonmerge.sub <- function(param, wordlab, phonlab, threshold = 0.05) {
+phonmerge_.sub <- function(param, wordlab, phonlab, threshold = 0.05) {
   # This function is part of the merge algorithm and makes the
   # decision on whether or not the merger shall take place based
   # on statistics.
-  # Function call in phonmerge() in this script (see above).
+  # Function call in phonmerge_() in this script (see above).
   #
   # Args:
   #    - param: a matrix of values (one row per observation),
@@ -279,6 +282,38 @@ phonmerge.sub <- function(param, wordlab, phonlab, threshold = 0.05) {
   return(mergecat)
 }
 
+
+split_merge_metric <- function(P) {
+  tdat <- train_gaussian_model(P);
+  if (ncol(P) == 1) {
+    log(abs((P - tdat$means)/tdat$cov)) %>% as.numeric()
+  } else {
+    distance(P, tdat, metric = "bayes") %>% as.numeric()
+  }
+}
+
+split_is_justified <- function(DT, Pcols, wordCol, splitCol) {
+  metric.split <- numeric(nrow(DT))
+  for (spl in unique(DT[[splitCol]])) {
+    metric.split[DT[[splitCol]] == spl] <- split_merge_metric(
+      DT[DT[[splitCol]] == spl, .SD, .SDcols = Pcols]
+    )
+  }
+  
+  metric.merge <- DT[,
+                     .(metric.merge = split_merge_metric(.SD)),
+                     .SDcols = Pcols,
+                     ][
+                       , metric.merge
+                       ]
+  
+  aggrMetric <- Hmisc::summarize(metric.split - metric.merge,
+                                 by = DT[[wordCol]], FUN = mean)[, 2]
+  return(t.test(aggrMetric)$p.value < 0.05 & mean(aggrMetric) > 0)
+}
+
+
+
 phonsplit <- function(memory, Pcols = NULL) { # agent
   if (is.null(Pcols)) {
     Pcols <- grep("^P[[:digit:]]+$", colnames(memory), value = TRUE)
@@ -288,13 +323,14 @@ phonsplit <- function(memory, Pcols = NULL) { # agent
          cluster := pam(.SD, 2, cluster.only = T),
          by = label,
          .SDcols = Pcols
-         ][!emptyRows,
+         ]  [!emptyRows,
            cluster := {
              .SD[, .N, by = cluster][which.max(N), cluster]
            },
            by = .(word, label),
            .SDcols = "cluster"
          ]
+  
   
   splittableLabels <- memory[!emptyRows,
        .(splittable = cluster %>% uniqueN == 2 &
@@ -304,46 +340,40 @@ phonsplit <- function(memory, Pcols = NULL) { # agent
          splittable == TRUE,
          label]
   
-  memory[label %in% splittableLabels,
-         metric.cluster := {
-           tdat <- train_gaussian_model(.SD);
-           if (ncol(.SD) == 1) {
-             log(abs((.SD - tdat$means)/tdat$cov))
-           } else {
-           distance(.SD, tdat, metric = "bayes")
-           }
-         },
-         .SDcols = Pcols,
-         by = .(label, cluster)]
-  
-  memory[label %in% splittableLabels,
-         metric.orig := {
-           tdat <- train_gaussian_model(.SD);
-           if (ncol(.SD) == 1) {
-             log(abs((.SD - tdat$means)/tdat$cov))
-           } else {
-             distance(.SD, tdat, metric = "bayes")
-           }
-         },
-         .SDcols = Pcols,
-         by = label]
+  # memory[label %in% splittableLabels,
+  #        metric.cluster := split_merge_metric(.SD),
+  #        .SDcols = Pcols,
+  #        by = .(label, cluster)]
+  # 
+  # memory[label %in% splittableLabels,
+  #        metric.orig := split_merge_metric(.SD),
+  #        .SDcols = Pcols,
+  #        by = label]
+  # 
+  # splitLabels <- memory[label %in% splittableLabels,
+  #                       .(metric = mean(metric.cluster - metric.orig)),
+  #                       by = .(label, word)
+  #                       ][,
+  #                         .(split = t.test(metric)$p.value < 0.05 & mean(metric) > 0),
+  #                         by = label
+  #                         ][split == TRUE,
+  #                           label
+  #                           ]
   
   splitLabels <- memory[label %in% splittableLabels,
-                        .(metric = mean(metric.cluster - metric.orig)),
-                        by = .(label, word)
-                        ][,
-                          .(split = t.test(metric)$p.value < 0.05 & mean(metric) > 0),
-                          by = label
-                          ][split == TRUE,
-                            label
-                            ]
+                        .(split = split_is_justified(.SD, Pcols, "word", "cluster")),
+                        by = label][
+                          split == TRUE,
+                          label
+                          ]
+  
   
   memory[label %in% splitLabels,
          label := paste(label, cluster, sep = ".")
          ]
 
   memory[,
-         `:=`(cluster = NULL, metric.cluster = NULL, metric.orig = NULL)]  
+         `:=`(cluster = NULL)]  
   
 }
 
