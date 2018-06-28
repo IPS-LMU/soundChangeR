@@ -110,15 +110,15 @@ for (nrSim in 1:nrOfSimulations) {
                                 ABM = rep(abmName, times = nrow(modifiedPopulation))))
   
   # create the plots during the ABM run
-  plotPath <- file.path(img, paste("plotDuringABM_", abmName, "_", nrSim * interactionsPerSimulation, ".svg", sep = ""))
-  if (plotting != "none" & plotBeforeABM == TRUE) {
-    svg(filename = plotPath, width = 10, height = 10, onefile = FALSE)
-    modifiedPlot <- plot_during(modifiedPopulation)
-    print(modifiedPlot); dev.off()
-    if (runMode == "single") {
-      print(modifiedPlot)
-    }
-  }
+  # plotPath <- file.path(img, paste("plotDuringABM_", abmName, "_", nrSim * interactionsPerSimulation, ".svg", sep = ""))
+  # if (plotting != "none" & plotBeforeABM == TRUE) {
+  #   svg(filename = plotPath, width = 10, height = 10, onefile = FALSE)
+  #   modifiedPlot <- plot_during(modifiedPopulation)
+  #   print(modifiedPlot); dev.off()
+  #   if (runMode == "single") {
+  #     print(modifiedPlot)
+  #   }
+  # }
   
   # calculate rejection ratio and derived labels per agent
   if (runMode == "single") {

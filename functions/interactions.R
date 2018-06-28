@@ -62,35 +62,74 @@ initialize_memory <- function(df) {
   return(initMemory)
 }
 
-create_population <- function(df, method = "speaker_is_agent") {
+create_population <- function(input.df, method = "speaker_is_agent", maxMemorySize ) {
   population <- list()
-  population$Pcols <- grep("^P[[:digit:]]+$", colnames(df), value = TRUE)
+  Pcols <- grep("^P[[:digit:]]+$", colnames(input.df), value = TRUE)
   if (method == "speaker_is_agent") {
-    population$info <- df %>%
+    population$info <- input.df %>%
+      as.data.frame %>%
+      .[,  c("speaker", "group")] %>%
+      unique %>%
       setDT %>%
-      unique(by = c("speaker", "group")) %>%
-      .[order(speaker), .(speaker, group)] %>%
+      .[order(speaker), ] %>%
       .[, agent := .I] %>%
       .[]
     
-    cols <- c(population$Pcols, "word", "labels", "initial", "speaker")
-    population$memory <- lapply(population$info$agent, function(a) {
-      mem <- df %>%
-        setDT %>%
-        .[speaker == population$info[agent == a, speaker], .SD, .SDcols=cols] %>%
-        .[population$info[, .(speaker, agent)], on = "speaker", nomatch = 0] %>%
-        .[, speaker := NULL] %>%
-        setnames("labels", "label") %>%
-        .[]
-      if (nrow(mem) == maxMemorySize) {
-        return(mem)
-      } else {
-        return(rbindlist(list(mem, matrix(nrow = maxMemorySize - nrow(mem), ncol = ncol(mem)) %>% data.table)))
-      }
-    })
-  } 
+    population$labels <- input.df[, c("word", "labels", "initial", "speaker")] %>%
+      setDT %>%
+      .[population$info, on = "speaker"] %>%
+      .[, valid := TRUE] %>%
+      .[]
+    
+    emptyRowsCounts <- population$labels[, .(Count = maxMemorySize - .N), by = agent]
+    population$labels <- rbindlist(list(
+      population$labels,
+      matrix(nrow = sum(emptyRowsCounts$Count), ncol = ncol(population$labels)) %>%
+        data.table() %>%
+        setnames(colnames(population$labels)) %>%
+        .[, `:=`(agent = rep(emptyRowsCounts$agent, emptyRowsCounts$Count),
+                 valid = FALSE)]
+    ))
+    population$labels[, rowIndex := .I]
+    
+    population$features <- rbind(input.df[, Pcols] %>% as.matrix,
+                                 matrix(nrow = population$labels[valid == FALSE, .N], ncol = length(Pcols))
+    )
+  }
   return(population)
 }
+
+
+
+# create_population <- function(df, method = "speaker_is_agent") {
+#   population <- list()
+#   population$Pcols <- grep("^P[[:digit:]]+$", colnames(df), value = TRUE)
+#   if (method == "speaker_is_agent") {
+#     population$info <- df %>%
+#       setDT %>%
+#       unique(by = c("speaker", "group")) %>%
+#       .[order(speaker), .(speaker, group)] %>%
+#       .[, agent := .I] %>%
+#       .[]
+#     
+#     cols <- c(population$Pcols, "word", "labels", "initial", "speaker")
+#     population$memory <- lapply(population$info$agent, function(a) {
+#       mem <- df %>%
+#         setDT %>%
+#         .[speaker == population$info[agent == a, speaker], .SD, .SDcols=cols] %>%
+#         .[population$info[, .(speaker, agent)], on = "speaker", nomatch = 0] %>%
+#         .[, speaker := NULL] %>%
+#         setnames("labels", "label") %>%
+#         .[]
+#       if (nrow(mem) == maxMemorySize) {
+#         return(mem)
+#       } else {
+#         return(rbindlist(list(mem, matrix(nrow = maxMemorySize - nrow(mem), ncol = ncol(mem)) %>% data.table)))
+#       }
+#     })
+#   } 
+#   return(population)
+# }
 
 create_population_ <- function(nrOfAgents, initMemory = NULL) {
   # This functions initiates the memories of the (chosen) agents. 
