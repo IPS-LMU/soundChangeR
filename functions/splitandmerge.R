@@ -292,90 +292,59 @@ split_merge_metric <- function(P) {
   }
 }
 
-split_is_justified <- function(DT, Pcols, wordCol, splitCol) {
-  metric.split <- numeric(nrow(DT))
-  for (spl in unique(DT[[splitCol]])) {
-    metric.split[DT[[splitCol]] == spl] <- split_merge_metric(
-      DT[DT[[splitCol]] == spl, .SD, .SDcols = Pcols]
-    )
+split_is_justified <- function(P, wordCol, splitCol) {
+  metric.split <- numeric(nrow(P))
+  for (spl in 1:2) { # assume 2 clusters labelled as 1, 2
+    metric.split[splitCol == spl] <- split_merge_metric(P[splitCol == spl, ])
   }
-  
-  metric.merge <- DT[,
-                     .(metric.merge = split_merge_metric(.SD)),
-                     .SDcols = Pcols,
-                     ][
-                       , metric.merge
-                       ]
+  metric.merge <- split_merge_metric(P)
   
   aggrMetric <- Hmisc::summarize(metric.split - metric.merge,
-                                 by = DT[[wordCol]], FUN = mean)[, 2]
+                                 by = wordCol, FUN = mean)[, 2]
   return(t.test(aggrMetric)$p.value < 0.05 & mean(aggrMetric) > 0)
 }
 
-
-
-phonsplit <- function(memory, Pcols = NULL) { # agent
-  if (is.null(Pcols)) {
-    Pcols <- grep("^P[[:digit:]]+$", colnames(memory), value = TRUE)
+phonsplit.sub <- function(pop, idx) {
+  # one label, one agent
+  pop$labels[idx,
+               .(cluster = pam(pop$features[idx,], 2, cluster.only = T),
+                 word)
+               ][,
+                 cluster := {
+                   # this line is more general 
+                   # (does not assume number of clusters == 2 and cluster labels 1, 2)
+                   # .SD[, .N, by = cluster][which.max(N), cluster]
+                   # this line is specific for 2 clusters and faster
+                   if (.SD[cluster == 1, .N] > .N/2) 1L else 2L
+                 },
+                 by = word,
+                 .SDcols = "cluster"
+                 ][] -> clusterByWord
+  
+  did_split <- FALSE
+  if (clusterByWord$cluster %>% uniqueN == 2 &
+      clusterByWord %>% unique %>% .[, .N, by = cluster] %>% .[, all(N > 1)]) {
+    if (split_is_justified(pop$features[idx,], clusterByWord$word, clusterByWord$cluster)) {
+      pop$labels[idx,
+                   label := paste(label, clusterByWord$cluster, sep = ".")
+                   ]
+      did_split <- TRUE
+    }
   }
-  emptyRows <- empty_rows(memory)
-  memory[!emptyRows,
-         cluster := pam(.SD, 2, cluster.only = T),
-         by = label,
-         .SDcols = Pcols
-         ]  [!emptyRows,
-           cluster := {
-             .SD[, .N, by = cluster][which.max(N), cluster]
-           },
-           by = .(word, label),
-           .SDcols = "cluster"
-         ]
-  
-  
-  splittableLabels <- memory[!emptyRows,
-       .(splittable = cluster %>% uniqueN == 2 &
-           .SD %>% unique %>% .[, .N, by = cluster] %>% .[, all(N > 1)]),
-       .SDcols = c("word", "cluster"),
-       by = label][
-         splittable == TRUE,
-         label]
-  
-  # memory[label %in% splittableLabels,
-  #        metric.cluster := split_merge_metric(.SD),
-  #        .SDcols = Pcols,
-  #        by = .(label, cluster)]
-  # 
-  # memory[label %in% splittableLabels,
-  #        metric.orig := split_merge_metric(.SD),
-  #        .SDcols = Pcols,
-  #        by = label]
-  # 
-  # splitLabels <- memory[label %in% splittableLabels,
-  #                       .(metric = mean(metric.cluster - metric.orig)),
-  #                       by = .(label, word)
-  #                       ][,
-  #                         .(split = t.test(metric)$p.value < 0.05 & mean(metric) > 0),
-  #                         by = label
-  #                         ][split == TRUE,
-  #                           label
-  #                           ]
-  
-  splitLabels <- memory[label %in% splittableLabels,
-                        .(split = split_is_justified(.SD, Pcols, "word", "cluster")),
-                        by = label][
-                          split == TRUE,
-                          label
-                          ]
-  
-  
-  memory[label %in% splitLabels,
-         label := paste(label, cluster, sep = ".")
-         ]
-
-  memory[,
-         `:=`(cluster = NULL)]  
-  
+  return(did_split)
 }
+
+phonsplit <- function(pop, idx) {
+  # one agent
+  pop$labels[idx,
+               .(did_split = phonsplit.sub(pop, rowIndex)),
+               by = label
+               ][, Reduce(`|`, did_split)]
+}
+
+
+
+
 
 phonsplit_ <- function(Pdata, wordclass, phonclass) {
   # This function performs the actual split on two phoneme classes.

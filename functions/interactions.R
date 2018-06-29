@@ -66,19 +66,14 @@ create_population <- function(input.df, method = "speaker_is_agent", maxMemorySi
   population <- list()
   Pcols <- grep("^P[[:digit:]]+$", colnames(input.df), value = TRUE)
   if (method == "speaker_is_agent") {
-    population$info <- input.df %>%
-      as.data.frame %>%
-      .[,  c("speaker", "group")] %>%
-      unique %>%
-      setDT %>%
-      .[order(speaker), ] %>%
-      .[, agent := .I] %>%
-      .[]
+    sortedSpeakers <- input.df$speaker %>% unique %>% sort
     
-    population$labels <- input.df[, c("word", "labels", "initial", "speaker")] %>%
+    population$labels <- input.df[, c("word", "labels", "initial", "speaker", "group")] %>%
       setDT %>%
-      .[population$info, on = "speaker"] %>%
       .[, valid := TRUE] %>%
+      # not using a data.table join as it would sort by speaker,
+      # while original order must be preserved
+      .[, agent := which(sortedSpeakers == speaker), by = speaker] %>%
       .[]
     
     emptyRowsCounts <- population$labels[, .(Count = maxMemorySize - .N), by = agent]
@@ -91,6 +86,7 @@ create_population <- function(input.df, method = "speaker_is_agent", maxMemorySi
                  valid = FALSE)]
     ))
     population$labels[, rowIndex := .I]
+    setnames(population$labels, "labels", "label")
     
     population$features <- rbind(input.df[, Pcols] %>% as.matrix,
                                  matrix(nrow = population$labels[valid == FALSE, .N], ncol = length(Pcols))
