@@ -141,6 +141,43 @@ train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
 }
 
 
+phonmerge <- function(pop, idx) {
+  # one agent
+  # skip entire function if there's only one category
+  if (popDT$labels[idx, label %>% uniqueN] == 1) {
+    return (FALSE)
+  }
+  
+  didMerge <- FALSE
+  didOneMerge <- TRUE # set TRUE in order to exec while loop at least once
+  while(didOneMerge) {
+    ulab <- popDT$labels[idx, label %>% unique]
+    distCentroids <- sapply(ulab, function(lab) {
+      popDT$features[popDT$labels[idx, ][label == lab, rowIndex], ] %>% colMeans
+    }) %>% t %>% dist
+   
+    didOneMerge <- FALSE
+    for (i in distCentroids %>% order) {
+      ulab.pair <- labels(distCentroids)[which(lower.tri(distCentroids),arr.ind=TRUE)[i,]]
+      subIdx <- idx[popDT$labels[idx, label] %in% ulab.pair]
+      if (! split_is_justified(popDT$features[subIdx,],
+                             popDT$labels[subIdx, word],
+                             popDT$labels[subIdx, label] %>% as.factor %>% as.integer)) {
+        while ((mergeLabel <- stri_rand_strings(1, 6, "[a-z]")) %in% popDT$labels[idx, label %>% unique]) {}
+        # popDT$labels[subIdx, label := mergeLabel]
+        print (i)
+        didOneMerge <- TRUE
+        break
+      }
+    }
+    didMerge <- didMerge || didOneMerge
+    if (popDT$labels[idx, label %>% uniqueN] == 1) {
+      return (didMerge)
+    }
+  }
+  return (didMerge)
+}
+
 phonmerge_ <- function(Pdata, wordclass, phonclass) {
   # This function performs the actual merge on two phoneme classes.
   # Function calls in splitandmergefull(), and splitandmerge()
