@@ -18,19 +18,18 @@
 ################################################################################
 
 
-splitandmerge <- function(pop, idx, full = FALSE) {
-  # one agent
+splitandmerge <- function(agent, full = FALSE) {
   phoneFuncList <- list(split = phonsplit_,
                         merge = phonmerge_)
-  agent <- pop$labels[idx, .SD[1, agent]]
+  validRows <- agent$labels[valid == TRUE, rowIndex]
   for (phoneFunc in c("split", "merge")) {
-    while(!identical(lab <- phoneFuncList[[phoneFunc]](popDT$features[idx,],
-                                                       popDT$labels[idx, word],
-                                                       popDT$labels[idx, label]),
-                     popDT$labels[idx, label])) {
-      popDT$labels[idx, label := lab]
+    while(!identical(lab <- phoneFuncList[[phoneFunc]](agent$features[validRows,],
+                                                       agent$labels[validRows, word],
+                                                       agent$labels[validRows, label]),
+                     agent$labels[validRows, label])) {
+      agent$labels[validRows, label := lab]
       if (runMode == "single") {
-        cat("Agent", agent, "did", phoneFunc, "\n")
+        cat("Agent", agent$agentID, "did", phoneFunc, "\n")
       }
       if (!full) break
     }

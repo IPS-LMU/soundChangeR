@@ -78,7 +78,7 @@ create_population <- function(input.df, method = "speaker_is_agent", maxMemorySi
         .[, timeStamp := sample(.N), by = word] %>%
         .[]
       population[[id]]$group <- population[[id]]$labels[, group %>% unique]
-      population[[id]]$features <- input.df[, Pcols] %>% as.matrix
+      population[[id]]$features <- input.df[input.df$speaker == sortedSpeakers[id], Pcols] %>% as.matrix
       
       bufferRowsCount <- maxMemorySize - nrow(population[[id]]$labels)
       if (bufferRowsCount > 0) {
@@ -93,6 +93,7 @@ create_population <- function(input.df, method = "speaker_is_agent", maxMemorySi
                                            matrix(nrow = bufferRowsCount, ncol = length(Pcols)))
       }
       population[[id]]$labels[, rowIndex := .I]
+      setnames(population[[id]]$labels, "labels", "label")
       population[[id]]$cache <- list(valid = FALSE)
       population[[id]]$received <- expandingList()
     }
