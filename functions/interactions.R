@@ -287,8 +287,32 @@ perform_single_interaction <- function(pop) {
   return(pop)
 }
 
-
 produce_token <- function(agent) {
+  randomIndex <- sample(which(agent$labels$valid == TRUE), 1)
+  producedWord <- agent$labels$word[randomIndex]
+  producedLabel <- agent$labels$label[randomIndex]
+  nWordTokens <- sum(agent$labels$word == producedWord, na.rm = TRUE)
+  otherWords <- unique(agent$labels$word[
+    agent$labels$label == producedLabel & agent$labels$word != producedWord & agent$labels$valid == TRUE
+    ])
+  nExtraTokens <- length(otherWords)
+  wordFeatures <- matrix(nrow = nWordTokens + nExtraTokens, ncol = ncol(agent$features))
+  wordFeatures[1:nWordTokens, ] <- agent$features[agent$labels$word == producedWord & agent$labels$valid == TRUE, ]
+  for (i in 1:nExtraTokens) {
+    wordFeatures[nWordTokens + i, ] <- apply(agent$features[agent$labels$word == otherWords[i] & agent$labels$valid == TRUE, ],
+                                             2,
+                                             mean)
+  }
+  producedToken <- list(
+    features = rmvnorm(1, apply(wordFeatures, 2, mean), cov(wordFeatures)),
+    labels = agent$labels[randomIndex, .(word, label, initial, speaker, group, agentID, timeStamp)]
+  )
+  return(producedToken)
+}
+
+
+
+produce_token_ <- function(agent) {
   # This function randomly samples a token from one of the
   # feature distributions of one agent (the speaking agent).
   # Function call in perform_single_interaction() in this script (see above).
