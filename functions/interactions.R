@@ -67,33 +67,63 @@ create_population <- function(input.df, method = "speaker_is_agent", maxMemorySi
   Pcols <- grep("^P[[:digit:]]+$", colnames(input.df), value = TRUE)
   if (method == "speaker_is_agent") {
     sortedSpeakers <- input.df$speaker %>% unique %>% sort
-    
-    population$labels <- input.df[, c("word", "labels", "initial", "speaker", "group")] %>%
-      setDT %>%
-      .[, valid := TRUE] %>%
-      # not using a data.table join as it would sort by speaker,
-      # while original order must be preserved
-      .[, agent := which(sortedSpeakers == speaker), by = speaker] %>%
-      .[]
-    
-    emptyRowsCounts <- population$labels[, .(Count = maxMemorySize - .N), by = agent]
-    population$labels <- rbindlist(list(
-      population$labels,
-      matrix(nrow = sum(emptyRowsCounts$Count), ncol = ncol(population$labels)) %>%
-        data.table() %>%
-        setnames(colnames(population$labels)) %>%
-        .[, `:=`(agent = rep(emptyRowsCounts$agent, emptyRowsCounts$Count),
-                 valid = FALSE)]
-    ))
-    population$labels[, rowIndex := .I]
-    setnames(population$labels, "labels", "label")
-    
-    population$features <- rbind(input.df[, Pcols] %>% as.matrix,
-                                 matrix(nrow = population$labels[valid == FALSE, .N], ncol = length(Pcols))
-    )
+    nrOfAgents <- length(sortedSpeakers)
+    for (id in seq_len(nrOfAgents)) {
+      population[[id]] <- list()
+      population[[id]]$agentID <- id
+      population[[id]]$labels <- input.df[input.df$speaker == sortedSpeakers[id],
+                                               c("word", "labels", "initial", "speaker", "group")] %>%
+        setDT %>%
+        .[, `:=`(valid = TRUE, nrOfTimesHeard = 1, agentID = id)] %>%
+        .[, timeStamp := sample(.N), by = word] %>%
+        .[]
+      population[[id]]$group <- population[[id]]$labels[, group %>% unique]
+      population[[id]]$features <- input.df[, Pcols] %>% as.matrix
+      
+      bufferRowsCount <- maxMemorySize - nrow(population[[id]]$labels)
+      if (bufferRowsCount > 0) {
+        population[[id]]$labels <- rbindlist(list(
+          population[[id]]$labels,
+          matrix(nrow = bufferRowsCount, ncol = ncol(population[[id]]$labels)) %>%
+            data.table() %>%
+            setnames(colnames(population[[id]]$labels)) %>%
+            .[, valid := FALSE]
+        ))
+        population[[id]]$features <- rbind(population[[id]]$features,
+                                           matrix(nrow = bufferRowsCount, ncol = length(Pcols)))
+      }
+      population[[id]]$labels[, rowIndex := .I]
+      population[[id]]$cache <- list(valid = FALSE)
+      population[[id]]$received <- expandingList()
+    }
   }
   return(population)
 }
+  #   population$labels <- input.df[, c("word", "labels", "initial", "speaker", "group")] %>%
+  #     setDT %>%
+  #     .[, valid := TRUE] %>%
+  #     # not using a data.table join as it would sort by speaker,
+  #     # while original order must be preserved
+  #     .[, agent := which(sortedSpeakers == speaker), by = speaker] %>%
+  #     .[]
+  #   
+  #   emptyRowsCounts <- population$labels[, .(Count = maxMemorySize - .N), by = agent]
+  #   population$labels <- rbindlist(list(
+  #     population$labels,
+  #     matrix(nrow = sum(emptyRowsCounts$Count), ncol = ncol(population$labels)) %>%
+  #       data.table() %>%
+  #       setnames(colnames(population$labels)) %>%
+  #       .[, `:=`(agent = rep(emptyRowsCounts$agent, emptyRowsCounts$Count),
+  #                valid = FALSE)]
+  #   ))
+  #   population$labels[, rowIndex := .I]
+  #   setnames(population$labels, "labels", "label")
+  #   
+  #   population$features <- rbind(input.df[, Pcols] %>% as.matrix,
+  #                                matrix(nrow = population$labels[valid == FALSE, .N], ncol = length(Pcols))
+  #   )
+  # }
+# }
 
 
 

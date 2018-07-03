@@ -105,7 +105,11 @@ make_equivalence_labels_ <- function(originalPopulation) {
 make_equivalence_labels <- function(labels) {
   ulab <- labels %>% unique %>% sort %>% as.character
   return(
-    Map(combn, list(ulab), seq_along(ulab), list(function(x) paste0(x, collapse="+"))) %>% unlist
+    Map(combn,
+        list(ulab),
+        seq_along(ulab),
+        list(function(x) paste0(x, collapse="+"))
+        ) %>% unlist
   )
 }
 
@@ -233,4 +237,35 @@ inverse_dct <- function(coeffs) {
 empty_rows <- function(df) {
   apply(df, 1, function(x) all(is.na(x))) %>% which
 }
+
+# https://stackoverflow.com/questions/2436688/append-an-object-to-a-list-in-r-in-amortized-constant-time-o1
+expandingList <- function(capacity = 10) {
+  buffer <- vector('list', capacity)
+  length <- 0
+  
+  methods <- list()
+  
+  methods$double.size <- function() {
+    buffer <<- c(buffer, vector('list', capacity))
+    capacity <<- capacity * 2
+  }
+  
+  methods$add <- function(val) {
+    if(length == capacity) {
+      methods$double.size()
+    }
+    
+    length <<- length + 1
+    buffer[[length]] <<- val
+  }
+  
+  methods$as.list <- function() {
+    b <- buffer[0:length]
+    return(b)
+  }
+  
+  methods
+}
+
+
 
