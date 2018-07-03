@@ -29,7 +29,8 @@ if (splitAndMerge == TRUE & doSplitAndMergeBeforeABM == TRUE) {
 originalPopulation <- convert_list_to_df(population, condition = "original")
 
 # create equivalence labels
-equivalenceLabels <- make_equivalence_labels(originalPopulation)
+# equivalenceLabels <- make_equivalence_labels_(originalPopulation)
+equivalenceLabels <- make_equivalence_labels(originalPopulation$initial)
 
 # iterator of the ABM run
 nrSim <- 0

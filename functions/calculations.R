@@ -81,7 +81,7 @@ calc_rejection_ratio <- function(population) {
 }
 
 
-make_equivalence_labels <- function(originalPopulation) {
+make_equivalence_labels_ <- function(originalPopulation) {
   # This function generates equivalence labels from the 
   # initial labels of the agents in the population.
   # Function call in coreABM.R.
@@ -100,6 +100,13 @@ make_equivalence_labels <- function(originalPopulation) {
     eLabels <- c(eLabels, apply(combi, 1, function(x) {paste0(x, collapse="+")}))
   }
   return(eLabels)
+}
+
+make_equivalence_labels <- function(labels) {
+  ulab <- labels %>% unique %>% sort %>% as.character
+  return(
+    Map(combn, list(ulab), seq_along(ulab), list(function(x) paste0(x, collapse="+"))) %>% unlist
+  )
 }
 
 
