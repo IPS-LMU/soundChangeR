@@ -72,13 +72,14 @@ create_population <- function(input.df, method = "speaker_is_agent", maxMemorySi
       population[[id]] <- list()
       population[[id]]$agentID <- id
       population[[id]]$labels <- input.df[input.df$speaker == sortedSpeakers[id],
-                                               c("word", "labels", "initial", "speaker", "group")] %>%
+                                               c("word", "labels", "initial")] %>%
         setDT %>%
         .[, `:=`(valid = TRUE, nrOfTimesHeard = 1, agentID = id)] %>%
         .[, timeStamp := sample(.N), by = word] %>%
         .[]
-      population[[id]]$group <- population[[id]]$labels[, group %>% unique]
-      population[[id]]$features <- input.df[input.df$speaker == sortedSpeakers[id], Pcols] %>% as.matrix
+      population[[id]]$group <-input.df[input.df$speaker == sortedSpeakers[id], "group"][1] 
+      population[[id]]$speaker <- input.df[input.df$speaker == sortedSpeakers[id], "speaker"][1] 
+      population[[id]]$features <- input.df[input.df$speaker == sortedSpeakers[id], Pcols] %>% setDT
       
       bufferRowsCount <- maxMemorySize - nrow(population[[id]]$labels)
       if (bufferRowsCount > 0) {
@@ -89,17 +90,34 @@ create_population <- function(input.df, method = "speaker_is_agent", maxMemorySi
             setnames(colnames(population[[id]]$labels)) %>%
             .[, valid := FALSE]
         ))
-        population[[id]]$features <- rbind(population[[id]]$features,
-                                           matrix(nrow = bufferRowsCount, ncol = length(Pcols)))
+        population[[id]]$features <- rbindlist(list(population[[id]]$features,
+                                           matrix(nrow = bufferRowsCount, ncol = length(Pcols)) %>%
+                                             data.table()
+                                           ))
       }
-      population[[id]]$labels[, rowIndex := .I]
       setnames(population[[id]]$labels, "labels", "label")
-      population[[id]]$cache <- list(valid = FALSE)
-      population[[id]]$received <- expandingList()
+      population[[id]]$cache <- data.table(name = "qda", value = list(), valid = FALSE)
     }
   }
   return(population)
 }
+
+create_interactions_log <- function(nrOfInteractions) {
+  interactionsLog <- data.table(word = NA_character_,
+                                producerID = NA_integer_, producerLabel = NA_character_, producerNrOfTimesHeard= NA_integer_,
+                                perceiverID = NA_integer_, perceiverLabel = NA_character_, perceiverNrOfTimesHeard= NA_integer_,
+                                accepted = NA, valid = NA)[0]
+  interactionsLog <- rbindlist(list(
+    interactionsLog,
+    data.table(matrix(nrow = nrOfInteractions, ncol = ncol(interactionsLog)))
+    )) %>% 
+    .[, valid := FALSE] %>%
+    .[]
+}
+
+# .(word, label, initial)][
+#   , `:=`(producerID = agent$agentID, speaker = agent$speaker, group = agent$group)][
+
   #   population$labels <- input.df[, c("word", "labels", "initial", "speaker", "group")] %>%
   #     setDT %>%
   #     .[, valid := TRUE] %>%
@@ -189,8 +207,16 @@ create_population_ <- function(nrOfAgents, initMemory = NULL) {
   return(pop)
 }
 
-
 perform_interactions <- function(pop, nrOfInteractions) {
+  interactionsLog <- create_interactions_log(nrOfInteractions)
+  groupsInfo <- rbindlist(lapply(pop, function(agent) {data.table(agentID = agent$agentID, group = agent$group)}))[order(agentID),]
+  for (i in 1:nrOfInteractions) {
+    perform_single_interaction(pop, interactionsLog, groupsInfo)
+  }
+  return(interactionsLog)
+}
+
+perform_interactions_ <- function(pop, nrOfInteractions) {
   # This function repeats perform_single_interaction() (see below)
   # for as many as nrOfInteractions. 
   # Function call in coreABM.R.
@@ -207,13 +233,46 @@ perform_interactions <- function(pop, nrOfInteractions) {
   
   # perform as many as nrOfInteractions
   for (i in 1:nrOfInteractions) {
-    pop <- perform_single_interaction(pop)
+    pop <- perform_single_interaction_(pop)
   }
   return(pop)
 }
 
+perform_single_interaction <- function(pop, interactionsLog, groupsInfo) {
+  prodNr <- 1
+  percNr <- 1
+  while (prodNr == percNr) {
+    # choose interaction partners without taking their group into account
+    if (interactionPartners == "random") {
+      prodNr <- sample(groupsInfo$agentID, 1, prob = speakerProb)
+      percNr <- sample(groupsInfo$agentID, 1, prob = listenerProb)
+      
+      # or choose interaction partners from the same group
+    } else if (interactionPartners == "withinGroups") {
+      randomGroup <- sample(unique(groupsInfo$group), 1)
+      prodNr <- sample(groupsInfo$agentID[groupsInfo$group == randomGroup], 1, prob = speakerProb[groupsInfo$group == randomGroup])
+      percNr <- sample(groupsInfo$agentID[groupsInfo$group == randomGroup], 1, prob = listenerProb[groupsInfo$group == randomGroup])
+      
+      # or choose interaction partners from different groups
+    } else if (interactionPartners == "betweenGroups") {
+      randomGroups <- sample(unique(groupsInfo$group), 2)
+      randomPercGroup <- randomGroups[1]
+      randomProdGroup <- randomGroups[2]
+      prodNr <- sample(groupsInfo$agentID[groupsInfo$group == randomPercGroup], 1, prob = speakerProb[groupsInfo$group == randomPercGroup])
+      percNr <- sample(groupsInfo$agentID[groupsInfo$group == randomProdGroup], 1, prob = listenerProb[groupsInfo$group == randomProdGroup])
+    }
+  }
+  
+  # set producer and perceiver to the chosen agents from pop
+  producer <- pop[[prodNr]]
+  perceiver <- pop[[percNr]]
+  
+  # let speaking agent produce a token and listening agent perceive it
+  perceive_token(perceiver, produce_token(producer), interactionsLog)
+}
 
-perform_single_interaction <- function(pop) {
+
+perform_single_interaction_ <- function(pop) {
   # This function performs a single interaction. 
   # Function call in performMultipleInteraction() in this script (see above).
   #
@@ -281,8 +340,8 @@ perform_single_interaction <- function(pop) {
   perceiver <- pop[[percNr]]
   
   # let speaking agent produce a token and listening agent perceive it
-  producedToken <- produce_token(producer)
-  pop[[percNr]] <- perceive_token(perceiver, producedToken)
+  producedToken <- produce_token_(producer)
+  pop[[percNr]] <- perceive_token_(perceiver, producedToken)
   
   return(pop)
 }
@@ -296,16 +355,19 @@ produce_token <- function(agent) {
     agent$labels$label == producedLabel & agent$labels$word != producedWord & agent$labels$valid == TRUE
     ])
   nExtraTokens <- length(otherWords)
-  wordFeatures <- matrix(nrow = nWordTokens + nExtraTokens, ncol = ncol(agent$features))
-  wordFeatures[1:nWordTokens, ] <- agent$features[agent$labels$word == producedWord & agent$labels$valid == TRUE, ]
+  wordFeatures <- matrix(nrow = nWordTokens + nExtraTokens, ncol = ncol(as.matrix(agent$features)))
+  wordFeatures[1:nWordTokens, ] <- as.matrix(agent$features)[agent$labels$word == producedWord & agent$labels$valid == TRUE, ]
   for (i in 1:nExtraTokens) {
-    wordFeatures[nWordTokens + i, ] <- apply(agent$features[agent$labels$word == otherWords[i] & agent$labels$valid == TRUE, ],
+    wordFeatures[nWordTokens + i, ] <- apply(as.matrix(agent$features)[agent$labels$word == otherWords[i] & agent$labels$valid == TRUE, ],
                                              2,
                                              mean)
   }
   producedToken <- list(
     features = rmvnorm(1, apply(wordFeatures, 2, mean), cov(wordFeatures)),
-    labels = agent$labels[randomIndex, .(word, label, initial, speaker, group, agentID, timeStamp)]
+    labels = agent$labels[randomIndex,
+                          .(word, label, nrOfTimesHeard)][
+                            , `:=`(producerID = agent$agentID)][
+                            ]
   )
   return(producedToken)
 }
@@ -367,8 +429,74 @@ produce_token_ <- function(agent) {
   return(producedToken)
 }
 
+perceive_token <- function(perceiver, producedToken, interactionsLog) {
+  perceiver$received <- perceiver$received + 1
+  perceiverLabel_ <- unique(perceiver$labels$label[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE])
+  if (memoryIntakeStrategy == "maxPosteriorProb") {
+    if (!{cacheRow <- which(perceiver$cache$name == "qda"); perceiver$cache$valid[cacheRow]}) {
+      perceiver$cache[cacheRow,  `:=`(value = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, ],
+                             grouping = perceiver$labels$label[perceiver$labels$valid == TRUE])),
+                             valid = TRUE)]
+    }
+    posteriorProbAll <- predict(perceiver$cache$value[cacheRow][[1]], producedToken$features)$posterior
+    recognized <- colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_
+  } else if (memoryIntakeStrategy == "mahalanobisDistance") {
+    mahalaDistanceLabel <- log(mahalanobis(producedToken$features,
+                                           apply(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, ], 2, mean),
+                                           cov(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, ])))
+    recognized <- mahalaDistanceLabel < mahalanobisThreshold
+  }
+  if (recognized == T) {
+    perceiver$accepted <- perceiver$accepted + 1
+    if (all(perceiver$labels$valid)) {
+      if (memoryRemovalStrategy == "timeDecay") {
+        rowToWrite <- which(perceiver$labels$word == producedToken$labels$word)[
+          which.min(perceiver$labels$timeStamp[perceiver$labels$word == producedToken$labels$word])
+          ]
+      } else if (memoryRemovalStrategy == "outlierRemoval") {
+        tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$labels$label == perceiverLabel_, ])
+        rowToWrite <- which(perceiver$labels$word == producedToken$labels$word)[
+          which.max(distance(as.matrix(perceiver$features)[perceiver$labels$word == producedToken$labels$word, ], tdat.mahal, metric = "mahal"))
+          ]
+      }
+    }
+    else {
+      rowToWrite <- which(perceiver$labels$valid == FALSE)[1]
+    }
+    # write in memory
+    updatedNrOfTimesHeard <- 1 + perceiver$labels$nrOfTimesHeard[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE][1]
+    receivedTimeStamp <- 1 + max(perceiver$labels$timeStamp[perceiver$labels$word == producedToken$labels$word], na.rm = TRUE)
+    perceiverInitial <- perceiver$labels$initial[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE][1]
+    perceiver$features[rowToWrite, names(perceiver$features) := as.list(producedToken$features)]
+    perceiver$labels[rowToWrite, `:=`(
+      word = producedToken$labels$word,
+      label = perceiverLabel_,
+      initial = perceiverInitial,
+      valid = TRUE,
+      nrOfTimesHeard = updatedNrOfTimesHeard,
+      agentID = producedToken$labels$producerID,
+      timeStamp = receivedTimeStamp
+    )]
+  }
+  # write on interactionsLog
+  rowToWrite <- which(interactionsLog$valid == FALSE)[1]
+  interactionsLog[rowToWrite, `:=`(
+    word = producedToken$labels$word,
+    producerID = producedToken$labels$producerID,
+    producerLabel = producedToken$labels$label,
+    producerNrOfTimesHeard = producedToken$labels$nrOfTimesHeard,
+    perceiverID = perceiver$agentID,
+    perceiverLabel = perceiverLabel_,
+    perceiverNrOfTimesHeard = updatedNrOfTimesHeard,
+    accepted = recognized,
+    valid = TRUE
+  )]
+  if (memoryIntakeStrategy == "maxPosteriorProb") {
+    perceiver$cache[cacheRow, valid := FALSE]
+  }
+}
 
-perceive_token <- function(agent, producedToken) {
+perceive_token_ <- function(agent, producedToken) {
   # This function tests whether the produced token shall be 
   # memorized by the listening agent.
   # Function call in perform_single_interaction() in this script (see above).

@@ -21,9 +21,9 @@
 splitandmerge <- function(agent, full = FALSE) {
   phoneFuncList <- list(split = phonsplit_,
                         merge = phonmerge_)
-  validRows <- agent$labels[valid == TRUE, rowIndex]
+  validRows <- which(agent$labels$valid == TRUE)
   for (phoneFunc in c("split", "merge")) {
-    while(!identical(lab <- phoneFuncList[[phoneFunc]](agent$features[validRows,],
+    while(!identical(lab <- phoneFuncList[[phoneFunc]](as.matrix(agent$features[validRows,]),
                                                        agent$labels[validRows, word],
                                                        agent$labels[validRows, label]),
                      agent$labels[validRows, label])) {
