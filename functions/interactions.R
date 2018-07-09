@@ -347,9 +347,15 @@ perform_single_interaction_ <- function(pop) {
 }
 
 produce_token <- function(agent) {
-  randomIndex <- sample(which(agent$labels$valid == TRUE), 1)
-  producedWord <- agent$labels$word[randomIndex]
+  # randomIndex <- sample(which(agent$labels$valid == TRUE), 1)
+  # producedWord <- agent$labels$word[randomIndex]
+  
+  
+  producedWord <- agent$labels$word[agent$labels$valid == TRUE] %>% unique() %>% sort %>% sample(1)
+  randomIndex <- which(agent$labels$word == producedWord)[1]
   producedLabel <- agent$labels$label[randomIndex]
+  
+  
   nWordTokens <- sum(agent$labels$word == producedWord, na.rm = TRUE)
   otherWords <- unique(agent$labels$word[
     agent$labels$label == producedLabel & agent$labels$word != producedWord & agent$labels$valid == TRUE
@@ -388,14 +394,20 @@ produce_token_ <- function(agent) {
   #
 
   # create a random index
-  randomIndex <- sample(1:length(agent$memory$word), 1)
-
-  # define word and label according to the random index
-  # define two logical vectors based on variables word and label
-  word <- agent$memory$word[randomIndex]
-  label <- agent$memory$label[randomIndex]
+  # randomIndex <- sample(1:length(agent$memory$word), 1)
+  # 
+  # # define word and label according to the random index
+  # # define two logical vectors based on variables word and label
+  # word <- agent$memory$word[randomIndex]
+  # label <- agent$memory$label[randomIndex]
+  
+  # temp, will be removed
+  word <- agent$memory$word %>% unique %>% sort %>% sample(1)
+  
   tempWord <- agent$memory$word == word
+  label <- agent$memory$label[tempWord][1]
   tempLabel <- agent$memory$label == label
+  randomIndex <- which(tempWord)[1]
 
   # define df as a data.frame with columns P... from the agent's memory
   if (plyr::count(tempWord[tempWord == T])$freq != 1) {
@@ -437,7 +449,7 @@ perceive_token <- function(perceiver, producedToken, interactionsLog) {
       perceiver$cache[cacheRow,  `:=`(value = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, ],
                              grouping = perceiver$labels$label[perceiver$labels$valid == TRUE])),
                              valid = TRUE)]
-    }
+    } 
     posteriorProbAll <- predict(perceiver$cache$value[cacheRow][[1]], producedToken$features)$posterior
     recognized <- colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_
   } else if (memoryIntakeStrategy == "mahalanobisDistance") {
@@ -473,10 +485,14 @@ perceive_token <- function(perceiver, producedToken, interactionsLog) {
       label = perceiverLabel_,
       initial = perceiverInitial,
       valid = TRUE,
-      nrOfTimesHeard = updatedNrOfTimesHeard,
       agentID = producedToken$labels$producerID,
       timeStamp = receivedTimeStamp
     )]
+    perceiver$labels[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE,
+                     nrOfTimesHeard := updatedNrOfTimesHeard]
+    if (memoryIntakeStrategy == "maxPosteriorProb") {
+      perceiver$cache[cacheRow, valid := FALSE]
+    }
   }
   # write on interactionsLog
   rowToWrite <- which(interactionsLog$valid == FALSE)[1]
@@ -491,9 +507,7 @@ perceive_token <- function(perceiver, producedToken, interactionsLog) {
     accepted = recognized,
     valid = TRUE
   )]
-  if (memoryIntakeStrategy == "maxPosteriorProb") {
-    perceiver$cache[cacheRow, valid := FALSE]
-  }
+ 
 }
 
 perceive_token_ <- function(agent, producedToken) {
