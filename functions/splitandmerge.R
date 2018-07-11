@@ -17,8 +17,24 @@
 #                                                                              #
 ################################################################################
 
-
 splitandmerge <- function(agent, full = FALSE) {
+  phoneFuncList <- list(split = phonsplit,
+                        merge = phonmerge)
+  for (phoneFunc in c("split", "merge")) {
+    didOneSM <- FALSE
+    while (phoneFuncList[[phoneFunc]](agent)) {
+      if (runMode == "single" && !didOneSM) {
+        cat("Agent", agent$agentID, "did", phoneFunc, "\n")
+        didOneSM <- TRUE
+      }
+      if (!full) break
+    }
+  }
+}
+      
+    
+
+splitandmerge_ <- function(agent, full = FALSE) {
   phoneFuncList <- list(split = phonsplit_,
                         merge = phonmerge_)
   validRows <- which(agent$labels$valid == TRUE)
@@ -37,6 +53,9 @@ splitandmerge <- function(agent, full = FALSE) {
 }
 
 
+
+
+
 splitandmergefull <- function(agent) {
   # This function performs splits and mergers on an agent until
   # no more changes occur.
@@ -48,19 +67,19 @@ splitandmergefull <- function(agent) {
   # Returns:
   #    - agent: the same except with changed labels, if split&merge occurred
   #
-  oldsplitMergeAgentLabel <- agent$memory$label
-  agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
-  if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & runMode == "single") {
-    cat("Agent", unique(agent$memory$speaker), "did split\n")
+  oldsplitMergeAgentLabel <- speaker_1$memory$label
+  speaker_1$memory$label <- phonsplit_(speaker_1$memory$P, speaker_1$memory$word, speaker_1$memory$label)
+  if (sum(oldsplitMergeAgentLabel != speaker_1$memory$label) > 0 & runMode == "single") {
+    cat("Agent", unique(speaker_1$memory$speaker), "did split\n")
   }
-  splitMergeAgentTemp <- agent$memory$label != oldsplitMergeAgentLabel
+  splitMergeAgentTemp <- speaker_1$memory$label != oldsplitMergeAgentLabel
   while (sum(splitMergeAgentTemp) != 0) {
-    oldsplitMergeAgentLabel <- agent$memory$label
-    agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
-    if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & runMode == "single") {
-      cat("Agent", unique(agent$memory$speaker), "did split\n")
+    oldsplitMergeAgentLabel <- speaker_1$memory$label
+    speaker_1$memory$label <- phonsplit_(speaker_1$memory$P, speaker_1$memory$word, speaker_1$memory$label)
+    if (sum(oldsplitMergeAgentLabel != speaker_1$memory$label) > 0 & runMode == "single") {
+      cat("Agent", unique(speaker_1$memory$speaker), "did split\n")
     }
-    splitMergeAgentTemp <- agent$memory$label != oldsplitMergeAgentLabel
+    splitMergeAgentTemp <- speaker_1$memory$label != oldsplitMergeAgentLabel
   }
   if (length(unique(agent$memory$label)) > 1) {
     oldsplitMergeAgentLabel <- agent$memory$label
@@ -159,43 +178,43 @@ train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
   return(mat)
 }
 
-
-phonmerge <- function(pop, idx) {
+phonmerge <- function(agent) {
   # one agent
   # skip entire function if there's only one category
-  if (pop$labels[idx, label %>% uniqueN] == 1) {
-    return (FALSE)
+  if (length(unique(agent$labels$word[agent$labels$valid])) <= 1) {
+    return(FALSE)
   }
   
   didMerge <- FALSE
   didOneMerge <- TRUE # set TRUE in order to exec while loop at least once
   while(didOneMerge) {
-    ulab <- pop$labels[idx, label %>% unique]
-    distCentroids <- sapply(ulab, function(lab) {
-      pop$features[pop$labels[idx, ][label == lab, rowIndex], ] %>% colMeans
-    }) %>% t %>% dist
-   
+    ulab <- unique(agent$labels$label[agent$labels$valid])
+    distCentroids <- dist(t(sapply(ulab, function(lab) {
+      apply(as.matrix(agent$features)[agent$labels$label == lab & agent$labels$valid, ], 2, mean) 
+    })))
     didOneMerge <- FALSE
-    for (i in distCentroids %>% order) {
+    for (i in order(distCentroids)) {
       ulab.pair <- labels(distCentroids)[which(lower.tri(distCentroids),arr.ind=TRUE)[i,]]
-      subIdx <- idx[pop$labels[idx, label] %in% ulab.pair]
-      if (! split_is_justified(pop$features[subIdx,],
-                             pop$labels[subIdx, word],
-                             pop$labels[subIdx, label] %>% as.factor %>% as.integer)) {
-        while ((mergeLabel <- stri_rand_strings(1, 6, "[a-z]")) %in% pop$labels[idx, label %>% unique]) {}
-        pop$labels[subIdx, label := mergeLabel]
-        # print (i)
+      ulab.pair.mask <- agent$labels$label %in% ulab.pair
+      if (! split_is_justified(as.matrix(agent$features)[ulab.pair.mask,],
+                               agent$labels$word[ulab.pair.mask],
+                               as.integer(as.factor(agent$labels$label[ulab.pair.mask])) )) {
+        while ((mergeLabel <- paste(sample(letters[1:26])[1:6], collapse = "")) %in% ulab) {}
+        # stri_rand_strings(1, 6, "[a-z]")) # this is a bit nicer than paste(sample... collapse = ""))
+        # but for testing purpose I keep the original one, otherwise we get different random strings with same seed.
+        agent$labels[ulab.pair.mask, label := mergeLabel]
         didOneMerge <- TRUE
         break
       }
     }
     didMerge <- didMerge || didOneMerge
-    if (pop$labels[idx, label %>% uniqueN] == 1) {
+    if (length(unique(agent$labels$word[agent$labels$valid])) == 1) {
       return (didMerge)
     }
   }
   return (didMerge)
 }
+
 
 phonmerge_ <- function(Pdata, wordclass, phonclass) {
   # This function performs the actual merge on two phoneme classes.
@@ -341,89 +360,57 @@ phonmerge_.sub <- function(param, wordlab, phonlab, threshold = 0.05) {
 split_merge_metric <- function(P) {
   tdat <- train_gaussian_model(P);
   if (ncol(P) == 1) {
-    log(abs((P - tdat$means)/tdat$cov)) %>% as.numeric()
+    as.numeric(log(abs((P - tdat$means)/tdat$cov)))
   } else {
-    distance(P, tdat, metric = "bayes") %>% as.numeric()
+    as.numeric(distance(P, tdat, metric = "bayes"))
   }
 }
 
-split_is_justified <- function(P, wordCol, splitCol) {
+split_is_justified <- function(P, wordValues, splitValues) {
   metric.split <- numeric(nrow(P))
   for (spl in 1:2) { # assume 2 clusters labelled as 1, 2
-    metric.split[splitCol == spl] <- split_merge_metric(P[splitCol == spl, ])
+    metric.split[splitValues == spl] <- split_merge_metric(P[splitValues == spl, ])
   }
   metric.merge <- split_merge_metric(P)
   
-  aggrMetric <- data.table(metric = metric.split - metric.merge, word = wordCol) %>%
-    .[, .(mm = mean(metric)), by = word] %>%
-    .[, mm]
+  aggrMetric <- data.table(metric = metric.split - metric.merge, word = wordValues)[
+    , .(mm = mean(metric)), by = word][
+      , mm]
   
   return(t.test(aggrMetric)$p.value < 0.05 & mean(aggrMetric) > 0)
 }
 
-phonsplit.sub <- function(pop, idx) {
+phonsplit.sub <- function(P, wordValues, label) {
   # one label, one agent
-  cluster <- pam(pop$features[idx,], 2, cluster.only = T)
-  for (w in pop$labels[idx, word %>% unique]) {
-    subIdx <- pop$labels[idx, word == w]
-    cluster[subIdx] <- {
-      if (sum(cluster[subIdx] == 1) > sum(subIdx) / 2) 1 else 2
+  cluster <- pam(P, 2, cluster.only = T)
+  for (w in unique(wordValues)) {
+    word.mask <- wordValues == w
+    cluster[word.mask] <- {
+      if (sum(cluster[word.mask] == 1) > sum(word.mask) / 2) 1 else 2
     }
   }
-  
-  # pop$labels[idx,
-  #              .(cluster = pam(pop$features[idx,], 2, cluster.only = T),
-  #                word)
-  #              ][,
-  #                cluster := {
-  #                  # this line is more general 
-  #                  # (does not assume number of clusters == 2 and cluster labels 1, 2)
-  #                  # .SD[, .N, by = cluster][which.max(N), cluster]
-  #                  # this line is specific for 2 clusters and faster
-  #                  if (.SD[cluster == 1, .N] > .N/2) 1L else 2L
-  #                },
-  #                by = word,
-  #                .SDcols = "cluster"
-  #                ][] -> clusterByWord
-  # 
-  # did_split <- FALSE
-  
-  label <- pop$labels[idx, label]
   if (length(unique(cluster)) == 2 & all(sapply(1:2, function(cl) {
-    length(unique(pop$labels[idx, word][cluster == cl])) > 1
+    length(unique(wordValues[cluster == cl])) > 1
   }))) {
-    if (split_is_justified(pop$features[idx,], pop$labels[idx, word], cluster)) {
+    if (split_is_justified(P, wordValues, cluster)) {
       label <- paste(label, cluster, sep = ".") 
     }
   }
   return(label)
-  
-  
-  
-  # if (clusterByWord$cluster %>% uniqueN == 2 &
-  #     clusterByWord %>% unique %>% .[, .N, by = cluster] %>% .[, all(N > 1)]) {
-  #   if (split_is_justified(pop$features[idx,], clusterByWord$word, clusterByWord$cluster)) {
-  #     pop$labels[idx,
-  #                  label := paste(label, clusterByWord$cluster, sep = ".")
-  #                  ]
-  #     did_split <- TRUE
-  #   }
-  # }
-  # return(did_split)
 }
 
- phonsplit <- function(pop, idx) {
-  # one agent
-  # pop$labels[idx,
-  #              .(did_split = phonsplit.sub(pop, rowIndex)),
-  #              by = label
-  #              ][, Reduce(`|`, did_split)]
-   
-   labels <- character(length(idx))
-   for (lab in pop$labels[idx, label %>% unique]) {
-     labels[pop$labels[idx, label == lab]] <- phonsplit.sub(pop, pop$labels[rowIndex %in% idx & label == lab, rowIndex])
+ phonsplit <- function(agent) {
+   didSplit <- FALSE
+   for (lab in unique(agent$labels$label[agent$labels$valid])) {
+     splitLab <- phonsplit.sub(as.matrix(agent$features)[agent$labels$label == lab & agent$labels$valid, ],
+                               agent$labels$word[agent$labels$label == lab & agent$labels$valid],
+                               lab)
+     if (splitLab[1] != lab) {
+       agent$labels[label == lab, label := splitLab]
+       didSplit <- TRUE
+     }
    }
-   return(labels)
+   return(didSplit)
 }
 
 
