@@ -74,7 +74,7 @@ create_population <- function(input.df, method = "speaker_is_agent", maxMemorySi
       population[[id]]$labels <- input.df[input.df$speaker == sortedSpeakers[id],
                                                c("word", "labels", "initial")] %>%
         setDT %>%
-        .[, `:=`(valid = TRUE, nrOfTimesHeard = 1, agentID = id)] %>%
+        .[, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
         .[, timeStamp := sample(.N), by = word] %>%
         .[]
       population[[id]]$group <-input.df[input.df$speaker == sortedSpeakers[id], "group"][1] 
@@ -403,7 +403,6 @@ produce_token_ <- function(agent) {
   
   # temp, will be removed
   word <- agent$memory$word %>% unique %>% sort %>% sample(1)
-  
   tempWord <- agent$memory$word == word
   label <- agent$memory$label[tempWord][1]
   tempLabel <- agent$memory$label == label
@@ -459,7 +458,6 @@ perceive_token <- function(perceiver, producedToken, interactionsLog) {
     recognized <- mahalaDistanceLabel < mahalanobisThreshold
   }
   if (recognized == T) {
-    perceiver$accepted <- perceiver$accepted + 1
     if (all(perceiver$labels$valid)) {
       if (memoryRemovalStrategy == "timeDecay") {
         rowToWrite <- which(perceiver$labels$word == producedToken$labels$word)[
@@ -485,7 +483,7 @@ perceive_token <- function(perceiver, producedToken, interactionsLog) {
       label = perceiverLabel_,
       initial = perceiverInitial,
       valid = TRUE,
-      agentID = producedToken$labels$producerID,
+      producerID = producedToken$labels$producerID,
       timeStamp = receivedTimeStamp
     )]
     perceiver$labels[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE,
