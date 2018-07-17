@@ -33,29 +33,6 @@ splitandmerge <- function(agent, full = FALSE) {
 }
       
     
-
-splitandmerge_ <- function(agent, full = FALSE) {
-  phoneFuncList <- list(split = phonsplit_,
-                        merge = phonmerge_)
-  validRows <- which(agent$labels$valid == TRUE)
-  for (phoneFunc in c("split", "merge")) {
-    while(!identical(lab <- phoneFuncList[[phoneFunc]](as.matrix(agent$features[validRows,]),
-                                                       agent$labels[validRows, word],
-                                                       agent$labels[validRows, label]),
-                     agent$labels[validRows, label])) {
-      agent$labels[validRows, label := lab]
-      if (runMode == "single") {
-        cat("Agent", agent$agentID, "did", phoneFunc, "\n")
-      }
-      if (!full) break
-    }
-  }
-}
-
-
-
-
-
 splitandmergefull <- function(agent) {
   # This function performs splits and mergers on an agent until
   # no more changes occur.
@@ -67,19 +44,19 @@ splitandmergefull <- function(agent) {
   # Returns:
   #    - agent: the same except with changed labels, if split&merge occurred
   #
-  oldsplitMergeAgentLabel <- speaker_1$memory$label
-  speaker_1$memory$label <- phonsplit_(speaker_1$memory$P, speaker_1$memory$word, speaker_1$memory$label)
-  if (sum(oldsplitMergeAgentLabel != speaker_1$memory$label) > 0 & runMode == "single") {
-    cat("Agent", unique(speaker_1$memory$speaker), "did split\n")
+  oldsplitMergeAgentLabel <- agent$memory$label
+  agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
+  if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & runMode == "single") {
+    cat("Agent", unique(agent$memory$speaker), "did split\n")
   }
-  splitMergeAgentTemp <- speaker_1$memory$label != oldsplitMergeAgentLabel
+  splitMergeAgentTemp <- agent$memory$label != oldsplitMergeAgentLabel
   while (sum(splitMergeAgentTemp) != 0) {
-    oldsplitMergeAgentLabel <- speaker_1$memory$label
-    speaker_1$memory$label <- phonsplit_(speaker_1$memory$P, speaker_1$memory$word, speaker_1$memory$label)
-    if (sum(oldsplitMergeAgentLabel != speaker_1$memory$label) > 0 & runMode == "single") {
-      cat("Agent", unique(speaker_1$memory$speaker), "did split\n")
+    oldsplitMergeAgentLabel <- agent$memory$label
+    agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
+    if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & runMode == "single") {
+      cat("Agent", unique(agent$memory$speaker), "did split\n")
     }
-    splitMergeAgentTemp <- speaker_1$memory$label != oldsplitMergeAgentLabel
+    splitMergeAgentTemp <- agent$memory$label != oldsplitMergeAgentLabel
   }
   if (length(unique(agent$memory$label)) > 1) {
     oldsplitMergeAgentLabel <- agent$memory$label
@@ -181,7 +158,7 @@ train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
 phonmerge <- function(agent) {
   # one agent
   # skip entire function if there's only one category
-  if (length(unique(agent$labels$word[agent$labels$valid])) <= 1) {
+  if (length(unique(agent$labels$label[agent$labels$valid])) <= 1) {
     return(FALSE)
   }
   
@@ -386,7 +363,14 @@ phonsplit.sub <- function(P, wordValues, label) {
   for (w in unique(wordValues)) {
     word.mask <- wordValues == w
     cluster[word.mask] <- {
-      if (sum(cluster[word.mask] == 1) > sum(word.mask) / 2) 1 else 2
+      # this is temp, only to make it possible to use seed and compare results
+      # break ties with an arbitrary criterion (which.min) indep of pam label, which can flip
+      # with an identical P with different order or rows
+      if (sum(cluster[word.mask] == 1) == sum(word.mask) / 2) {
+        # print (paste("tie", label, w))
+        cluster[word.mask][which.min(P[word.mask, 1])]
+      }
+      else if (sum(cluster[word.mask] == 1) > sum(word.mask) / 2) 1 else 2
     }
   }
   if (length(unique(cluster)) == 2 & all(sapply(1:2, function(cl) {
@@ -471,7 +455,13 @@ phonsplit_.sub <- function(param, wordlab, phonlab) {
   for (j in unique(wordlab)) {
     temp.1 <- wordlab == j & param.k$cluster == 1
     temp.2 <- wordlab == j & param.k$cluster == 2
-    if (sum(temp.1) > sum(temp.2)) {
+    # this is temp, only to make it possible to use seed and compare results
+    # break ties with an arbitrary criterion (which.min) indep of pam label, which can flip
+    # with an identical param with different order of rows
+    if (sum(temp.1) == sum(temp.2)) {
+      cluster.vec[wordlab == j] <- param.k$cluster[wordlab == j][which.min(param[wordlab == j, 1])]
+      # print (paste("tie", phonlab[1], j))
+    } else if (sum(temp.1) > sum(temp.2)) {
       cluster.vec[wordlab == j] <- "1"
     } else {
       cluster.vec[wordlab == j] <- "2"
