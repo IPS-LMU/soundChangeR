@@ -22,6 +22,32 @@
 ################################################################################
 
 
+savePopulation <- function(pop, extraCols = list(condition = "x"), logDir) {
+  saveRDS(rbindlist(lapply(seq_along(pop), function (i) {
+    cbind(pop[[i]]$features, pop[[i]]$labels) %>%
+      .[, agentID := pop[[i]]$agentID]
+  })) %>% {
+    for (col in names(extraCols)) {
+      .[, (col) := extraCols[[col]]]
+    }
+    .[]
+  },
+  file = file.path(logDir, paste("pop", unlist(extraCols), "rds", sep = "."))
+  )
+}
+
+
+saveInteractionsLog <- function(interactionsLog, extraCols = list(condition = "x"), logDir) {
+  saveRDS(interactionsLog %>% {
+    for (col in names(extraCols)) {
+      .[, (col) := extraCols[[col]]]
+    }
+    .[]
+  },
+  file = file.path(logDir, paste("intLog", unlist(extraCols), "rds", sep = "."))
+  )
+}
+
 convert_list_to_df <- function(population, condition = "x") {
   # This function converts the population list into a data.frame 
   # with the additional column condition.
