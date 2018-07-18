@@ -2,22 +2,42 @@
 #                                                                              #
 # This script contains the following functions that perform splits & mergers:  #
 #                                                                              #
+# - splitandmerge(agent, full = FALSE)                                         #
+# - splitandmerge_(agent, full = FALSE)                                        #
 # - splitandmergefull(agent)                                                   #
-# - splitandmerge(agent)                                                       #
+# - splitandmerge_(agent)                                                      #
 # - train_gaussian_model(x, lab = rep("x", nrow(x)))                           #
-# - phonmerge_(Pdata, wordclass, phonclass)                                     #
-# - phonmerge_.sub(param, wordlab, phonlab, threshold = 0.05)                   #
-# - phonsplit_(Pdata, wordclass, phonclass)                                     #
-# - phonsplit_.sub(param, wordlab, phonlab, threshold = 0.05)                   #
+# - phonmerge(agent)                                                           #
+# - phonmerge_(Pdata, wordclass, phonclass)                                    #
+# - phonmerge_.sub(param, wordlab, phonlab, threshold = 0.05)                  #
+# - split_merge_metric(P)                                                      #
+# - split_is_justified(P, wordValues, splitValues)                             #
+# - phonsplit.sub(P, wordValues, label)                                        #
+# - phonsplit(agent)                                                           #
+# - phonsplit_(Pdata, wordclass, phonclass)                                    #
+# - phonsplit_.sub(param, wordlab, phonlab, threshold = 0.05)                  #
 #                                                                              #
 # Developed by Florian Schiel and Jonathan Harrington                          #
-# Adapted by Johanna Cronenberg                                                #
+# Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
 # Copyright 2018, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
 
+
 splitandmerge <- function(agent, full = FALSE) {
+  # This function performs splits and mergers on a perceiving agent.
+  # Function call in interactions.R.
+  #
+  # Args:
+  #    - agent: a list that is part of the population, as defined in coreABM.R
+  #    - full: boolean which tells you whether or not split&merge shall be
+  #      performed until there are no further changes or not
+  #
+  # Returns:
+  #    - nothing. Simply changes the input.
+  #
+  
   phoneFuncList <- list(split = phonsplit,
                         merge = phonmerge)
   for (phoneFunc in c("split", "merge")) {
@@ -31,10 +51,20 @@ splitandmerge <- function(agent, full = FALSE) {
     }
   }
 }
-      
-    
+
 
 splitandmerge_ <- function(agent, full = FALSE) {
+  # Another function for split & merge. Currently no function call.
+  #
+  # Args:
+  #    - agent: a list that is part of the population, as defined in coreABM.R
+  #    - full: boolean which tells you whether or not split&merge shall be
+  #      performed until there are no further changes or not
+  #
+  # Returns:
+  #    - nothing. Simply changes the input.
+  #
+  
   phoneFuncList <- list(split = phonsplit_,
                         merge = phonmerge_)
   validRows <- which(agent$labels$valid == TRUE)
@@ -53,9 +83,6 @@ splitandmerge_ <- function(agent, full = FALSE) {
 }
 
 
-
-
-
 splitandmergefull <- function(agent) {
   # This function performs splits and mergers on an agent until
   # no more changes occur.
@@ -67,11 +94,13 @@ splitandmergefull <- function(agent) {
   # Returns:
   #    - agent: the same except with changed labels, if split&merge occurred
   #
+  
   oldsplitMergeAgentLabel <- speaker_1$memory$label
   speaker_1$memory$label <- phonsplit_(speaker_1$memory$P, speaker_1$memory$word, speaker_1$memory$label)
   if (sum(oldsplitMergeAgentLabel != speaker_1$memory$label) > 0 & runMode == "single") {
     cat("Agent", unique(speaker_1$memory$speaker), "did split\n")
   }
+  
   splitMergeAgentTemp <- speaker_1$memory$label != oldsplitMergeAgentLabel
   while (sum(splitMergeAgentTemp) != 0) {
     oldsplitMergeAgentLabel <- speaker_1$memory$label
@@ -81,6 +110,7 @@ splitandmergefull <- function(agent) {
     }
     splitMergeAgentTemp <- speaker_1$memory$label != oldsplitMergeAgentLabel
   }
+  
   if (length(unique(agent$memory$label)) > 1) {
     oldsplitMergeAgentLabel <- agent$memory$label
     agent$memory$label <- phonmerge_(agent$memory$P, agent$memory$word, agent$memory$label)
@@ -103,7 +133,7 @@ splitandmergefull <- function(agent) {
 
 splitandmerge_ <- function(agent) {
   # This function uses the split&merge algorithm on the given agent.
-  # Function call in perceiveToken() in interactions.R
+  # Currently no function call.
   #
   # Args:
   #    - agent: a list that is part of a population, as defined in coreABM.R
@@ -114,7 +144,6 @@ splitandmerge_ <- function(agent) {
   
   oldLabel <- agent$memory$label
   agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
-  
   
   if (sum(oldLabel != agent$memory$label) > 0 & runMode == "single") {
     cat("Agent", unique(agent$memory$speaker), "did split\n")
@@ -132,7 +161,8 @@ splitandmerge_ <- function(agent) {
 
 train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
   # This function builds a Gaussian distribution on the basis of data in x.
-  # Function call in phonmerge_.sub() and phonsplit_.sub() below.
+  # Function call in phonmerge_.sub(), phonsplit_.sub(), and 
+  # split_merge_metric() in this script.
   #
   # Args:
   #    - x: data to calculate the Gaussian distribution from; see phonmerge_.sub() or
@@ -141,6 +171,7 @@ train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
   # Returns:
   #    - mat: data object that contains the mean, covariance and inverse covariance values
   #
+  
   mat <- NULL
   if (ncol(x) != 1) {
     summeanvals <- NULL
@@ -178,15 +209,31 @@ train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
   return(mat)
 }
 
+
 phonmerge <- function(agent) {
+  # This function performs the actual merge on two phoneme classes.
+  # Function call in splitandmerge() in this script (see above).
+  #
+  # Args:
+  #    - agent: a list that is part of population
+  #
+  # Returns:
+  #    - didMerge: boolean which stands for whether or not
+  #      there has been a merger
+  #
+  
   # one agent
   # skip entire function if there's only one category
   if (length(unique(agent$labels$word[agent$labels$valid])) <= 1) {
     return(FALSE)
   }
   
+  # initiate output variable didMerge with FALSE
+  # set didOneMerge to TRUE in order to exec while loop at least once
   didMerge <- FALSE
-  didOneMerge <- TRUE # set TRUE in order to exec while loop at least once
+  didOneMerge <- TRUE
+  
+  # test wether there are two classes to be merged
   while(didOneMerge) {
     ulab <- unique(agent$labels$label[agent$labels$valid])
     distCentroids <- dist(t(sapply(ulab, function(lab) {
@@ -207,6 +254,7 @@ phonmerge <- function(agent) {
         break
       }
     }
+    
     didMerge <- didMerge || didOneMerge
     if (length(unique(agent$labels$word[agent$labels$valid])) == 1) {
       return (didMerge)
@@ -218,8 +266,7 @@ phonmerge <- function(agent) {
 
 phonmerge_ <- function(Pdata, wordclass, phonclass) {
   # This function performs the actual merge on two phoneme classes.
-  # Function calls in splitandmergefull(), and splitandmerge()
-  # in this script (see above).
+  # Function call in splitandmergefull() in this script (see above).
   #
   # Args:
   #    - Pdata: the P1, P2, etc. features of a specific agent
@@ -229,6 +276,7 @@ phonmerge_ <- function(Pdata, wordclass, phonclass) {
   # Returns:
   #    - phonclass: the new phoneme label
   #
+  
   phonclass <- as.character(phonclass)
   wordclass <- as.character(wordclass)
   flagmult <- T
@@ -358,6 +406,17 @@ phonmerge_.sub <- function(param, wordlab, phonlab, threshold = 0.05) {
 
 
 split_merge_metric <- function(P) {
+  # This function tests for the dimensionality of P and
+  # applies the adequate metric.
+  # Function call in split_is_justified() in this script (see below).
+  #
+  # Args:
+  #    - P: data.table with the acoustic data of an agent
+  #
+  # Returns:
+  #    - nothing. Simply changes the input
+  #
+  
   tdat <- train_gaussian_model(P);
   if (ncol(P) == 1) {
     as.numeric(log(abs((P - tdat$means)/tdat$cov)))
@@ -366,7 +425,22 @@ split_merge_metric <- function(P) {
   }
 }
 
+
 split_is_justified <- function(P, wordValues, splitValues) {
+  # This function essentially performs the t.test which 
+  # decides whether or not two classes should be splitted.
+  # Function calls in phonsplit.sub() and phonmerge() in this script.
+  #
+  # Args:
+  #    - P: data.table with the acoustic data of an agent
+  #    - wordValues: the corresponding word labels
+  #    - splitValues: the corresponding labels
+  #
+  # Returns:
+  #    - a boolean; TRUE means that the split should be performed 
+  #      according to the t-test and metric
+  #
+  
   metric.split <- numeric(nrow(P))
   for (spl in 1:2) { # assume 2 clusters labelled as 1, 2
     metric.split[splitValues == spl] <- split_merge_metric(P[splitValues == spl, ])
@@ -380,7 +454,20 @@ split_is_justified <- function(P, wordValues, splitValues) {
   return(t.test(aggrMetric)$p.value < 0.05 & mean(aggrMetric) > 0)
 }
 
+
 phonsplit.sub <- function(P, wordValues, label) {
+  # This function returns the new label if a split is performed.
+  # Function call in phonsplit() in this script.
+  #
+  # Args:
+  #    - P: a data.frame with the acoustic data of an agent
+  #    - wordValues: the corresponding word labels
+  #    - label: the corresponding phoneme labels
+  #
+  # Returns:
+  #    - label: the new label after the split
+  #
+  
   # one label, one agent
   cluster <- pam(P, 2, cluster.only = T)
   for (w in unique(wordValues)) {
@@ -399,9 +486,20 @@ phonsplit.sub <- function(P, wordValues, label) {
   return(label)
 }
 
- phonsplit <- function(agent) {
-   didSplit <- FALSE
-   for (lab in unique(agent$labels$label[agent$labels$valid])) {
+
+phonsplit <- function(agent) {
+  # This function performs the actual split on two phoneme classes.
+  # Function call in splitandmerge() in this script (see above).
+  # 
+  # Args:
+  #    - agent: a list that is part of population
+  #
+  # Returns:
+  #    - didSplit: a boolean; TRUE means that a split has taken place.
+  #
+  
+  didSplit <- FALSE
+  for (lab in unique(agent$labels$label[agent$labels$valid])) {
      splitLab <- phonsplit.sub(as.matrix(agent$features)[agent$labels$label == lab & agent$labels$valid, ],
                                agent$labels$word[agent$labels$label == lab & agent$labels$valid],
                                lab)
@@ -414,12 +512,9 @@ phonsplit.sub <- function(P, wordValues, label) {
 }
 
 
-
-
-
 phonsplit_ <- function(Pdata, wordclass, phonclass) {
   # This function performs the actual split on two phoneme classes.
-  # Function calls in splitandmergefull(), and splitandmerge()
+  # Function calls in splitandmergefull() and splitandmerge_()
   # in this script (see above).
   #
   # Args:
@@ -430,6 +525,7 @@ phonsplit_ <- function(Pdata, wordclass, phonclass) {
   # Returns:
   #    - phonclass: a vector of the new phoneme labels
   #
+  
   Pdata <- as.matrix(Pdata)
   phonclass <- as.character(phonclass)
   wordclass <- as.character(wordclass)

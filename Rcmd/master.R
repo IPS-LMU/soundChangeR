@@ -4,11 +4,12 @@
 # basically gets everything ready in order to start the ABM run.               #
 #                                                                              #
 # Developed by Florian Schiel and Jonathan Harrington                          #
-# Adapted by Johanna Cronenberg                                                #
+# Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
 # Copyright 2018, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
+
 
 # set path
 path <- getwd()
