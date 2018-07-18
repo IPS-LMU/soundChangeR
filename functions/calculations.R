@@ -5,14 +5,17 @@
 #                                                                              #
 # - convert_list_to_df(population, condition)                                  #
 # - calc_rejection_ratio(population)                                           #
-# - make_equivalence_labels(originalPopulation)                                #
+# - make_equivalence_labels_(originalPopulation)                               #
+# - make_equivalence_labels(labels)                                            #
 # - equal_class(orig, derived)                                                 #
 # - get_equivalence_clusters(population, eLabels, abmName, simulation)         #
 # - reconstruct_tracks(df)                                                     #
 # - inverse_dct(coeffs)                                                        #
+# - empty_rows(df)                                                             #
+# - expandingList(capacity = 10)                                               #
 #                                                                              #
 # Developed by Florian Schiel and Jonathan Harrington                          #
-# Adapted by Johanna Cronenberg                                                #
+# Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
 # Copyright 2018, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
@@ -48,18 +51,20 @@ saveInteractionsLog <- function(interactionsLog, extraCols = list(condition = "x
 }
 
 convert_list_to_df <- function(population, condition = "x") {
-  # This function converts the population list into a dataframe with
-  # the additional column condition.
+  # This function converts the population list into a data.frame 
+  # with the additional column condition.
   # Function call in coreABM.R.
   #
   # Args:
-  #    - population: result of createPopulation(), defined in coreABM.R
+  #    - population: result of create_population(), defined in coreABM.R
   #    - condition: a string denoting the state of the ABM
   #
   # Returns:
-  #    - df: a dataframe with columns word, age, speaker, group, initial, condition,
+  #    - df: a data.frame with columns word, age, speaker, group, initial, condition,
   #      and P1, P2, etc.
   #
+  
+  # initiate variables
   params <- NULL
   word <- NULL
   label <- NULL
@@ -68,6 +73,7 @@ convert_list_to_df <- function(population, condition = "x") {
   group <- NULL
   initial <- NULL
   
+  # repetitively fill variables with values from the list population
   for (j in 1:length(population)) {
     params <- rbind(params, population[[j]]$memory$P)
     word <- c(word, population[[j]]$memory$word)
@@ -78,27 +84,29 @@ convert_list_to_df <- function(population, condition = "x") {
     initial <- c(initial, population[[j]]$memory$initial)
   }
   
+  # add variable condition and compose data.frame
   cond <- rep(condition, nrow(params))
   df <- data.frame(params, word = factor(word), label = factor(label), age, speaker = factor(speaker), 
                    group = factor(group), initial = factor(initial), condition = factor(cond))
   names(df) <- c(paste("P", 1:ncol(params), sep = ""), "word", "label", "age", "speaker", "group", 
                  "initial", "condition")
-  
   return(df)
 }
 
 
 calc_rejection_ratio <- function(population) {
-  # This function computes the ratio of rejections, i.e. how many percent of
-  # all produced tokens were rejected by the receiving agent.
+  # This function computes the ratio of rejections, 
+  # i.e. how many percent of all produced tokens were 
+  # rejected by the perceiving agent.
   # Function call in coreABM.R.
   #
   # Args:
-  #    - population: result of performInteractions(), defined in coreABM
+  #    - population: result of perform_interactions(), defined in coreABM.R
   #
   # Returns:
   #    - numRejections/numTokens: quotient
   #
+  
   numTokens <- 0
   numRejections <- 0
   for (i in 1:length(population)) {
@@ -112,14 +120,15 @@ calc_rejection_ratio <- function(population) {
 make_equivalence_labels_ <- function(originalPopulation) {
   # This function generates equivalence labels from the 
   # initial labels of the agents in the population.
-  # Function call in coreABM.R.
+  # Currently not used.
   #
   # Args:
-  #    - originalPopulation: data.frame generated from population (done in coreABM.R)
+  #    - originalPopulation: dataframe generated from population (done in coreABM.R)
   #
   # Returns:
   #    - eLabels: a vector of equivalence labels
   #
+  
   labelClasses <- unique(as.character(originalPopulation$initial))
   labelClasses <- labelClasses[order(labelClasses)]
   eLabels <- NULL
@@ -130,7 +139,19 @@ make_equivalence_labels_ <- function(originalPopulation) {
   return(eLabels)
 }
 
+
 make_equivalence_labels <- function(labels) {
+  # This function generates equivalence labels from the 
+  # labels of the agents in the population.
+  # Function call in coreABM.R.
+  #
+  # Args:
+  #    - labels: originalPopulation$initial
+  #
+  # Returns:
+  #    - (no variable name): the newly formed labels
+  #
+  
   ulab <- labels %>% unique %>% sort %>% as.character
   return(
     Map(combn,
@@ -138,13 +159,14 @@ make_equivalence_labels <- function(labels) {
         seq_along(ulab),
         list(function(x) paste0(x, collapse="+"))
         ) %>% unlist
-  )
+    )
 }
 
 
 equal_class <- function(orig, derived) {
-  # This function generates equivalence labels from the initial and 
-  # developed labels of the agents in the population.
+  # This function generates equivalence labels from 
+  # the initial and developed labels of the agents 
+  # in the population.
   # Function call in coreABM.R.
   #
   # Args:
@@ -156,6 +178,7 @@ equal_class <- function(orig, derived) {
   # Returns:
   #    - derived: the equivalence label
   #
+  
   tab <- t(table(orig, derived))
   namesOfOrig <- colnames(tab)
   #namesOfOrig <- namesOfOrig[order(nchar(namesOfOrig), namesOfOrig)]
@@ -172,6 +195,7 @@ equal_class <- function(orig, derived) {
   return(derived)
 }
 
+
 get_equivalence_clusters <- function(population, eLabels, abmName, simulation) {
   # This function calculates in how many of the agents each
   # equivalence label occurs.
@@ -187,6 +211,7 @@ get_equivalence_clusters <- function(population, eLabels, abmName, simulation) {
   #    - df: a data.frame with columns ABM, simulation, and one column
   #      per equivalence label
   #
+  
   frequencyCount <- plyr::count(population, c("speaker", "equivalence"))
   df <- as.data.frame.matrix(t(table(frequencyCount$equivalence)))
   for (label in equivalenceLabels) {
@@ -200,6 +225,7 @@ get_equivalence_clusters <- function(population, eLabels, abmName, simulation) {
   df <- df[, c("ABM", "simulation", equivalenceLabels)]
   return(df)
 }
+
 
 reconstruct_tracks <- function(df) {
   # This function reconstructs tracks from DCT coefficients.
@@ -216,6 +242,7 @@ reconstruct_tracks <- function(df) {
   #      reconstructed track values, the other representing the standard
   #      deviation of the track values
   #
+  
   valueColumns <- grep("P", names(df), value = T)
   coeffs <- as.matrix(dplyr::select(df, valueColumns))
   
@@ -248,6 +275,7 @@ inverse_dct <- function(coeffs) {
   # Returns:
   #    - result: a numeric vector with all the track values
   #
+  
   result <- NULL
   matrixDimension <- ncol(coeffs) - 1
   for (i in 1:nrow(coeffs)) {
@@ -262,12 +290,35 @@ inverse_dct <- function(coeffs) {
   return(result)
 }
 
+
 empty_rows <- function(df) {
+  # This function finds empty rows in a data.frame (or data.table).
+  # Currently no function call?
+  #
+  # Args:
+  #    - df: a data.frame or data.table.
+  #
+  # Returns:
+  #    - (no variable name): the rows which are empty (i.e. filled with NA).
+  #
+  
   apply(df, 1, function(x) all(is.na(x))) %>% which
 }
 
-# https://stackoverflow.com/questions/2436688/append-an-object-to-a-list-in-r-in-amortized-constant-time-o1
+
 expandingList <- function(capacity = 10) {
+  # This function changes the capacity of of a list.
+  # Currently no function call?
+  # For more information, see:
+  # https://stackoverflow.com/questions/2436688/append-an-object-to-a-list-in-r-in-amortized-constant-time-o1
+  #
+  # Args:
+  #    - capacity: Numeric. Default: 10
+  #
+  # Returns:
+  #    - methods: a list
+  #
+  
   buffer <- vector('list', capacity)
   length <- 0
   
@@ -294,6 +345,4 @@ expandingList <- function(capacity = 10) {
   
   methods
 }
-
-
 

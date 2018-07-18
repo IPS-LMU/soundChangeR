@@ -3,14 +3,20 @@
 # This script contains the following functions that perform the interactions:  #
 #                                                                              #
 # - initialize_memory(df)                                                      #
-# - create_population(nrOfAgents, initMemory = NULL)                           #
+# - create_population(input.df, method = "speaker_is_agent", maxMemorySize)    #
+# - create_interactions_log(nrOfInteractions)                                  #
+# - create_population_(nrOfAgents, initMemory = NULL)                          #
 # - perform_interactions(pop, nrOfInteractions)                                #
-# - perform_single_interaction(pop)                                            #
+# - perform_interactions_(pop, nrOfInteractions)                               #
+# - perform_single_interaction(pop, interactionsLog, groupsInfo)               #
+# - perform_single_interaction_(pop)                                           #
 # - produce_token(agent)                                                       #
-# - perceive_token(agent, producedToken)                                       #
+# - produce_token_(agent)                                                      #
+# - perceive_token(perceiver, producedToken, interactionsLog                   #
+# - perceive_token_(agent, producedToken)                                      #
 #                                                                              #
 # Developed by Florian Schiel and Jonathan Harrington                          #
-# Adapted by Johanna Cronenberg                                                #
+# Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
 # Copyright 2018, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
@@ -62,12 +68,32 @@ initialize_memory <- function(df) {
   return(initMemory)
 }
 
-create_population <- function(input.df, method = "speaker_is_agent", maxMemorySize ) {
+
+create_population <- function(input.df, method = "speaker_is_agent", maxMemorySize) {
+  # This function creates the agent population, i.e. it offers
+  # the same functionality as create_population_(), but it doesn't need
+  # initialize_memory() anymore.
+  # Currently not used.
+  # 
+  # Args:
+  #    - input.df: the input data.frame
+  #    - method: string. Default: "speaker_is_agent"
+  #    - maxMemorySize: variable calculated in performChecks.R
+  #
+  # Returns:
+  #    - population: a list
+  #
+  
+  # initiate a list called population and search for P-columns in input.df
   population <- list()
   Pcols <- grep("^P[[:digit:]]+$", colnames(input.df), value = TRUE)
+  
+  # currently no other possibility than method == "speaker_is_agent"
   if (method == "speaker_is_agent") {
     sortedSpeakers <- input.df$speaker %>% unique %>% sort
     nrOfAgents <- length(sortedSpeakers)
+    
+    # for every agent in population, add information from input.df
     for (id in seq_len(nrOfAgents)) {
       population[[id]] <- list()
       population[[id]]$agentID <- id
@@ -102,11 +128,24 @@ create_population <- function(input.df, method = "speaker_is_agent", maxMemorySi
   return(population)
 }
 
+
 create_interactions_log <- function(nrOfInteractions) {
+  # This function creates a log for every interaction.
+  # Function call in perform_interactions().
+  # 
+  # Args:
+  #    - nrOfInteractions: variable created and altered in coreABM.R
+  #
+  # Returns:
+  #    - interactionsLog: a data.table
+  #
   interactionsLog <- data.table(word = NA_character_,
-                                producerID = NA_integer_, producerLabel = NA_character_, producerNrOfTimesHeard= NA_integer_,
-                                perceiverID = NA_integer_, perceiverLabel = NA_character_, perceiverNrOfTimesHeard= NA_integer_,
+                                producerID = NA_integer_, producerLabel = NA_character_,
+                                producerNrOfTimesHeard= NA_integer_,
+                                perceiverID = NA_integer_, perceiverLabel = NA_character_,
+                                perceiverNrOfTimesHeard= NA_integer_,
                                 accepted = NA, simulationNr = NA_integer_, valid = NA)[0]
+
   interactionsLog <- rbindlist(list(
     interactionsLog,
     data.table(matrix(nrow = nrOfInteractions, ncol = ncol(interactionsLog)))
@@ -176,6 +215,7 @@ create_interactions_log <- function(nrOfInteractions) {
 #   return(population)
 # }
 
+
 create_population_ <- function(nrOfAgents, initMemory = NULL) {
   # This functions initiates the memories of the (chosen) agents. 
   # Function call in coreABM.R.
@@ -208,6 +248,18 @@ create_population_ <- function(nrOfAgents, initMemory = NULL) {
 }
 
 perform_interactions <- function(pop, interactionsPerSimulation, nrOfSimulations, logDir) {
+  # This function repeats perform_single_interaction() (see below)
+  # for as many as nrOfInteractions. 
+  # Function call in coreABM.R.
+  #
+  # Args:
+  #    - pop: population as defined in coreABM.R by create_population().
+  #    - nrOfInteractions: full positive number, defined as parameter 
+  #      interactionsPerSimulation in params.R.
+  #
+  # Returns:
+  #    - interactionsLog: a data.table
+  #
   interactionsLog <- create_interactions_log(interactionsPerSimulation * nrOfSimulations)
   groupsInfo <- rbindlist(lapply(pop, function(agent) {data.table(agentID = agent$agentID, group = agent$group)}))[order(agentID),]
   for (nrSim in 1:nrOfSimulations) {
@@ -219,10 +271,11 @@ perform_interactions <- function(pop, interactionsPerSimulation, nrOfSimulations
   return(interactionsLog)
 }
 
+
 perform_interactions_ <- function(pop, nrOfInteractions) {
   # This function repeats perform_single_interaction() (see below)
   # for as many as nrOfInteractions. 
-  # Function call in coreABM.R.
+  # Currently not used.
   #
   # Args:
   #    - pop: population as defined in coreABM.R by create_population().
@@ -230,8 +283,8 @@ perform_interactions_ <- function(pop, nrOfInteractions) {
   #      interactionsPerSimulation in param.R.
   #
   # Returns:
-  #    - pop: a list, same as population defined by create_population(),
-  #      but obviously with changed feature values because of the interactions.
+  #    - pop: a list, same as input population, but obviously with 
+  #      changed feature values because of the interactions.
   #
   
   # perform as many as nrOfInteractions
@@ -242,6 +295,20 @@ perform_interactions_ <- function(pop, nrOfInteractions) {
 }
 
 perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo) {
+  # This function performs a single interaction. 
+  # Function call in perform_interactions() in this script (see above).
+  #
+  # Args:
+  #    - pop: population as defined in coreABM.R by create_population() or
+  #      by perform_interactions(), respectively.
+  #    - interactionsLog: a data.table
+  #    - groupsInfo: a data.table containing the agents' IDs and groups,
+  #      ordered by ID
+  #
+  # Returns:
+  #    - nothing. Simply changes the input.
+  #
+  
   prodNr <- 1
   percNr <- 1
   while (prodNr == percNr) {
@@ -279,14 +346,15 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo) 
 
 perform_single_interaction_ <- function(pop) {
   # This function performs a single interaction. 
-  # Function call in performMultipleInteraction() in this script (see above).
+  # Currently not used.
   #
   # Args:
-  #    - pop: population as defined in coreABM.R by create_population().
+  #    - pop: population as defined in coreABM.R by create_population() or
+  #      by perform_interactions, respectively.
   #
   # Returns:
-  #    - pop: a list, same as population defined by create_population(),
-  #      but obviously with changed feature values because of the interactions.
+  #    - pop: a list, same as input population, but obviously with 
+  #      changed feature values because of the interactions.
   #
   
   # make a list of all agent groups
@@ -352,16 +420,29 @@ perform_single_interaction_ <- function(pop) {
   return(pop)
 }
 
+
 produce_token <- function(agent) {
+  # This function randomly samples a token from one of the
+  # feature distributions of one agent (the speaking agent).
+  # Function call in perform_single_interaction() in this script (see above).
+  #
+  # Args:
+  #    - agent: one of the agents from population
+  #
+  # Returns:
+  #    - producedToken: a list
+  #
+  
   # randomIndex <- sample(which(agent$labels$valid == TRUE), 1)
   # producedWord <- agent$labels$word[randomIndex]
   
-  
+  # sample a random word and get its corresponding labels
   producedWord <- agent$labels$word[agent$labels$valid == TRUE] %>% unique() %>% sort %>% sample(1)
   randomIndex <- which(agent$labels$word == producedWord)[1]
   producedLabel <- agent$labels$label[randomIndex]
   
-  
+  # get acoustic values for word tokens and an averaged value
+  # per word of the same phoneme category
   nWordTokens <- sum(agent$labels$word == producedWord, na.rm = TRUE)
   otherWords <- unique(agent$labels$word[
     agent$labels$label == producedLabel & agent$labels$word != producedWord & agent$labels$valid == TRUE
@@ -369,11 +450,14 @@ produce_token <- function(agent) {
   nExtraTokens <- length(otherWords)
   wordFeatures <- matrix(nrow = nWordTokens + nExtraTokens, ncol = ncol(as.matrix(agent$features)))
   wordFeatures[1:nWordTokens, ] <- as.matrix(agent$features)[agent$labels$word == producedWord & agent$labels$valid == TRUE, ]
+  
   for (i in 1:nExtraTokens) {
     wordFeatures[nWordTokens + i, ] <- apply(as.matrix(agent$features)[agent$labels$word == otherWords[i] & agent$labels$valid == TRUE, ],
                                              2,
                                              mean)
   }
+  
+  # generate producedToken as a list
   producedToken <- list(
     features = rmvnorm(1, apply(wordFeatures, 2, mean), cov(wordFeatures)),
     labels = agent$labels[randomIndex,
@@ -387,11 +471,10 @@ produce_token <- function(agent) {
 }
 
 
-
 produce_token_ <- function(agent) {
   # This function randomly samples a token from one of the
   # feature distributions of one agent (the speaking agent).
-  # Function call in perform_single_interaction() in this script (see above).
+  # Currently not used.
   #
   # Args:
   #    - agent: one of the agents from population
@@ -452,7 +535,24 @@ produce_token_ <- function(agent) {
 }
 
 perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
+  # This function tests whether the produced token is to be 
+  # memorized by the listening agent.
+  # Function call in perform_single_interaction() in this script (see above).
+  #
+  # Args:
+  #    - perceiver: an agent from the population
+  #    - producedToken: a data.frame, result of produce_token()
+  #    - interactionsLog: a data.table
+  #    - nrSim: simulation number
+  #
+  # Returns:
+  #    - nothing. Overwrites one row in the main data.table.
+  #
+  
   perceiverLabel_ <- unique(perceiver$labels$label[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE])
+  
+  # find out whether the token is recognized or not
+  # ... either by maximum posterior probability decision
   if (memoryIntakeStrategy == "maxPosteriorProb") {
     if (!{cacheRow <- which(perceiver$cache$name == "qda"); perceiver$cache$valid[cacheRow]}) {
       perceiver$cache[cacheRow,  `:=`(value = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, ],
@@ -461,6 +561,7 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
     } 
     posteriorProbAll <- predict(perceiver$cache$value[cacheRow][[1]], producedToken$features)$posterior
     recognized <- colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_
+    # or a Mahalanobis distance measurement
   } else if (memoryIntakeStrategy == "mahalanobisDistance") {
     mahalaDistanceLabel <- log(mahalanobis(producedToken$features,
                                            apply(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, ], 2, mean),
@@ -468,12 +569,16 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
     recognized <- mahalaDistanceLabel < mahalanobisThreshold
   }
   
+  # if the token is recognized, test for memory capacity
   if (recognized == T) {
+    # if memory is full, delete one token
     if (all(perceiver$labels$valid)) {
+      # ... either the oldest token
       if (memoryRemovalStrategy == "timeDecay") {
         rowToWrite <- which(perceiver$labels$word == producedToken$labels$word)[
           which.min(perceiver$labels$timeStamp[perceiver$labels$word == producedToken$labels$word])
           ]
+        # ... or the farthest outlier of the token distribution
       } else if (memoryRemovalStrategy == "outlierRemoval") {
         tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$labels$label == perceiverLabel_, ])
         rowToWrite <- which(perceiver$labels$word == producedToken$labels$word)[
@@ -481,9 +586,11 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
           ]
       }
     }
+    # if there is still some capacity, use an empty row of the memory
     else {
       rowToWrite <- which(perceiver$labels$valid == FALSE)[1]
     }
+    
     # write in memory
     updatedNrOfTimesHeard <- 1 + perceiver$labels$nrOfTimesHeard[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE][1]
     receivedTimeStamp <- 1 + max(perceiver$labels$timeStamp[perceiver$labels$word == producedToken$labels$word], na.rm = TRUE)
@@ -517,7 +624,6 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
     simulationNr = nrSim,
     valid = TRUE
   )]
-  
   # apply split&merge if needed
   numReceivedTokens <- sum(interactionsLog$valid[interactionsLog$perceiverID == perceiver$agentID], na.rm = TRUE)
   if (splitAndMerge == T & numReceivedTokens %% splitAndMergeInterval == 0) {
@@ -528,10 +634,11 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
   }
 }
 
+
 perceive_token_ <- function(agent, producedToken) {
   # This function tests whether the produced token shall be 
   # memorized by the listening agent.
-  # Function call in perform_single_interaction() in this script (see above).
+  # Currently not used.
   #
   # Args:
   #    - agent: a list that is part of a population
