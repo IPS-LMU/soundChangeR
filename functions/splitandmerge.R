@@ -416,7 +416,7 @@ split_merge_metric <- function(P) {
   #    - P: data.table with the acoustic data of an agent
   #
   # Returns:
-  #    - nothing. Simply changes the input
+  #    - a numeric vector of lengyh nrow(P) providing the metric for each row of P.
   #
   
   tdat <- train_gaussian_model(P);
