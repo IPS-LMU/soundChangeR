@@ -405,8 +405,11 @@ phonmerge_.sub <- function(param, wordlab, phonlab, threshold = 0.05) {
 
 
 split_merge_metric <- function(P) {
-  # This function tests for the dimensionality of P and
-  # applies the adequate metric.
+  # This function computes a metric on each row of P based on a Gaussian model
+  # trained on P itself. 
+  # In this version the metric is a linear transformation of the log likelihood.
+  # This (similarity) metric is used as a criterion to assess wether a split or a merge
+  # are justified. 
   # Function call in split_is_justified() in this script (see below).
   #
   # Args:
