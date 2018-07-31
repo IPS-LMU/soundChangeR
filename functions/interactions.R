@@ -451,6 +451,7 @@ produce_token <- function(agent) {
     agent$labels$label == producedLabel & agent$labels$word != producedWord & agent$labels$valid == TRUE
     ])
   nExtraTokens <- length(otherWords)
+  # nExtraTokens <- 0
   wordFeatures <- matrix(nrow = nWordTokens + nExtraTokens, ncol = ncol(as.matrix(agent$features)))
   wordFeatures[1:nWordTokens, ] <- as.matrix(agent$features)[agent$labels$word == producedWord & agent$labels$valid == TRUE, ]
   
@@ -458,6 +459,9 @@ produce_token <- function(agent) {
     wordFeatures[nWordTokens + i, ] <- apply(as.matrix(agent$features)[agent$labels$word == otherWords[i] & agent$labels$valid == TRUE, ],
                                              2,
                                              mean)
+
+    # wordFeatures[nWordTokens + i, ] <- as.matrix(agent$features)[
+    #   sample(which(agent$labels$word == otherWords[i] & agent$labels$valid == TRUE), 1), ]
   }
   
   # generate producedToken as a list
