@@ -26,7 +26,8 @@ savePopulation <- function(pop, extraCols = list(condition = "x"), logDir) {
   dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
   saveRDS(rbindlist(lapply(seq_along(pop), function (i) {
     cbind(pop[[i]]$features, pop[[i]]$labels) %>%
-      .[, agentID := pop[[i]]$agentID]
+      .[, agentID := pop[[i]]$agentID] %>%
+      .[, equivalence := equal_class(initial, label)]
   })) %>% {
     for (col in names(extraCols)) {
       .[, (col) := extraCols[[col]]]
@@ -190,8 +191,25 @@ equal_class <- function(orig, derived) {
   return(derived)
 }
 
+get_equivalence_clusters <- function(population, eLabels) {
+  # This function calculates in how many of the agents each
+  # equivalence label occurs.
+  # Args:
+  #    - population: a data.table, as in the format produced by savePopulation()
+  #    - eLabels: all the equivalence labels to take into account, usually obtained 
+  #     by running make_equivalence_labels()
+  # Returns:
+  #    - a data.table with columns 'equivalence', the labels, and 'N_Agents', 
+  #     the number of agents where a label occurs
+  eq <- data.table(equivalence = eLabels)
+  population[, .N, by = .(agentID, equivalence)][
+    , .SD[eq, .(equivalence, N), on = "equivalence"], by = agentID][
+      , .(N_Agents = sum(!is.na(N))), by = equivalence
+      ]
+}
 
-get_equivalence_clusters <- function(population, eLabels, abmName, simulation) {
+
+get_equivalence_clusters_ <- function(population, eLabels, abmName, simulation) {
   # This function calculates in how many of the agents each
   # equivalence label occurs.
   # Function call in coreABM.R.

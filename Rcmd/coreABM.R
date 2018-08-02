@@ -47,7 +47,7 @@ for (speakers in unique(originalPopulation$speaker)) {
 originalPopulation$equivalence <- eclassLabels
 
 # calculate in how many agents each equivalence label occurs
-originalEquivalenceClusters <- get_equivalence_clusters(originalPopulation, equivalenceLabels, 
+originalEquivalenceClusters <- get_equivalence_clusters_(originalPopulation, equivalenceLabels, 
                                                         abmName, nrSim)
 if (runMode == "single") {
   cat("\n"); print(dplyr::select_if(originalEquivalenceClusters,
@@ -96,7 +96,7 @@ for (nrSim in 1:nrOfSimulations) {
   modifiedPopulation$equivalence <- as.factor(eclassLabels)
   
   # calculate in how many agents each equivalence label occurs
-  newEquivalenceClusters <- get_equivalence_clusters(modifiedPopulation, equivalenceLabels, 
+  newEquivalenceClusters <- get_equivalence_clusters_(modifiedPopulation, equivalenceLabels, 
                                                      abmName, nrSim)
   if (runMode == "single") {
     cat("\n"); print(dplyr::select_if(newEquivalenceClusters,

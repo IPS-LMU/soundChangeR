@@ -40,7 +40,7 @@ splitAndMerge <- TRUE                       # ... or FALSE
 
 ##### ABM Options
 
-runMode <- "multiple"                         # ... or "multiple"
+runMode <- "single"                         # ... "single" or "multiple"
 nrOfSimulations <- 4                       # ... or any full positive number, e.g. 20
 interactionsPerSimulation <- 1000           # ... or any full positive number, e.g. 125
 
