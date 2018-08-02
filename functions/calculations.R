@@ -38,15 +38,10 @@ savePopulation <- function(pop, extraCols = list(condition = "x"), logDir) {
 }
 
 
-saveInteractionsLog <- function(interactionsLog, extraCols = list(condition = "x"), logDir) {
+saveInteractionsLog <- function(interactionsLog, logDir) {
   dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
-  saveRDS(interactionsLog %>% {
-    for (col in names(extraCols)) {
-      .[, (col) := extraCols[[col]]]
-    }
-    .[]
-  },
-  file = file.path(logDir, paste("intLog", unlist(extraCols), "rds", sep = "."))
+  saveRDS(interactionsLog,
+          file.path(logDir, "intLog.rds")
   )
 }
 

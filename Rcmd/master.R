@@ -12,11 +12,11 @@
 
 
 # set path
-path <- getwd()
+ABMpath <- getwd()
 
 # load libraries and parameters
-source(paste(path, "Rcmd/loadLibraries.R", sep = "/"))
-source(paste(path, "data/params.R", sep = "/"))
+source(paste(ABMpath, "Rcmd/loadLibraries.R", sep = "/"))
+source(paste(ABMpath, "data/params.R", sep = "/"))
 
 # check if logDir exists already
 if (dir.exists(paths = logDirDate)) {
@@ -31,10 +31,10 @@ system(paste("mkdir ", logDirDate, sep = ""))
 system(paste("mkdir ", img, sep = ""))
 
 # load input dataframe from data/
-input.df <- read.table(paste(path, "data/input.df", sep = "/"), stringsAsFactors = F)
+input.df <- read.table(paste(ABMpath, "data/input.df", sep = "/"), stringsAsFactors = F)
 
 # perform checks on input.df and the parameters set in params.R
-source(paste(path, "Rcmd/performChecks.R", sep = "/"))
+source(paste(ABMpath, "Rcmd/performChecks.R", sep = "/"))
 
 # initiate the ABM run(s)
 if (runMode == "single") {
@@ -51,7 +51,7 @@ if (runMode == "single") {
   }
   
   # run the ABM
-  source(paste(path, "Rcmd/coreABM.R", sep = "/"))
+  source(paste(ABMpath, "Rcmd/coreABM.R", sep = "/"))
   
   # save abm.df, originalPopulation, and modifiedPopulation to logDirDate
   write.table(abm.df, file.path(logDirDate, "abm.df.txt"), sep = "\t", row.names = FALSE)
@@ -65,7 +65,7 @@ if (runMode == "single") {
     
     # print ABM run and start ABM run
     cat("ABM run", abmName, "\n")
-    source(paste(path, "Rcmd/coreABM.R", sep = "/"))
+    source(paste(ABMpath, "Rcmd/coreABM.R", sep = "/"))
     
     # save abm.df, originalPopulation, and modifiedPopulation to logDirDate
     write.table(abm.df, file.path(logDirDate, paste("abm.df_", abmName, ".txt", sep = "")), sep = "\t", row.names = FALSE)
@@ -75,9 +75,9 @@ if (runMode == "single") {
 }
 
 # move input.df and params.R to logDirDate/
-system(paste("cp ", file.path(path, "data/input.df"), " ", logDirDate, sep = ""))
+system(paste("cp ", file.path(ABMpath, "data/input.df"), " ", logDirDate, sep = ""))
 cat("Your input.df has been copied to the current logDir:", logDirDate, "\n")
-system(paste("cp ", file.path(path, "data/params.R"), " ", logDirDate, sep = ""))
+system(paste("cp ", file.path(ABMpath, "data/params.R"), " ", logDirDate, sep = ""))
 cat("Your params.R file has been copied to the current logDir:", logDirDate, "\n")
 
 # remove superfluous variables which were created during the ABM run

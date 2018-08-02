@@ -58,7 +58,7 @@ if (runMode == "single") {
 }
 
 # now that some variables have been set, source the plotting functions
-source(file.path(path, "functions/plotting.R"))
+source(file.path(ABMpath, "functions/plotting.R"))
 
 # make plots before the ABM run, if wanted
 plotPath <- file.path(img, paste("plotBeforeABM_", abmName, ".svg", sep = ""))

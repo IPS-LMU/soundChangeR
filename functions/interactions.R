@@ -84,6 +84,7 @@ create_population <- function(input.df, method = "speaker_is_agent", maxMemorySi
   #    - population: a list
   #
   
+  setDT(input.df)
   # initiate a list called population and search for P-columns in input.df
   population <- list()
   Pcols <- grep("^P[[:digit:]]+$", colnames(input.df), value = TRUE)
@@ -97,15 +98,14 @@ create_population <- function(input.df, method = "speaker_is_agent", maxMemorySi
     for (id in seq_len(nrOfAgents)) {
       population[[id]] <- list()
       population[[id]]$agentID <- id
-      population[[id]]$labels <- input.df[input.df$speaker == sortedSpeakers[id],
-                                               c("word", "labels", "initial")] %>%
-        setDT %>%
+      population[[id]]$labels <- input.df[speaker == sortedSpeakers[id],
+                                               .(word, labels, initial)] %>%
         .[, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
         .[, timeStamp := sample(.N), by = word] %>%
         .[]
-      population[[id]]$group <-input.df[input.df$speaker == sortedSpeakers[id], "group"][1] 
-      population[[id]]$speaker <- input.df[input.df$speaker == sortedSpeakers[id], "speaker"][1] 
-      population[[id]]$features <- input.df[input.df$speaker == sortedSpeakers[id], Pcols] %>% setDT
+      population[[id]]$group <-input.df[speaker == sortedSpeakers[id], group][1] 
+      population[[id]]$speaker <- input.df[speaker == sortedSpeakers[id], speaker][1] 
+      population[[id]]$features <- input.df[speaker == sortedSpeakers[id], .SD, .SDcols = Pcols]
       
       bufferRowsCount <- maxMemorySize - nrow(population[[id]]$labels)
       if (bufferRowsCount > 0) {
@@ -336,8 +336,9 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo) 
   # set producer and perceiver to the chosen agents from pop
   producer <- pop[[prodNr]]
   perceiver <- pop[[percNr]]
-  # ppDT <<- c(ppDT, prodNr, percNr)
-  
+  if (debugMode & runMode == "single") {
+    ppDT <<- c(ppDT, prodNr, percNr)
+  }
   # let speaking agent produce a token and listening agent perceive it
   pt <- produce_token(producer)
   perceive_token(perceiver, pt, interactionsLog, nrSim)
@@ -411,7 +412,7 @@ perform_single_interaction_ <- function(pop) {
   # set producer and perceiver to the chosen agents from pop
   producer <- pop[[prodNr]]
   perceiver <- pop[[percNr]]
-  # pp <<- c(pp, prodNr, percNr)
+  pp <<- c(pp, prodNr, percNr)
   
   # let speaking agent produce a token and listening agent perceive it
   producedToken <- produce_token_(producer)
@@ -472,8 +473,10 @@ produce_token <- function(agent) {
                             , `:=`(producerID = agent$agentID)][
                             ]
   )
-  # freeRow <- as.integer(min(which(is.na(PDT[,1]))))
-  # for (j in 1:3) {set(PDT, freeRow, j, producedToken$features[j])}
+  if (debugMode & runMode == "single") {
+    freeRow <- as.integer(min(which(is.na(PDT[,1]))))
+    for (j in seq_len(ncol(producedToken$features))) {set(PDT, freeRow, j, producedToken$features[j])}
+  }
   return(producedToken)
 }
 
@@ -526,8 +529,9 @@ produce_token_ <- function(agent) {
   mu <- apply(df, 2, mean)
   sigma <- cov(df)
   token <- rmvnorm(1, mu, sigma)
-  # freeRow <- as.integer(min(which(is.na(P[,1]))))
-  # for (j in 1:3) {set(P, freeRow, j, token[j])}
+  
+  freeRow <- as.integer(min(which(is.na(P[,1]))))
+  for (j in 1:3) {set(P, freeRow, j, token[j])}
 
   # create data.frame producedToken
   label <- agent$memory$label[randomIndex]

@@ -22,8 +22,30 @@ require("ggplot2")
 require("RColorBrewer")
 require("cluster")
 
-source(file.path(path, "functions/interactions.R"))
-source(file.path(path, "functions/calculations.R"))
-source(file.path(path, "functions/splitandmerge.R"))
+source(file.path(ABMpath, "functions/interactions.R"))
+source(file.path(ABMpath, "functions/calculations.R"))
+source(file.path(ABMpath, "functions/splitandmerge.R"))
+
 # plotting.R is sourced in coreABM.R
+
+coreABM <- function(logDir) {
+  ### main ABM routine
+  # Assumes params.R and loadLibraries.R sourced, input.df loaded
+  # Only a convenience function to avoid code duplication
+  # for single and multiple run modes (parallel) in ABMmain.R
+  
+  pop <- create_population(input.df = input.df, maxMemorySize = maxMemorySize)
+  
+  if (splitAndMerge == TRUE & doSplitAndMergeBeforeABM == TRUE) {
+    for (j in seq_along(pop)) {
+      splitandmerge(pop[[j]], TRUE)
+    }
+  }
+  savePopulation(pop,
+                 extraCols = list(condition = 0),
+                 logDir = logDir)
+  
+  interactionsLog <- perform_interactions(pop, interactionsPerSimulation, nrOfSimulations, logDir)
+  saveInteractionsLog(interactionsLog, logDir = logDir)
+}
 

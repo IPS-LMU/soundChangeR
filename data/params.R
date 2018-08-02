@@ -28,16 +28,19 @@
 
 ########################## Obligatory Options ##########################
 
+##### Input dataframe
+inputDataFile <- "/vdata/Projects/ABM/data/s-retraction.df"
+
 ##### Strategies
 
 memoryIntakeStrategy <- "maxPosteriorProb"  # ... or "mahalanobisDistance"
 memoryRemovalStrategy <- "timeDecay"        # ... or "outlierRemoval"
-memorySizeStrategy <- 410                   # ... or any full positive number, e.g. 500 (without quotes!).
+maxMemorySize <- 410                        # ... or any full positive number, e.g. 500 (without quotes!).
 splitAndMerge <- TRUE                       # ... or FALSE
 
 ##### ABM Options
 
-runMode <- "single"                         # ... or "multiple"
+runMode <- "multiple"                         # ... or "multiple"
 nrOfSimulations <- 4                       # ... or any full positive number, e.g. 20
 interactionsPerSimulation <- 1000           # ... or any full positive number, e.g. 125
 
@@ -55,9 +58,9 @@ plotAfterABM <- FALSE                        # or FALSE
 
 ##### General Options
 
-logDir <- paste(path, "logDir", sep = "/")
+logDir_ <- paste(ABMpath, "logDir", sep = "/")
 dateTime <- format(Sys.time(), "%Y%m%d%H%M%S")
-logDirDate <- paste(logDir, dateTime, sep = "/")
+logDirDate <- paste(logDir_, dateTime, sep = "/")
 img <- paste(logDirDate, "img", sep = "/")
 
 ##### ABM Options
@@ -65,7 +68,7 @@ img <- paste(logDirDate, "img", sep = "/")
 splitAndMergeInterval <- 100                # ... or any full positive number, e.g. 75
 doSplitAndMergeBeforeABM <- TRUE            # ... or FALSE
 mahalanobisThreshold <- 1.5                 # ... or any other full positive number, e.g. 5.0
-multipleABMRuns <- 100                      # ... or any full positive number, e.g. 20
+multipleABMRuns <- 3                      # ... or any full positive number, e.g. 20
 subsetSpeakers <- NULL                      # ... or a vector of strings, e.g. c("spk01", "spk02", "spk03")
 subsetSegments <- NULL                      # ... or a vector of strings, e.g. c("a", "i", "u", "o")
 speakerProb <- NULL                         # ... or a vector of numerics, see param_explanations.pdf
@@ -77,3 +80,7 @@ interactionPartners <- "random"             # ... or "betweenGroups" or "withinG
 plotSpeaker <- ""                           # ... or a string, e.g. "spk01"
 plotSegment <- ""                           # ... or a string, e.g. "a"
 
+##### Debug options
+
+debugMode <- FALSE
+seed <- 398
