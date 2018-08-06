@@ -26,7 +26,9 @@ savePopulation <- function(pop, extraCols = list(condition = "x"), logDir) {
   dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
   saveRDS(rbindlist(lapply(seq_along(pop), function (i) {
     cbind(pop[[i]]$features, pop[[i]]$labels) %>%
-      .[, agentID := pop[[i]]$agentID] %>%
+      .[, `:=`(agentID = pop[[i]]$agentID,
+               speaker = pop[[i]]$speaker,
+               group = pop[[i]]$group)] %>%
       .[, equivalence := equal_class(initial, label)]
   })) %>% {
     for (col in names(extraCols)) {
