@@ -29,20 +29,29 @@
 ########################## Obligatory Options ##########################
 
 ##### Input dataframe
-inputDataFile <- "/vdata/Projects/ABM/data/s-retraction.df"
+inputDataFile <- "/vdata/Projects/ABM/data/andalusian/pre-aspiration_clean.df"
 
 ##### Strategies
 
 memoryIntakeStrategy <- "maxPosteriorProb"  # ... or "mahalanobisDistance"
 memoryRemovalStrategy <- "timeDecay"        # ... or "outlierRemoval"
-maxMemorySize <- 410                        # ... or any full positive number, e.g. 500 (without quotes!).
-splitAndMerge <- TRUE                       # ... or FALSE
+# maxMemorySize <- 18                        # ... or any full positive number, e.g. 500 (without quotes!).
+maxMemoryExpansion <- 1.0
+
+splitAndMerge <- FALSE                       # ... or FALSE
+productionStrategy <- "SMOTE"           # "meanWords", "extraTokens", "MAP", "SMOTE"
+productionExtraTokensRatio <- 1.0         # used if productionStrategy == "extraTokens"
+productionMAPPriorAdaptRatio <- 1.0       # used if productionStrategy == "MAP"
+productionMinTokens <- 20                 # used if productionStrategy == "SMOTE"
+productionSMOTENN <- 5                    # used if productionStrategy == "SMOTE"
+
+perceptionOOVNN <- 5
 
 ##### ABM Options
 
-runMode <- "single"                         # ... "single" or "multiple"
-nrOfSimulations <- 4                       # ... or any full positive number, e.g. 20
-interactionsPerSimulation <- 1000           # ... or any full positive number, e.g. 125
+runMode <- "multiple"                         # ... "single" or "multiple"
+nrOfSimulations <- 6                       # ... or any full positive number, e.g. 20
+interactionsPerSimulation <- 5000           # ... or any full positive number, e.g. 125
 
 ##### Plotting Options
 
@@ -73,7 +82,7 @@ subsetSpeakers <- NULL                      # ... or a vector of strings, e.g. c
 subsetSegments <- NULL                      # ... or a vector of strings, e.g. c("a", "i", "u", "o")
 speakerProb <- NULL                         # ... or a vector of numerics, see param_explanations.pdf
 listenerProb <- NULL                        # ... or a vector of numerics, see param_explanations.pdf
-interactionPartners <- "random"             # ... or "betweenGroups" or "withinGroups"
+interactionPartners <- "betweenGroups"             # ... or "betweenGroups" or "withinGroups"
 
 ##### Plotting Options
 

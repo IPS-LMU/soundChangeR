@@ -21,6 +21,11 @@ require("mvtnorm")
 require("ggplot2")
 require("RColorBrewer")
 require("cluster")
+require("matrixcalc")
+require("smotefamily")
+require("FNN")
+require("tools")
+
 
 source(file.path(ABMpath, "functions/interactions.R"))
 source(file.path(ABMpath, "functions/calculations.R"))
@@ -34,7 +39,7 @@ coreABM <- function(logDir) {
   # Only a convenience function to avoid code duplication
   # for single and multiple run modes (parallel) in ABMmain.R
   
-  pop <- create_population(input.df = input.df, maxMemorySize = maxMemorySize)
+  pop <- create_population(input.df = input.df)
   
   if (splitAndMerge == TRUE & doSplitAndMergeBeforeABM == TRUE) {
     for (j in seq_along(pop)) {

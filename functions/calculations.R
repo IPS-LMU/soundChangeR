@@ -21,10 +21,8 @@
 #                                                                              #
 ################################################################################
 
-
-savePopulation <- function(pop, extraCols = list(condition = "x"), logDir) {
-  dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
-  saveRDS(rbindlist(lapply(seq_along(pop), function (i) {
+convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
+  rbindlist(lapply(seq_along(pop), function (i) {
     cbind(pop[[i]]$features, pop[[i]]$labels) %>%
       .[, `:=`(agentID = pop[[i]]$agentID,
                speaker = pop[[i]]$speaker,
@@ -35,7 +33,12 @@ savePopulation <- function(pop, extraCols = list(condition = "x"), logDir) {
       .[, (col) := extraCols[[col]]]
     }
     .[]
-  },
+  }
+}
+
+savePopulation <- function(pop, extraCols = list(condition = "x"), logDir) {
+  dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
+  saveRDS(convert_pop_list_to_dt(pop, extraCols),
   file = file.path(logDir, paste("pop", unlist(extraCols), "rds", sep = "."))
   )
 }
@@ -47,6 +50,71 @@ saveInteractionsLog <- function(interactionsLog, logDir) {
           file.path(logDir, "intLog.rds")
   )
 }
+
+MAPadaptGaussian <- function(adaptData, priorData, priorAdaptRatio) {
+  # https://stats.stackexchange.com/questions/50844/estimating-the-covariance-posterior-distribution-of-a-multivariate-gaussian
+  # https://en.wikipedia.org/wiki/Conjugate_prior
+  # k_0 == nu_0 == number of prior samples, this is the 'theoretical one'
+  # k_0 <- nu_0 <- nrow(priorData)
+  n <- nrow(adaptData)
+  k_0 <- nu_0 <- max(round(n * priorAdaptRatio), 1)
+  mu_0 <- apply(priorData, 2, mean)
+  x_hat <- apply(adaptData, 2, mean)
+  Psi <- cov(priorData) * max((nu_0 - 1), 1)
+  C <- 0
+  if (n > 1) {
+    C <- cov(adaptData) * (n - 1)
+  }
+  Psi_posterior <- Psi + C + (k_0 * n)/(k_0 + n) * outer(x_hat - mu_0, x_hat - mu_0)
+  p <- ncol(adaptData)
+  res <- list(
+    mean = (k_0 * mu_0 + n * x_hat) / (k_0 + n),
+    cov = Psi_posterior / (nu_0 + n + p + 1) # Mode, Mean would end in - p - 1
+  )
+  return(res)
+}
+
+
+ellipse_confidence <- function(P, alpha) {
+  # only 2-dim P
+  eig <- eigen(cov(P), only.values = FALSE)
+  Chisq <- sqrt(qchisq(1 - alpha, 2))
+  return( list(
+    C = colMeans(P),
+    a = Chisq * sqrt(eig$values[1]),
+    b = Chisq * sqrt(eig$values[2]),
+    theta = atan2(eig$vectors[2,1], eig$vectors[1,1])
+  ))
+}
+
+# synth_tokens_SMOTE <- function(token, cloud, K = 1, n = 1) {
+#   nn <- knearest(cloud, token, K)
+#   rbindlist(lapply(1:n, function(i) {
+#     token + runif(1) * (cloud[nn[sample.int(length(nn), 1)],] - token)
+#   }))
+# }
+
+knearest_Fallback <- function(cloud, targetIndices, K) {
+  nFallback <- K + 1 - length(targetIndices)
+  if (nFallback <= 0) {
+    return (targetIndices)
+  }
+  fallback <- knnx.index(cloud, cloud[targetIndices, , drop=FALSE], K + 1) %>%
+    as.vector %>%
+    .[!. %in% targetIndices] %>%
+    unique %>%
+    sample(nFallback)
+  # candidates <- knearest(cloud, cloud[targetIndices,], K) %>%
+  #   as.vector
+  # fallback <- c(targetIndices, rep(0, nFallback))
+  # while (!is.na(i <- Position(isTRUE, fallback == 0))) {
+  #   if (!(fb <- sample(candidates, 1)) %in% fallback) {
+  #     fallback[i] <- fb
+  #   }
+  # }
+  return(c(targetIndices, fallback))
+}
+
 
 convert_list_to_df <- function(population, condition = "x") {
   # This function converts the population list into a data.frame 
