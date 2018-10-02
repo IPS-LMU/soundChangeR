@@ -496,7 +496,7 @@ produce_token <- function(agent) {
   }
   
   
-  if (productionStrategy %in% c("meanWords", "extraTokens", "SMOTE")) {
+  if (productionStrategy %in% c("targetWordTokens", "meanWords", "extraTokens", "SMOTE")) {
     tokenGauss <- list(
     mean = apply(wordFeatures, 2, mean),
     cov = cov(wordFeatures)
@@ -508,8 +508,10 @@ produce_token <- function(agent) {
                                    productionMAPPriorAdaptRatio
                                    )
   }
+  epsilon_diag <- 1e-6
   while (!is.positive.definite(tokenGauss$cov)) {
-    tokenGauss$cov = tokenGauss$cov + diag(nrow(tokenGauss$cov))
+    tokenGauss$cov <- tokenGauss$cov + epsilon_diag * diag(nrow(tokenGauss$cov))
+    epsilon_diag <- 2 * epsilon_diag
     print("non-positive def cov in production")
   }
   # generate producedToken as a list
@@ -615,20 +617,24 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
   }
   # find out whether the token is recognized or not
   # ... either by maximum posterior probability decision
-  if (memoryIntakeStrategy == "maxPosteriorProb") {
+  if (memoryIntakeStrategy %in% c("maxPosteriorProb", "posteriorProbThr")) {
     if (!{cacheRow <- which(perceiver$cache$name == "qda"); perceiver$cache$valid[cacheRow]}) {
       perceiver$cache[cacheRow,  `:=`(value = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, ],
                              grouping = perceiver$labels$label[perceiver$labels$valid == TRUE])),
                              valid = TRUE)]
     } 
     posteriorProbAll <- predict(perceiver$cache$value[cacheRow][[1]], producedToken$features)$posterior
-    recognized <- colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_
+    if (memoryIntakeStrategy == "maxPosteriorProb") {
+      recognized <- colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_
+    } else if (memoryIntakeStrategy == "posteriorProbThr") {
+      recognized <- posteriorProbAll[, perceiverLabel_] >= posteriorProbThr
+    }
     # or a Mahalanobis distance measurement
   } else if (memoryIntakeStrategy == "mahalanobisDistance") {
-    mahalaDistanceLabel <- log(mahalanobis(producedToken$features,
-                                           apply(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, ], 2, mean),
-                                           cov(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, ])))
-    recognized <- mahalaDistanceLabel < mahalanobisThreshold
+    mahalaDistanceLabel <- mahalanobis(producedToken$features,
+                                           apply(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & perceiver$labels$label == perceiverLabel_, ], 2, mean),
+                                           cov(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & perceiver$labels$label == perceiverLabel_, ]))
+    recognized <- mahalaDistanceLabel <= mahalanobisThreshold
   }
   
   # if the token is recognized, test for memory capacity
@@ -668,9 +674,9 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
     )]
     perceiver$labels[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE,
                      nrOfTimesHeard := updatedNrOfTimesHeard]
-    if (memoryIntakeStrategy == "maxPosteriorProb") {
+    # if (memoryIntakeStrategy == "maxPosteriorProb") {
       perceiver$cache[cacheRow, valid := FALSE]
-    }
+    # }
   }
   # write on interactionsLog
   rowToWrite <- which(interactionsLog$valid == FALSE)[1]
