@@ -674,9 +674,9 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
     )]
     perceiver$labels[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE,
                      nrOfTimesHeard := updatedNrOfTimesHeard]
-    # if (memoryIntakeStrategy == "maxPosteriorProb") {
+    if (memoryIntakeStrategy %in% c("maxPosteriorProb", "posteriorProbThr")) {
       perceiver$cache[cacheRow, valid := FALSE]
-    # }
+    }
   }
   # write on interactionsLog
   rowToWrite <- which(interactionsLog$valid == FALSE)[1]
