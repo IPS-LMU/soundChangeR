@@ -26,70 +26,58 @@
 ################################################################################
 
 
-########################## Obligatory Options ##########################
+params = list(
+  
+  ##### Input dataframe
+  inputDataFile = "/vdata/Projects/ABM/data/andalusian/pre-aspiration_clean.df",
+  
+  ##### Strategies
+  
+  memoryIntakeStrategy = "maxPosteriorProb",  # ... or "mahalanobisDistance"
+  memoryRemovalStrategy = "timeDecay",        # ... or "outlierRemoval"
+  # maxMemorySize = 18,                        # ... or any full positive number, e.g. 500 (without quotes!).
+  maxMemoryExpansion = 1.0,
+  
+  splitAndMerge = FALSE,                       # ... or FALSE
+  productionStrategy = "SMOTE",           # "meanWords", "extraTokens", "MAP", "SMOTE"
+  productionExtraTokensRatio = 1.0,         # used if productionStrategy == "extraTokens"
+  productionMAPPriorAdaptRatio = 1.0,       # used if productionStrategy == "MAP"
+  productionMinTokens = 20,                 # used if productionStrategy == "SMOTE"
+  productionSMOTENN = 5,                    # used if productionStrategy == "SMOTE"
+  
+  perceptionOOVNN = 5,
+  
+  ##### ABM Options
+  
+  runMode = "single",                         # ... "single" or "multiple"
+  nrOfSimulations = 3,                       # ... or any full positive number, e.g. 20
+  interactionsPerSimulation = 1000,           # ... or any full positive number, e.g. 125
+  
+  
+  ############################ Expert Options ############################
+  
+  ##### General Options
+  
 
-##### Input dataframe
-inputDataFile <- "/vdata/Projects/ABM/data/andalusian/pre-aspiration_clean.df"
-
-##### Strategies
-
-memoryIntakeStrategy <- "maxPosteriorProb"  # ... or "mahalanobisDistance"
-memoryRemovalStrategy <- "timeDecay"        # ... or "outlierRemoval"
-# maxMemorySize <- 18                        # ... or any full positive number, e.g. 500 (without quotes!).
-maxMemoryExpansion <- 1.0
-
-splitAndMerge <- FALSE                       # ... or FALSE
-productionStrategy <- "SMOTE"           # "meanWords", "extraTokens", "MAP", "SMOTE"
-productionExtraTokensRatio <- 1.0         # used if productionStrategy == "extraTokens"
-productionMAPPriorAdaptRatio <- 1.0       # used if productionStrategy == "MAP"
-productionMinTokens <- 20                 # used if productionStrategy == "SMOTE"
-productionSMOTENN <- 5                    # used if productionStrategy == "SMOTE"
-
-perceptionOOVNN <- 5
-
-##### ABM Options
-
-runMode <- "multiple"                         # ... "single" or "multiple"
-nrOfSimulations <- 6                       # ... or any full positive number, e.g. 20
-interactionsPerSimulation <- 5000           # ... or any full positive number, e.g. 125
-
-##### Plotting Options
-
-columnsToPlot <- c("P1", "P2")              # ... or any other combination of two P-columns of input.df
-plotting <- "points"                        # ... or "tracks" or "formants" or "none"
-plotGroupBy <- "speaker"                    # ... or "group"
-plotColor <- "equivalence"                  # ... or "initial"
-plotBeforeABM <- FALSE                       # or FALSE
-plotAfterABM <- FALSE                        # or FALSE
-
-
-############################ Expert Options ############################
-
-##### General Options
-
-logDir_ <- paste(ABMpath, "logDir", sep = "/")
-dateTime <- format(Sys.time(), "%Y%m%d%H%M%S")
-logDirDate <- paste(logDir_, dateTime, sep = "/")
-img <- paste(logDirDate, "img", sep = "/")
-
-##### ABM Options
-
-splitAndMergeInterval <- 100                # ... or any full positive number, e.g. 75
-doSplitAndMergeBeforeABM <- TRUE            # ... or FALSE
-mahalanobisThreshold <- 1.5                 # ... or any other full positive number, e.g. 5.0
-multipleABMRuns <- 3                      # ... or any full positive number, e.g. 20
-subsetSpeakers <- NULL                      # ... or a vector of strings, e.g. c("spk01", "spk02", "spk03")
-subsetSegments <- NULL                      # ... or a vector of strings, e.g. c("a", "i", "u", "o")
-speakerProb <- NULL                         # ... or a vector of numerics, see param_explanations.pdf
-listenerProb <- NULL                        # ... or a vector of numerics, see param_explanations.pdf
-interactionPartners <- "betweenGroups"             # ... or "betweenGroups" or "withinGroups"
-
-##### Plotting Options
-
-plotSpeaker <- ""                           # ... or a string, e.g. "spk01"
-plotSegment <- ""                           # ... or a string, e.g. "a"
-
-##### Debug options
-
-debugMode <- FALSE
-seed <- 398
+  ##### ABM Options
+  
+  splitAndMergeInterval = 100,                # ... or any full positive number, e.g. 75
+  doSplitAndMergeBeforeABM = TRUE,            # ... or FALSE
+  mahalanobisThreshold = 1.5,                 # ... or any other full positive number, e.g. 5.0
+  multipleABMRuns = 3,                      # ... or any full positive number, e.g. 20
+  subsetSpeakers = NULL,                      # ... or a vector of strings, e.g. c("spk01", "spk02", "spk03")
+  subsetSegments = NULL,                      # ... or a vector of strings, e.g. c("a", "i", "u", "o")
+  speakerProb = NULL,                         # ... or a vector of numerics, see param_explanations.pdf
+  listenerProb = NULL,                        # ... or a vector of numerics, see param_explanations.pdf
+  interactionPartners = "betweenGroups",             # ... or "betweenGroups" or "withinGroups"
+  
+  ##### Plotting Options
+  
+  plotSpeaker = "",                           # ... or a string, e.g. "spk01"
+  plotSegment = "",                          # ... or a string, e.g. "a"
+  
+  ##### Debug options
+  
+  debugMode = FALSE,
+  seed = 398
+)

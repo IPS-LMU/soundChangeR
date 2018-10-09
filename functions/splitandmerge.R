@@ -43,7 +43,7 @@ splitandmerge <- function(agent, full = FALSE) {
   for (phoneFunc in c("split", "merge")) {
     didOneSM <- FALSE
     while (phoneFuncList[[phoneFunc]](agent)) {
-      if (runMode == "single" && !didOneSM) {
+      if (params[['runMode']] == "single" && !didOneSM) {
         cat("Agent", agent$agentID, "did", phoneFunc, "\n")
         didOneSM <- TRUE
       }
@@ -74,7 +74,7 @@ splitandmerge_ <- function(agent, full = FALSE) {
                                                        agent$labels[validRows, label]),
                      agent$labels[validRows, label])) {
       agent$labels[validRows, label := lab]
-      if (runMode == "single") {
+      if (params[['runMode']] == "single") {
         cat("Agent", agent$agentID, "did", phoneFunc, "\n")
       }
       if (!full) break
@@ -96,7 +96,7 @@ splitandmergefull <- function(agent) {
   #
   oldsplitMergeAgentLabel <- agent$memory$label
   agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
-  if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & runMode == "single") {
+  if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & params[['runMode']] == "single") {
     cat("Agent", unique(agent$memory$speaker), "did split\n")
   }
   splitMergeAgentTemp <- agent$memory$label != oldsplitMergeAgentLabel
@@ -104,7 +104,7 @@ splitandmergefull <- function(agent) {
   while (sum(splitMergeAgentTemp) != 0) {
     oldsplitMergeAgentLabel <- agent$memory$label
     agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
-    if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & runMode == "single") {
+    if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & params[['runMode']] == "single") {
       cat("Agent", unique(agent$memory$speaker), "did split\n")
     }
     splitMergeAgentTemp <- agent$memory$label != oldsplitMergeAgentLabel
@@ -113,14 +113,14 @@ splitandmergefull <- function(agent) {
   if (length(unique(agent$memory$label)) > 1) {
     oldsplitMergeAgentLabel <- agent$memory$label
     agent$memory$label <- phonmerge_(agent$memory$P, agent$memory$word, agent$memory$label)
-    if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & runMode == "single") {
+    if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & params[['runMode']] == "single") {
       cat("Agent", unique(agent$memory$speaker), "did merge\n")
     }
     splitMergeAgentTemp <- agent$memory$label != oldsplitMergeAgentLabel
     while (sum(splitMergeAgentTemp) != 0 && length(unique(agent$memory$label)) > 1) {
       oldsplitMergeAgentLabel <- agent$memory$label
       agent$memory$label <- phonmerge_(agent$memory$P, agent$memory$word, agent$memory$label)
-      if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & runMode == "single") {
+      if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & params[['runMode']] == "single") {
         cat("Agent", unique(agent$memory$speaker), "did merge\n")
       }
       splitMergeAgentTemp <- agent$memory$label != oldsplitMergeAgentLabel
@@ -144,13 +144,13 @@ splitandmerge_ <- function(agent) {
   oldLabel <- agent$memory$label
   agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
   
-  if (sum(oldLabel != agent$memory$label) > 0 & runMode == "single") {
+  if (sum(oldLabel != agent$memory$label) > 0 & params[['runMode']] == "single") {
     cat("Agent", unique(agent$memory$speaker), "did split\n")
   }
   if (length(unique(agent$memory$label)) > 1) {
     oldLabel <- agent$memory$label
     agent$memory$label <- phonmerge_(agent$memory$P, agent$memory$word, agent$memory$label)
-    if (sum(oldLabel != agent$memory$label) > 0 & runMode == "single") {
+    if (sum(oldLabel != agent$memory$label) > 0 & params[['runMode']] == "single") {
       cat("Agent", unique(agent$memory$speaker), "did merge\n")
     }
   }
@@ -247,7 +247,7 @@ phonmerge <- function(agent) {
                                as.integer(as.factor(agent$labels$label[ulab.pair.mask])) )) {
         while ((mergeLabel <- paste(sample(letters[1:26])[1:6], collapse = "")) %in% ulab) {}
         # stri_rand_strings(1, 6, "[a-z]")) # this is a bit nicer than paste(sample... collapse = ""))
-        # but for testing purpose I keep the original one, otherwise we get different random strings with same seed.
+        # but for testing purpose I keep the original one, otherwise we get different random strings with same params[['seed']].
         agent$labels[ulab.pair.mask, label := mergeLabel]
         didOneMerge <- TRUE
         break
@@ -475,7 +475,7 @@ phonsplit.sub <- function(P, wordValues, label) {
   for (w in unique(wordValues)) {
     word.mask <- wordValues == w
     cluster[word.mask] <- {
-      # this is temp, only to make it possible to use seed and compare results
+      # this is temp, only to make it possible to use params[['seed']] and compare results
       # break ties with an arbitrary criterion (which.min) indep of pam label, which can flip
       # with an identical P with different order or rows
       if (sum(cluster[word.mask] == 1) == sum(word.mask) / 2) {
@@ -576,7 +576,7 @@ phonsplit_.sub <- function(param, wordlab, phonlab) {
   for (j in unique(wordlab)) {
     temp.1 <- wordlab == j & param.k$cluster == 1
     temp.2 <- wordlab == j & param.k$cluster == 2
-    # this is temp, only to make it possible to use seed and compare results
+    # this is temp, only to make it possible to use params[['seed']] and compare results
     # break ties with an arbitrary criterion (which.min) indep of pam label, which can flip
     # with an identical param with different order of rows
     if (sum(temp.1) == sum(temp.2)) {

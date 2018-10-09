@@ -31,7 +31,6 @@ source(file.path(ABMpath, "functions/interactions.R"))
 source(file.path(ABMpath, "functions/calculations.R"))
 source(file.path(ABMpath, "functions/splitandmerge.R"))
 
-# plotting.R is sourced in coreABM.R
 
 coreABM <- function(logDir) {
   ### main ABM routine
@@ -41,7 +40,7 @@ coreABM <- function(logDir) {
   
   pop <- create_population(input.df = input.df)
   
-  if (splitAndMerge == TRUE & doSplitAndMergeBeforeABM == TRUE) {
+  if (params[['splitAndMerge']] == TRUE & params[['doSplitAndMergeBeforeABM']] == TRUE) {
     for (j in seq_along(pop)) {
       splitandmerge(pop[[j]], TRUE)
     }
@@ -50,7 +49,7 @@ coreABM <- function(logDir) {
                  extraCols = list(condition = 0),
                  logDir = logDir)
   
-  interactionsLog <- perform_interactions(pop, interactionsPerSimulation, nrOfSimulations, logDir)
+  interactionsLog <- perform_interactions(pop, logDir)
   saveInteractionsLog(interactionsLog, logDir = logDir)
 }
 

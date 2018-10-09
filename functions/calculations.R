@@ -288,7 +288,7 @@ get_equivalence_clusters_ <- function(population, eLabels, abmName, simulation) 
   #    - population: either originalPopulation or modifiedPopulation, defined in coreABM.R
   #    - eLabels: vector equivalenceLabels, as defined in coreABM.R
   #    - abmName: variable defined in coreABM.R
-  #    - simulation: variable nrOfSimulations, as defined in coreABM.R
+  #    - simulation: variable params[['nrOfSimulations']], as defined in coreABM.R
   #
   # Returns:
   #    - df: a data.frame with columns ABM, simulation, and one column
@@ -312,13 +312,13 @@ get_equivalence_clusters_ <- function(population, eLabels, abmName, simulation) 
 
 reconstruct_tracks <- function(df) {
   # This function reconstructs tracks from DCT coefficients.
-  # Function calls in plotting.R.
+  # Function calls in params[['plotting']].R.
   #
   # Args:
   #    - df: a data.frame (at least) with columns P1, P2, P3 (or any other combination of 
   #      exactly three columns that begin with "P"), initial, label, word,
   #      speaker, age, group, condition, and equivalence; see the function calls in
-  #      plotting.R to see the data.frames this function is used with
+  #      params[['plotting']].R to see the data.frames this function is used with
   #
   # Returns:
   #    - result: a list of two data.frames, one representing the mean
