@@ -51,6 +51,71 @@ saveInteractionsLog <- function(interactionsLog, logDir) {
   )
 }
 
+SIM_REG_FILENAME <- "simulations_register.rds"
+PARAMS_FILENAME <- "params.yaml"
+
+generateSimulationName <- function(prefix = "ABM") {
+  paste0(prefix, format(Sys.time(), "%Y%m%d%H%M%S"))
+}
+
+setFeatureNames <- function(input.df, cols) {
+  stopifnot(all(cols %in% colnames(input.df)))
+  input.df %>% setnames(cols, paste0("P", seq_along(cols)))
+}
+
+createSimulationRegister <- function(rootLogDir, force = FALSE) {
+  if (!file.exists(file.path(rootLogDir, SIM_REG_FILENAME)) | force) {
+    list.save(list(), file.path(rootLogDir, SIM_REG_FILENAME))
+  }
+}
+
+registerSimulation <- function(params, rootLogDir) {
+  list.save(params, file.path(logDir, params[['simulationName']], PARAMS_FILENAME))
+  params['completed'] <- FALSE
+  regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
+  list.load(regFile) %>%
+    list.append(params) %>%
+    list.save(regFile)
+}
+
+setCompleted <- function(simulationName_, rootLogDir) {
+  regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
+  reg <- list.load(regFile)
+  i <- reg %>% list.findi(simulationName == simulationName_)
+  reg[[i]]['completed'] <- TRUE
+  list.save(reg, regFile)
+}
+
+deleteSimulation <- function(simulationName_, rootLogDir) {
+  regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
+  list.load(regFile) %>%
+    list.exclude(simulationName == simulationName_) %>%
+    list.save(regFile)
+}
+
+purgeSimulation <- function(simulationName_, rootLogDir) {
+  deleteSimulation(simulationName_, rootLogDir)
+  system(paste("rm -rf", file.path(rootLogDir, simulationName_)))
+}
+
+filterSimulations <- function(rootLogDir, ..., condList = NULL) {
+  regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
+  reg <- list.load(regFile)
+  if (!is.null(condList)) {
+    matching <- sapply(reg, function(r) {
+      sapply(names(condList), function(k) r[[k]] == condList[[k]]) %>% all()
+    })
+  } else {
+    matching <- list.is(reg, ...)
+  }
+  reg[matching] %>% list.select(simulationName) %>% unlist
+}
+
+getParams <- function(rootLogDir, simulationName) {
+  list.load(file.path(rootLogDir, simulationName, PARAMS_FILENAME))
+}
+
+
 MAPadaptGaussian <- function(adaptData, priorData, priorAdaptRatio) {
   # https://stats.stackexchange.com/questions/50844/estimating-the-covariance-posterior-distribution-of-a-multivariate-gaussian
   # https://en.wikipedia.org/wiki/Conjugate_prior

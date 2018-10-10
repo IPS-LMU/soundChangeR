@@ -29,7 +29,7 @@
 params = list(
   
   ##### Input dataframe
-  inputDataFile = "/vdata/Projects/ABM/data/andalusian/pre-aspiration_clean.df",
+  inputDataFile = "/vdata/Projects/ABM/data/antarctica01.csv",
   
   ##### Strategies
   
@@ -39,7 +39,7 @@ params = list(
   maxMemoryExpansion = 1.0,
   
   splitAndMerge = FALSE,                       # ... or FALSE
-  productionStrategy = "SMOTE",           # "meanWords", "extraTokens", "MAP", "SMOTE"
+  productionStrategy = "meanWords",           # "meanWords", "extraTokens", "MAP", "SMOTE"
   productionExtraTokensRatio = 1.0,         # used if productionStrategy == "extraTokens"
   productionMAPPriorAdaptRatio = 1.0,       # used if productionStrategy == "MAP"
   productionMinTokens = 20,                 # used if productionStrategy == "SMOTE"
@@ -69,7 +69,7 @@ params = list(
   subsetSegments = NULL,                      # ... or a vector of strings, e.g. c("a", "i", "u", "o")
   speakerProb = NULL,                         # ... or a vector of numerics, see param_explanations.pdf
   listenerProb = NULL,                        # ... or a vector of numerics, see param_explanations.pdf
-  interactionPartners = "betweenGroups",             # ... or "betweenGroups" or "withinGroups"
+  interactionPartners = "random",             # ... or "betweenGroups" or "withinGroups"
   
   ##### Plotting Options
   

@@ -9,24 +9,34 @@ source(file.path("Rcmd", "loadLibraries.R"))
 # source parameter file
 source(file.path("data", "params.R"))
 
-# name of current simulation
-simulationName <- paste("pre-aspiration",
-                        "age",
-                        "maxMemoryExpansion", params[['maxMemoryExpansion']],
-                        "productionExtraTokensRatio", params[['productionExtraTokensRatio']],
-                        sep = "."
-)
 # log dir
 rootLogDir <- "/vdata/Projects/ABM/simulations/Michele/firstExplorations"
-logDir <- file.path(rootLogDir, simulationName)
-dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
+rootLogDir <- "/homes/m.gubian/ABM/ABM/tests"
+# create simulations register if it does not exist
+createSimulationRegister(rootLogDir)
 
-# and copy it into log dir
-file.copy(file.path("data", "params.R"), file.path(logDir, "params.R"))
-# load input dataframe (specified in params.R)
+params[['simulationName']] <- generateSimulationName()
+logDir <- file.path(rootLogDir, params[['simulationName']])
+dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
+# load input dataframe (can be specified in params.R)
 input.df <- fread(params[['inputDataFile']], stringsAsFactors = F)
-# old/young grouping
-input.df[, group := Alter]
+# adapt it, e.g. create groups, subset speakers, etc.
+input.df <- input.df[session == 0 & V %in% c("i:", "I:", "I")]
+input.df %>% setnames(Cs(ORT, Vpn, V),
+                      Cs(word, speaker, initial))
+input.df[, initial := as.character(initial)]
+input.df[, labels := initial]
+input.df[, group := "dummy"]
+
+# original feature names (columns in input.df)
+params[['features']] <- Cs(kF10, kF12, kF20)
+setFeatureNames(input.df, params[['features']])
+# save input.df and params
+saveRDS(input.df, file.path(logDir, "input.rds"))
+
+# log simulation in register
+registerSimulation(params, rootLogDir)
+
 # run simulation
 if (params[['runMode']] == "single") {
   coreABM(logDir)
@@ -40,4 +50,5 @@ if (params[['runMode']] == "single") {
     })
   stopCluster(cl)  
 }
+setCompleted(params[['simulationName']], rootLogDir)
 
