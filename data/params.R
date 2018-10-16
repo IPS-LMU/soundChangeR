@@ -29,7 +29,7 @@
 params = list(
   
   ##### Input dataframe
-  inputDataFile = "/vdata/Projects/ABM/data/antarctica01.csv",
+  inputDataFile = "",
   
   ##### Strategies
   
@@ -71,11 +71,7 @@ params = list(
   listenerProb = NULL,                        # ... or a vector of numerics, see param_explanations.pdf
   interactionPartners = "random",             # ... or "betweenGroups" or "withinGroups"
   
-  ##### Plotting Options
-  
-  plotSpeaker = "",                           # ... or a string, e.g. "spk01"
-  plotSegment = "",                          # ... or a string, e.g. "a"
-  
+
   ##### Debug options
   
   debugMode = FALSE,

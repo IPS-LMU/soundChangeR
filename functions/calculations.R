@@ -70,7 +70,7 @@ createSimulationRegister <- function(rootLogDir, force = FALSE) {
 }
 
 registerSimulation <- function(params, rootLogDir) {
-  list.save(params, file.path(logDir, params[['simulationName']], PARAMS_FILENAME))
+  list.save(params, file.path(rootLogDir, params[['simulationName']], PARAMS_FILENAME))
   params['completed'] <- FALSE
   regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
   list.load(regFile) %>%
@@ -109,6 +109,12 @@ filterSimulations <- function(rootLogDir, ..., condList = NULL) {
     matching <- list.is(reg, ...)
   }
   reg[matching] %>% list.select(simulationName) %>% unlist
+}
+
+getFieldFromSimRegister <- function(rootLogDir, ...) {
+  regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
+  reg <- list.load(regFile)
+  list.map(reg, ...)
 }
 
 getParams <- function(rootLogDir, simulationName) {
