@@ -98,6 +98,13 @@ purgeSimulation <- function(simulationName_, rootLogDir) {
   system(paste("rm -rf", file.path(rootLogDir, simulationName_)))
 }
 
+purgeNotCompleted <- function(rootLogDir) {
+  lapply(filterSimulations(rootLogDir, completed == FALSE),
+         function(simName) {
+           purgeSimulation(simName, rootLogDir)
+         })
+}
+
 filterSimulations <- function(rootLogDir, ..., condList = NULL) {
   regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
   reg <- list.load(regFile)

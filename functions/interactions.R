@@ -332,9 +332,16 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo) 
       randomProdGroup <- randomGroups[2]
       prodNr <- sample(groupsInfo$agentID[groupsInfo$group == randomPercGroup], 1, prob = params[['speakerProb']][groupsInfo$group == randomPercGroup])
       percNr <- sample(groupsInfo$agentID[groupsInfo$group == randomProdGroup], 1, prob = params[['listenerProb']][groupsInfo$group == randomProdGroup])
+    } else if (params[['interactionPartners']] == "selfTalk") {
+      prodNr <- sample(groupsInfo$agentID, 1, prob = params[['speakerProb']])
+      percNr <- 0 # temp hack
     }
   }
   
+  # temp hack
+  if (params[['interactionPartners']] == "selfTalk") {
+    percNr <- prodNr
+  }
   # set producer and perceiver to the chosen agents from pop
   producer <- pop[[prodNr]]
   perceiver <- pop[[percNr]]
