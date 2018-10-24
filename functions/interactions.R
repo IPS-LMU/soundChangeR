@@ -659,6 +659,8 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
         rowToWrite <- which(perceiver$labels$word == producedToken$labels$word)[
           which.max(distance(as.matrix(perceiver$features)[perceiver$labels$word == producedToken$labels$word, ], tdat.mahal, metric = "mahal"))
           ]
+      } else if (params[['memoryRemovalStrategy']] == "random") {
+        rowToWrite <- sample(which(perceiver$labels$word == producedToken$labels$word), 1)
       }
     }
     # if there is still some capacity, use an empty row of the memory
