@@ -6,7 +6,7 @@ setwd(ABMpath)
 
 # load libraries
 source(file.path("Rcmd", "loadLibraries.R"))
-# log dir
+# root log dir for this experiment
 rootLogDir <- "/vdata/Projects/ABM/simulations/Michele/happy_Antarctica"
 dir.create(rootLogDir, showWarnings = FALSE, recursive = TRUE)
 # create simulations register if it does not exist
@@ -14,9 +14,9 @@ createSimulationRegister(rootLogDir)
 
 
 # source parameter file
-source(file.path("data", "u-fronting.params.R"))
+source(file.path("data", "params.R"))
 params[['prettyName']] <- "happy_Antarctica" # optional
-# load input dataframe
+# load input dataframe, it may be stored in params
 input.df <- fread(params[['inputDataFile']], stringsAsFactors = F)
 # adapt it, e.g. create groups, subset speakers, etc.
 # input.df <- input.df[session == 0 & V %in% c("i:", "ju", "u")] # u-fronting
@@ -24,7 +24,7 @@ input.df <- input.df[session == 0 & V %in% c("i:", "I:", "I")] # happy
 input.df %>% setnames(Cs(ORT, Vpn, V),
                       Cs(word, speaker, initial))
 input.df[, initial := as.character(initial)]
-input.df[, labels := initial]
+input.df[, label := initial]
 input.df[, group := 'dummy']
 # select 22 speakers 
 # input.df <- input.df[!speaker %in% c("apwi", "chbr", "olto", "arkn", "gisa")]
@@ -39,7 +39,7 @@ params[['codeCommit']] <- system("git log -n1 --format=format:\"%H\"", intern = 
 # set up different simulation settings by modifying params
 
 Config <- expand.grid(
-  maxMemoryExpansion = c(1,10)
+  maxMemoryExpansion = c(1)
   # memoryRemovalStrategy = c("timeDecay", "outlierRemoval"),
   # memoryIntakeStrategy = c( "posteriorProbThr", "mahalanobisDistance"), 
   # interactionPartners = c("random", "withinGroups")

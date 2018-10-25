@@ -29,7 +29,7 @@
 params = list(
   
   ##### Input dataframe
-  inputDataFile = "",
+  inputDataFile = "/vdata/Projects/ABM/data/Antarctica/input_antarctica_oct18.df",
   
   ##### Strategies
   
@@ -39,13 +39,14 @@ params = list(
   maxMemoryExpansion = 1.0,
   
   splitAndMerge = FALSE,                       # ... or FALSE
-  productionStrategy = "meanWords",           # "meanWords", "extraTokens", "MAP", "SMOTE"
-  productionExtraTokensRatio = 1.0,         # used if productionStrategy == "extraTokens"
-  productionMAPPriorAdaptRatio = 1.0,       # used if productionStrategy == "MAP"
+  productionStrategy = "SMOTE",           # "targetWordTokens", "meanWords", "extraTokens", "MAP", "SMOTE"
+  # productionExtraTokensRatio = 1.0,         # used if productionStrategy == "extraTokens"
+  # productionMAPPriorAdaptRatio = 1.0,       # used if productionStrategy == "MAP" not used anymore
   productionMinTokens = 20,                 # used if productionStrategy == "SMOTE"
   productionSMOTENN = 5,                    # used if productionStrategy == "SMOTE"
   
-  perceptionOOVNN = 5,
+  perceptionOOVNN = 5,                      # number of nearest neighbours used 
+                                            # to attribute label in case of unknown word
   
   ##### ABM Options
   
@@ -72,7 +73,7 @@ params = list(
   interactionPartners = "random",             # ... or "betweenGroups" or "withinGroups"
   
 
-  ##### Debug options
+  ##### Debug options (not used anymore)
   
   debugMode = FALSE,
   seed = 398

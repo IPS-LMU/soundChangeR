@@ -101,7 +101,7 @@ create_population <- function(input.df, method = "speaker_is_agent") {
       population[[id]] <- list()
       population[[id]]$agentID <- id
       population[[id]]$labels <- input.df[speaker == sortedSpeakers[id],
-                                               .(word, labels, initial)] %>%
+                                               .(word, label, initial)] %>%
         .[, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
         .[, timeStamp := sample(.N), by = word] %>%
         .[]
@@ -123,7 +123,7 @@ create_population <- function(input.df, method = "speaker_is_agent") {
                                              data.table()
                                            ))
       }
-      setnames(population[[id]]$labels, "labels", "label")
+      # setnames(population[[id]]$labels, "labels", "label")
       population[[id]]$cache <- data.table(name = "qda", value = list(), valid = FALSE)
     }
   }
@@ -617,6 +617,7 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
   #
   
   perceiverLabel_ <- unique(perceiver$labels$label[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE])
+  # if word is unknown, assign label by looking at perceptionOOVNN nearest neighbours
   if (length(perceiverLabel_) == 0) {
     perceiverLabel_ <- names(which.max(table(perceiver$labels$label[perceiver$labels$valid == TRUE][
       knnx.index(perceiver$features[perceiver$labels$valid == TRUE,], producedToken$features, params[['perceptionOOVNN']])
