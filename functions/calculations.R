@@ -36,6 +36,21 @@ convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
   }
 }
 
+convert_pop_dt_to_list <- function(pop.dt) {
+  population <- list()
+  Pcols <- grep("^P[[:digit:]]+$", colnames(pop.dt), value = TRUE)
+  for (id in pop.dt$agentID %>% unique) {
+    population[[id]] <- list()
+    population[[id]]$agentID <- id
+    population[[id]]$label <- pop.dt[agentID == id, .(word, label, initial, valid, nrOfTimesHeard, producerID, timeStamp)]
+    population[[id]]$features <- pop.dt[agentID == id, .SD, .SDcols = Pcols]
+    population[[id]]$cache <- data.table(name = "qda", value = list(), valid = FALSE)
+    population[[id]]$group <- pop.dt[agentID == id, group][1]
+    population[[id]]$speaker <- pop.dt[agentID == id, speaker][1]
+  }
+  return(population)
+}
+
 savePopulation <- function(pop, extraCols = list(condition = "x"), logDir) {
   dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
   saveRDS(convert_pop_list_to_dt(pop, extraCols),
