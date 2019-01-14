@@ -257,15 +257,15 @@ perform_interactions <- function(pop, logDir) {
   # Args:
   #    - pop: population as defined in coreABM.R by create_population().
   #    - nrOfInteractions: full positive number, defined as parameter 
-  #      params[['interactionsPerSimulation']] in params.R.
+  #      params[['interactionsPerSnapshot']] in params.R.
   #
   # Returns:
   #    - interactionsLog: a data.table
   #
-  interactionsLog <- create_interactions_log(params[['interactionsPerSimulation']] * params[['nrOfSimulations']])
+  interactionsLog <- create_interactions_log(params[['interactionsPerSnapshot']] * params[['nrOfSnapshots']])
   groupsInfo <- rbindlist(lapply(pop, function(agent) {data.table(agentID = agent$agentID, group = agent$group)}))[order(agentID),]
-  for (nrSim in 1:params[['nrOfSimulations']]) {
-    for (i in 1:params[['interactionsPerSimulation']]) {
+  for (nrSim in 1:params[['nrOfSnapshots']]) {
+    for (i in 1:params[['interactionsPerSnapshot']]) {
       perform_single_interaction(pop, interactionsLog, nrSim, groupsInfo)
     }
     savePopulation(pop, extraCols = list(condition = nrSim), logDir = logDir)
@@ -282,7 +282,7 @@ perform_interactions_ <- function(pop, nrOfInteractions) {
   # Args:
   #    - pop: population as defined in coreABM.R by create_population().
   #    - nrOfInteractions: full positive number, defined as parameter 
-  #      params[['interactionsPerSimulation']] in param.R.
+  #      params[['interactionsPerSnapshot']] in param.R.
   #
   # Returns:
   #    - pop: a list, same as input population, but obviously with 

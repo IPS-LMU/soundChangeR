@@ -56,9 +56,9 @@ params = list(
   ##### Runs
   
   runMode = "multiple",                         # ... "single" or "multiple"
-  nrOfSimulations = 5,                       # ... or any full positive number, e.g. 20
-  interactionsPerSimulation = 1000,           # ... or any full positive number, e.g. 125
-  multipleABMRuns = 100,                      # ... or any full positive number, e.g. 20
+  nrOfSnapshots = 5,                       # ... or any full positive number, e.g. 20
+  interactionsPerSnapshot = 100,           # ... or any full positive number, e.g. 125
+  multipleABMRuns = 2,                      # ... or any full positive number, e.g. 20
   
 
   ##### Other options

@@ -115,10 +115,10 @@ multiple independent ABM runs (`"multiple"`) which makes it possible to check wh
 stable results on your data. If multiple simulations are run, specify the number of runs by setting the parameter `multipleABMRuns`.
 
 ```r
-nrOfSimulations = 5,
-interactionsPerSimulation = 1000
+nrOfSnapshots = 5,
+interactionsPerSnapshot = 1000
 ```
-A simulation is a sequence of `nrOfSimulations * interactionsPerSimulation` interactions. At every `interactionsPerSimulation` interactions a snapshot of all agents' memories is taken and saved.
+A simulation is a sequence of `nrOfSnapshots * interactionsPerSnapshot` interactions. At every `interactionsPerSnapshot` interactions a snapshot of all agents' memories is taken and saved.
 
 ## Data structures and files organisation
 
@@ -159,7 +159,7 @@ Let's see each file in detail.
 
 - `params.yaml` is the saved params list. It's in `yaml` format, so you can directly open it as text and read it conveniently. All other files are stored as `rds`, so you need `readRDS()`. 
 - `input.rds` is a copy of the input file, as you can start with an existing dataframe and tweak (e.g. remove speakers etc). In this way you preserve the exact input.
-- `pop.<NUMBER>.rds` are as many memory snapshots as `params$nrOfSimulations`. These are data.tables that report the state of all agents. The columns are:
+- `pop.<NUMBER>.rds` are as many memory snapshots as `params$nrOfSnapshots`. These are data.tables that report the state of all agents. The columns are:
 ```
 P1, P2, ..., word, label, initial, valid, nrOfTimesHeard, producerID, timeStamp, agentID, speaker, group, equivalence, condition
 ```

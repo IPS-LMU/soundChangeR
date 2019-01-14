@@ -34,10 +34,10 @@ if (memoryIntakeStrategy != "maxPosteriorProb" & memoryIntakeStrategy != "mahala
 }
 
 # check if all params of class numeric are set to adequate values
-if (class(nrOfSimulations) != "numeric" | 
-    class(nrOfSimulations) == "numeric" & nrOfSimulations < 1 | 
-    class(interactionsPerSimulation) != "numeric" | 
-    class(interactionsPerSimulation) == "numeric" & interactionsPerSimulation < 1 | 
+if (class(nrOfSnapshots) != "numeric" | 
+    class(nrOfSnapshots) == "numeric" & nrOfSnapshots < 1 | 
+    class(interactionsPerSnapshot) != "numeric" | 
+    class(interactionsPerSnapshot) == "numeric" & interactionsPerSnapshot < 1 | 
     class(splitAndMergeInterval) != "numeric" | 
     class(splitAndMergeInterval) == "numeric" & splitAndMergeInterval < 1 | 
     class(mahalanobisThreshold) != "numeric" | 
@@ -45,15 +45,15 @@ if (class(nrOfSimulations) != "numeric" |
     class(multipleABMRuns) == "numeric" & multipleABMRuns < 0) {
   stop("One of the following parameters has not been set to an adequate value 
   or is not of class numeric:
-  nrOfSimulations, interactionsPerSimulation, splitAndMergeInterval, mahalanobisThreshold, multipleABMRuns.
+  nrOfSnapshots, interactionsPerSnapshot, splitAndMergeInterval, mahalanobisThreshold, multipleABMRuns.
   Please check params.R.")
 }
 
 # check if params of class numeric are set to full numbers
-if (nrOfSimulations %% 1 != 0 | interactionsPerSimulation %% 1 != 0 | 
+if (nrOfSnapshots %% 1 != 0 | interactionsPerSnapshot %% 1 != 0 | 
     splitAndMergeInterval %% 1 != 0 | multipleABMRuns %% 1 != 0) {
   stop("One of the following parameters has not been set to a full number:
-  nrOfSimulations, interactionsPerSimulation, splitAndMergeInterval, multipleABMRuns.
+  nrOfSnapshots, interactionsPerSnapshot, splitAndMergeInterval, multipleABMRuns.
   Please check params.R.")
 }
 

@@ -76,10 +76,10 @@ if (plotting != "none" & plotBeforeABM == TRUE) {
 abm.df <- cbind(originalPopulation, ABM = rep(abmName, times = nrow(originalPopulation)))
 
 # ABM run
-for (nrSim in 1:nrOfSimulations) {
+for (nrSim in 1:nrOfSnapshots) {
   
   # perform interactions
-  population <- perform_interactions(pop = population, nrOfInteractions = interactionsPerSimulation)
+  population <- perform_interactions(pop = population, nrOfInteractions = interactionsPerSnapshot)
   
   # convert population (list of lists) to data.frame
   modifiedPopulation <- convert_list_to_df(population, as.character(nrSim))
@@ -111,7 +111,7 @@ for (nrSim in 1:nrOfSimulations) {
                                 ABM = rep(abmName, times = nrow(modifiedPopulation))))
   
   # create the plots during the ABM run
-  # plotPath <- file.path(img, paste("plotDuringABM_", abmName, "_", nrSim * interactionsPerSimulation, ".svg", sep = ""))
+  # plotPath <- file.path(img, paste("plotDuringABM_", abmName, "_", nrSim * interactionsPerSnapshot, ".svg", sep = ""))
   # if (plotting != "none" & plotBeforeABM == TRUE) {
   #   svg(filename = plotPath, width = 10, height = 10, onefile = FALSE)
   #   modifiedPlot <- plot_during(modifiedPopulation)
