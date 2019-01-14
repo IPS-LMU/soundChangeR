@@ -28,53 +28,45 @@
 
 params = list(
   
-  ##### Input dataframe
-  inputDataFile = "/vdata/Projects/ABM/data/Antarctica/input_antarctica_oct18.df",
+  inputDataFile = "data/Antarctica.csv",
   
-  ##### Strategies
+  ##### Production
   
-  memoryIntakeStrategy = "maxPosteriorProb",  # ... or "mahalanobisDistance"
-  memoryRemovalStrategy = "timeDecay",        # ... or "outlierRemoval"
-  # maxMemorySize = 18,                        # ... or any full positive number, e.g. 500 (without quotes!).
-  maxMemoryExpansion = 1.0,
-  
-  splitAndMerge = FALSE,                       # ... or FALSE
   productionStrategy = "SMOTE",           # "targetWordTokens", "meanWords", "extraTokens", "MAP", "SMOTE"
-  # productionExtraTokensRatio = 1.0,         # used if productionStrategy == "extraTokens"
-  # productionMAPPriorAdaptRatio = 1.0,       # used if productionStrategy == "MAP" not used anymore
   productionMinTokens = 20,                 # used if productionStrategy == "SMOTE"
   productionSMOTENN = 5,                    # used if productionStrategy == "SMOTE"
   
+  ##### Perception
+  
+  memoryIntakeStrategy = "maxPosteriorProb",  # ... or "mahalanobisDistance"
+  memoryRemovalStrategy = "outlierRemoval",        # ... or "timeDecay"
+  maxMemoryExpansion = 1.0,
+  
+  splitAndMerge = FALSE, 
   perceptionOOVNN = 5,                      # number of nearest neighbours used 
                                             # to attribute label in case of unknown word
   
-  ##### ABM Options
+  ##### Interaction
   
-  runMode = "single",                         # ... "single" or "multiple"
-  nrOfSimulations = 3,                       # ... or any full positive number, e.g. 20
+  interactionPartners = "random",             # ... or "betweenGroups" or "withinGroups"
+  speakerProb = NULL,                         # ... or a vector of numerics
+  listenerProb = NULL,                        # ... or a vector of numerics
+  
+  
+  ##### Runs
+  
+  runMode = "multiple",                         # ... "single" or "multiple"
+  nrOfSimulations = 5,                       # ... or any full positive number, e.g. 20
   interactionsPerSimulation = 1000,           # ... or any full positive number, e.g. 125
-  
-  
-  ############################ Expert Options ############################
-  
-  ##### General Options
+  multipleABMRuns = 100,                      # ... or any full positive number, e.g. 20
   
 
-  ##### ABM Options
+  ##### Other options
   
   splitAndMergeInterval = 100,                # ... or any full positive number, e.g. 75
-  doSplitAndMergeBeforeABM = TRUE,            # ... or FALSE
-  mahalanobisThreshold = 1.5,                 # ... or any other full positive number, e.g. 5.0
-  multipleABMRuns = 3,                      # ... or any full positive number, e.g. 20
-  subsetSpeakers = NULL,                      # ... or a vector of strings, e.g. c("spk01", "spk02", "spk03")
-  subsetSegments = NULL,                      # ... or a vector of strings, e.g. c("a", "i", "u", "o")
-  speakerProb = NULL,                         # ... or a vector of numerics, see param_explanations.pdf
-  listenerProb = NULL,                        # ... or a vector of numerics, see param_explanations.pdf
-  interactionPartners = "random",             # ... or "betweenGroups" or "withinGroups"
+  doSplitAndMergeBeforeABM = FALSE            
+  # mahalanobisThreshold = 1.5,                 # ... or any other full positive number, e.g. 5.0
+  # subsetSpeakers = NULL,                      # ... or a vector of strings, e.g. c("spk01", "spk02", "spk03")
+  # subsetSegments = NULL,                      # ... or a vector of strings, e.g. c("a", "i", "u", "o")
   
-
-  ##### Debug options (not used anymore)
-  
-  debugMode = FALSE,
-  seed = 398
 )

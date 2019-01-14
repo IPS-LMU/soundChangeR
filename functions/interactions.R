@@ -345,9 +345,6 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo) 
   # set producer and perceiver to the chosen agents from pop
   producer <- pop[[prodNr]]
   perceiver <- pop[[percNr]]
-  if (params[['debugMode']] & params[['runMode']] == "single") {
-    ppDT <<- c(ppDT, prodNr, percNr)
-  }
   # let speaking agent produce a token and listening agent perceive it
   pt <- produce_token(producer)
   perceive_token(perceiver, pt, interactionsLog, nrSim)
