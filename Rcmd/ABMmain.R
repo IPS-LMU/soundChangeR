@@ -1,3 +1,17 @@
+
+################################################################################
+#                                                                              #
+# This script contains the ABM main routine                                    #
+#                                                                              #
+# Developed by Florian Schiel and Jonathan Harrington                          #
+# Adapted by Johanna Cronenberg and Michele Gubian                             #
+#                                                                              #
+# Copyright 2018, Institute of Phonetics and Speech Processing, LMU Munich.    #
+#                                                                              #
+################################################################################
+
+
+
 ### ABM main routine
 
 # set path (change manually)
