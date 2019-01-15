@@ -17,6 +17,8 @@ source(file.path("data", "params.R"))
 params[['prettyName']] <- "Antarctica" # optional
 # load input data.table 
 input.df <- fread(params[['inputDataFile']], stringsAsFactors = F)
+# only session == 0 used in the simulation
+input.df <- input.df[session == 0]
 
 # original feature names (columns in input.df)
 params[['features']] <- Cs(kF10, kF11, kF12, kF20, kF21, kF22)

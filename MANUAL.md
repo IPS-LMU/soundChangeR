@@ -112,7 +112,7 @@ runMode = "multiple"
 The ABM system offers you two ways of running it: You can
 either perform one ABM run (`"single"`) in order to see the immediate results or you can perform
 multiple independent ABM runs (`"multiple"`) which makes it possible to check whether the ABM delivers
-stable results on your data. If multiple simulations are run, specify the number of runs by setting the parameter `multipleABMRuns`.
+stable results on your data. If multiple simulations are run, specify the number of runs by setting the parameter `multipleABMRuns`. In the current version, the `"multiple"` mode makes use of the `parallel` library and it is only supported for Linux. 
 
 ```r
 nrOfSnapshots = 5,
