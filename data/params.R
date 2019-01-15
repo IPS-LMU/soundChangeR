@@ -1,22 +1,6 @@
 ################################################################################
 #                                                                              #
-# Please set all obligatory parameters below! You will find possible options   #
-# for each value in the corresponding commentaries. If you need more detailed  #
-# explanations, please refer to param_expl/param_explanations.pdf. If you are  #
-# operating on Ubuntu and use okular as a pdf reader, you can open that file   #
-# by typing the following command in your R console:                           #
-#                                                                              #
-# system(paste0('okular param_expl/param_explanations.pdf'))                   #
-#                                                                              #
-# If you are an advanced user, you can also go through the expert options and  #
-# see, if you want to change any of them. Again, a thorough explanation of     #
-# each parameter can be found in param_expl/param_explanations.pdf.            #
-#                                                                              #
-# After having set all necessary parameters, save this script (Strg + s, or    #
-# Ctrl + s), and then type the following command in you R console in order     #
-# to initiate the ABM:                                                         #
-#                                                                              #
-# source("Rcmd/master.R")                                                      #
+# Parameter settings                                                           #
 #                                                                              #
 # Developed by Florian Schiel and Jonathan Harrington                          #
 # Adapted by Johanna Cronenberg                                                #
@@ -57,8 +41,8 @@ params = list(
   
   runMode = "multiple",                         # ... "single" or "multiple"
   nrOfSnapshots = 5,                       # ... or any full positive number, e.g. 20
-  interactionsPerSnapshot = 100,           # ... or any full positive number, e.g. 125
-  multipleABMRuns = 2,                      # ... or any full positive number, e.g. 20
+  interactionsPerSnapshot = 1000,           # ... or any full positive number, e.g. 125
+  multipleABMRuns = 100,                      # ... or any full positive number, e.g. 20
   
 
   ##### Other options
