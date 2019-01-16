@@ -11,7 +11,7 @@ The top module is `Rcmd/ABMmain.R`, where you have some comments. Please consult
 
 ## The Antarctica case study
 
-This version is provided with data and settings ready to replicate the case study on sound change in Antarctica, which is described in the manuscript `Antarctica.pdf`. 
+This version is provided with data and settings ready to replicate the case study on sound change in Antarctica, which is described in a manuscript under review. 
 Input data are in `data/Antarctica.csv`, settings are as in `data/params.R`,
 a bundle of the original simulation output is in `data/Antarctica_results.zip`,
 the data analysis reported in the manuscript is in `data/Antarctica_data_analysis.R`.
