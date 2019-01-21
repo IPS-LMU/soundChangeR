@@ -12,12 +12,14 @@ library(dtt)
 library(Tmisc)
 library(optimx)
 
-# rootLogDir is the top directory where you ran the simulations
+# If you ran the simulations, rootLogDir is the top directory where you ran the simulations.
+# Otherwise, you can load the results from data/Antarctica_results.zip.
+# In the latter case, skip to the line where REALandABM.df is read from file
+
 rootLogDir <- "/vdata/Projects/ABM/simulations/Michele/Antarctica" # change manually
 simulationName <- "ABM20181204185316" # change manually
 params  <- getParams(rootLogDir, simulationName)
 logDir <- file.path(rootLogDir, simulationName)
-# alternatively, skip to the line where REALandABM.df is read from file
 
 # human data
 sessions.df <- fread(params[['inputDataFile']], stringsAsFactors = F)
@@ -69,13 +71,14 @@ REALandABM.df <- rbindlist(list(sessions.df, pop), use.names = TRUE, fill = TRUE
 # logDir is the directory where you extracted data/Antarctica_results.zip
 
 # real data + all runs collected here
-# this is the version where ABM session 1 is based on the agents' memory at 5000 interactions
-# REALandABM.df <- fread(file.path(logDir, "REALandABM.df"))
-# alternatively, ABM session 1 based on production after 5000 interactions
+# ABM session 1 based on production after 5000 interactions
 REALandABM.df <- fread(file.path(logDir, "REALandABM.production.df"))
 REALandABM.df[, `:=`(speaker = factor(speaker),
-                     session = factor(session),
+                     session = session %>% as.character %>% as.numeric, # this is needed in the lmer  
                      origin = factor(origin, levels = c("REAL", "ABM")))]
+
+# Note: session has to be coded as numeric (integer) for later use in lmer
+# see: https://stats.stackexchange.com/questions/122336/coding-of-categorical-random-effects-in-r-int-vs-factor
 
 # choose which acoustic features to use to compute distances
 Pcols <- paste0("P", 1:6)
@@ -98,6 +101,7 @@ REALandABM.df[label %in% c("i:", "ju", "u", "ou"),
               .SDcols = Ucols]
 
 # function to compute projection on a segment 
+# values in data near A, B will take values near -1, 1.
 projectOnSegment <- function(data, A, B) {
   if (ncol(A) != ncol(B)) stop()
   if (ncol(data) != ncol(A)) stop()
@@ -132,6 +136,7 @@ REAL.lmer <- sapply(phonemes, function(ph) {
 }, USE.NAMES = TRUE)
 # get fixed effects and their significance:
 sapply(REAL.lmer, fixef)
+# stats reported in caption of Fig. 1
 sapply(REAL.lmer, Anova)
 
 # random slopes for speaker
@@ -140,46 +145,24 @@ REAL.slopes <- rbindlist(lapply(phonemes, function(ph) {
     setDT(keep.rownames = TRUE) %>% .[, phoneme := ph]
 })) %>% setnames("rn", "speaker") %>% .[, `(Intercept)` := NULL]
 
-# lmer on ABMs, one lmer per run,
-# collect results in a table called REALandABM.stats,
-# which has 3 results column, each row is specific to a single run and a single phoneme:
-# session.fixed.eff : the estimated fixed effect for session in the lmer on ABM
-# session.p.val : the significance of session.fixed.eff
-# session.slopes.cor : cor() between REAL and ABM session slopes 
-
-# (it may take 1-2 minutes)
-REALandABM.df[origin == "ABM" & label %in% phonemes & Run != 0,
-              {
-                label_ <- label
-                ABM.lmer <- lmer(as.formula(lmer.formula[[label]]),
-                                 data = rbindlist(list(.SD, REALandABM.df[origin == "REAL" &
-                                                                            label == label_ & 
-                                                                            session == 0]), use.names = TRUE, fill = TRUE))
-                ABM.slopes <- ABM.lmer %>% ranef %>% .[["speaker"]] %>%
-                  setDT(keep.rownames = TRUE) %>% setnames("rn", "speaker") %>% .[, `(Intercept)` := NULL]
-                slopes <- ABM.slopes[REAL.slopes[phoneme == label], on = "speaker", nomatch = 0]
-                .(session.slopes.cor = cor(slopes$session, slopes$i.session),
-                  session.fixed.eff = ABM.lmer %>% summary %>% .$coefficients %>% .["session", "Estimate"],
-                  session.p.val = Anova(ABM.lmer, type = "III") %>% .["session",'Pr(>Chisq)'])
-              },
-              by = .(label, Run)] -> REALandABM.stats 
-
-# how many run-phoneme specific lmer report a negative fixed effect for session?
-REALandABM.stats[session.fixed.eff < 0, .N, by = label]
-# how many run-phoneme specific lmer report a significant fixed effect for session?
-REALandABM.stats[session.p.val < 0.05, .N, by = label]
-# what is the median of speaker random slopes cor(REAL, ABM), specific for phoneme?
-REALandABM.stats[, median(session.slopes.cor), by = label]
 
 # lmer on global ABM, all runs
-ABM.lmer <- sapply(c("u", "ju", "ou"), function(ph) {
-  lmer(as.formula(paste(lmer.formula[[ph]], "+ (session - 1 | Run)")),
+
+require(parallel)
+numCores <- detectCores() - 1
+cl <- makeCluster(numCores, type = "FORK")
+clusterSetRNGStream(cl)
+ABM.lmer <- parSapply(cl, c("u", "ju", "ou"), function(ph) {
+  lmer(as.formula(paste(lmer.formula[[ph]], "+ (0 + session | Run)")),
        data = REALandABM.df[origin == "ABM" & label == ph])
 }, USE.NAMES = TRUE)
+stopCluster(cl)  
+
+
 # 'I:' does not converge using the default lmer optimizer (bobyqa)
 # Using optimx.nlminb instead it does.
 library(optimx)
-ABM.lmer[["I:"]] <- lmer(as.formula(paste(lmer.formula[["I:"]], "+ (session - 1 | Run)")),
+ABM.lmer[["I:"]] <- lmer(as.formula(paste(lmer.formula[["I:"]], "+ (0 + session | Run)")),
                          data = REALandABM.df[origin == "ABM" & label == "I:"],
                          control=lmerControl(optimizer = "optimx", optCtrl=list(method = "nlminb"))
 )
@@ -209,15 +192,9 @@ slopes <- rbindlist(list(
 ))
 slopes <- slopes[Vpn, on = "speaker", nomatch = 0]
 
-# plot REAL vs ABM slopes
-ggplot(slopes %>% spread(origin, session)) +
-  aes(x = ABM, y = REAL) +
-  geom_text(aes(label = Vpn)) +
-  facet_grid(~ phoneme)
-
 # add position prior to Antarctica as Position0
 slopes <- slopes[
-  REALandABM.df[session == 0 & label %in% phonemes,
+  REALandABM.df[session == 0 & origin == "REAL" & label %in% phonemes,
                 {
                   if (label == "I:") {
                     Pos <- mean(projection_i)
@@ -230,14 +207,6 @@ slopes <- slopes[
     .[, speaker := as.character(speaker)],
   on = c("speaker", phoneme = "label"),
   nomatch=0]
-
-# plot position 0 against slopes
-ggplot(slopes) +
-  aes(x = Position0, y = session) +
-  geom_text(aes(label = Vpn)) +
-  facet_grid(origin ~ phoneme)
-
-
 
 ########## formant trajectories in time
 
@@ -257,19 +226,6 @@ REALandABM.traj <- meanDCT[, .(F2 = inv_dct_from_emuR(.SD %>% as.numeric, N = N_
                                time = seq(0, 1, length.out = N_samples)),
                            by = .(session, label, origin), .SDcols = Fcols] 
 
-# plot F2 in time
-ggplot(REALandABM.traj[!(session == 0 & origin == "ABM") & label %in% phonemes]  %>%
-         .[, origin := factor(origin, levels = c("REAL", "ABM"))]) +
-  aes(x = time, y = F2, color = interaction(session, origin), group = interaction(session, origin)) +
-  facet_grid( ~ label) +
-  geom_line() +
-  ggtitle("F2 trajectories") +
-  ylab("F2")
-
-dunnsidak = function(alpha = .05, N = 4)
-{
-  1 - (1 - alpha)^(1/N)
-}
 
 ########################################## Fig. 1
 # plot F2 in time
@@ -300,11 +256,11 @@ ggplot(z[!(session == 0 & origin == "ABM") & label %in% phonemes]  %>%
 slopes[phoneme == "I:", phoneme := "ɪ:"]
 slopes[origin == "REAL", origin := "In Antarctica"]
 
-ggplot(slopes) +
+ggplot(slopes[origin == "In Antarctica"]) +
   aes(x = Position0, y = session) +
   stat_smooth(method="lm", se=FALSE,  color = 'grey') +
   geom_text(aes(label = Vpn)) +
-  facet_grid(origin ~ phoneme) + xlab("Position in baseline") + ylab("Size of change relative to baseline")
+  facet_grid( ~ phoneme) + xlab("Position in baseline") + ylab("Size of change relative to baseline")
 
 slopes[origin == "In Antarctica",
        {print(phoneme); lm(session ~ Position0) %>% summary %>% print},
@@ -320,7 +276,7 @@ ggplot(slopes %>% spread(origin, session)) +
   
 
 
-##########################################
+########################################## Stats reported in Figures
 dunnsidak = function(alpha = .05, N = 4)
 {
   1 - (1 - alpha)^(1/N)
@@ -329,19 +285,67 @@ dunnsidak = function(alpha = .05, N = 4)
 dunnsidak()
 #  0.01274146
 
+# Fig. 1
 # this shows that from 0 to 1 /ou/is significant
 sapply(REAL.lmer, Anova)
 # Chisq      0.7883375 0.796133  10.58769    0.5853313
 # Df         1         1         1           1        
 # Pr(>Chisq) 0.3746033 0.3722521 0.001138432 0.4442302
 
+# Fig. 2
+# Correlation tests between changes in Antarctica and position before Antarctica
+slopes[origin == "In Antarctica"] %>% .[, cor.test(Position0, session), by = phoneme] %>%
+  .[c(1, 3, 5, 7),1:5]
+# phoneme statistic parameter     p.value   estimate
+# 1:      ɪ: -4.751163         9 0.001042492 -0.8455479
+# 2:      ju -4.658539         9 0.001187678 -0.8407493
+# 3:       u -2.547947         9 0.031300019 -0.6473455
+# 4:      ou -1.349585         9 0.210114306 -0.4102599
 
-w = slopes %>% spread(origin, session) %>% .[, cor.test(ABM, REAL), by = phoneme]
-w[c(1, 3, 5, 7),1:5]
-#phoneme statistic parameter      p.value  estimate
-#1:      I:  4.662467         9 0.0011810988 0.8409569
-#2:      ju  4.889689         9 0.0008597959 0.8523609
-#3:      ou  1.286290         9 0.2304445365 0.3940683
-#4:       u  2.473898         9 0.0353435162 0.6362143
+# Fig 3 
+# Correlation tests between changes in ABM and 'In Antarctica'
+slopes %>% spread(origin, session) %>% .[, cor.test(ABM, `In Antarctica`), by = phoneme] %>%
+  .[c(1, 3, 5, 7),1:5]
+# phoneme statistic parameter      p.value  estimate
+# 1:      ɪ:  4.662467         9 0.0011810986 0.8409569
+# 2:      ju  4.889689         9 0.0008597959 0.8523609
+# 3:      ou  1.286290         9 0.2304445365 0.3940683
+# 4:       u  2.473898         9 0.0353435162 0.6362143
 
 
+
+
+
+
+########### Extra analysis (not used in the manuscript) ###########
+
+# lmer on ABMs, one lmer per run,
+# collect results in a table called REALandABM.stats,
+# which has 3 results column, each row is specific to a single run and a single phoneme:
+# session.fixed.eff : the estimated fixed effect for session in the lmer on ABM
+# session.p.val : the significance of session.fixed.eff
+# session.slopes.cor : cor() between REAL and ABM session slopes 
+
+# (it may take 1-2 minutes)
+REALandABM.df[origin == "ABM" & label %in% phonemes & Run != 0 ,
+              {
+                label_ <- label
+                ABM.lmer <- lmer(as.formula(lmer.formula[[label]]),
+                                 data = rbindlist(list(.SD, REALandABM.df[origin == "REAL" &
+                                                                            label == label_ & 
+                                                                            session == 0]), use.names = TRUE, fill = TRUE))
+                ABM.slopes <- ABM.lmer %>% ranef %>% .[["speaker"]] %>%
+                  setDT(keep.rownames = TRUE) %>% setnames("rn", "speaker") %>% .[, `(Intercept)` := NULL]
+                slopes <- ABM.slopes[REAL.slopes[phoneme == label], on = "speaker", nomatch = 0]
+                .(session.slopes.cor = cor(slopes$session, slopes$i.session),
+                  session.fixed.eff = ABM.lmer %>% summary %>% .$coefficients %>% .["session1", "Estimate"],
+                  session.p.val = Anova(ABM.lmer, type = "III") %>% .["session",'Pr(>Chisq)'])
+              },
+              by = .(label, Run)] -> REALandABM.stats 
+
+# how many run-phoneme specific lmer report a negative fixed effect for session?
+REALandABM.stats[session.fixed.eff < 0, .N, by = label]
+# how many run-phoneme specific lmer report a significant fixed effect for session?
+REALandABM.stats[session.p.val < 0.05, .N, by = label]
+# what is the median of speaker random slopes cor(REAL, ABM), specific for phoneme?
+REALandABM.stats[, median(session.slopes.cor), by = label]
