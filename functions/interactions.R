@@ -239,7 +239,7 @@ produce_token <- function(agent) {
     # wordIndicesWithinLabel <- agent$labels[label == producedLabel,][word == producedWord, which = TRUE]
     fallbckIndices <- knearest_Fallback(
       as.matrix(agent$features)[agent$labels$label == producedLabel &
-                                  agent$labels$valid == TRUE,],
+                                  agent$labels$valid == TRUE, , drop = FALSE],
       wordIndicesWithinLabel,
       params[['productionSMOTENN']]
       )
@@ -261,7 +261,7 @@ produce_token <- function(agent) {
   } else if (params[['productionStrategy']] == "MAP") {
     tokenGauss <- MAPadaptGaussian(wordFeatures,
                                    as.matrix(agent$features)[agent$labels$label == producedLabel &
-                                                               agent$labels$valid == TRUE, ],
+                                                               agent$labels$valid == TRUE, , drop = FALSE],
                                    params[['productionMAPPriorAdaptRatio']]
                                    )
   }
@@ -309,7 +309,7 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
   # ... either by maximum posterior probability decision
   if (params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr")) {
     if (!{cacheRow <- which(perceiver$cache$name == "qda"); perceiver$cache$valid[cacheRow]}) {
-      perceiver$cache[cacheRow,  `:=`(value = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, ],
+      perceiver$cache[cacheRow,  `:=`(value = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, , drop = FALSE],
                              grouping = perceiver$labels$label[perceiver$labels$valid == TRUE])),
                              valid = TRUE)]
     } 
@@ -322,8 +322,8 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
     # or a Mahalanobis distance measurement
   } else if (params[['memoryIntakeStrategy']] == "mahalanobisDistance") {
     mahalaDistanceLabel <- mahalanobis(producedToken$features,
-                                           apply(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & perceiver$labels$label == perceiverLabel_, ], 2, mean),
-                                           cov(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & perceiver$labels$label == perceiverLabel_, ]))
+                                           apply(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & perceiver$labels$label == perceiverLabel_, , drop = FALSE], 2, mean),
+                                           cov(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & perceiver$labels$label == perceiverLabel_, , drop = FALSE]))
     recognized <- mahalaDistanceLabel <= params[['mahalanobisThreshold']]
   }
   
@@ -338,9 +338,10 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
           ]
         # ... or the farthest outlier of the token distribution
       } else if (params[['memoryRemovalStrategy']] == "outlierRemoval") {
-        tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$labels$label == perceiverLabel_, ])
+        print(sum(perceiver$labels$word == producedToken$labels$word))
+        tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$labels$label == perceiverLabel_, , drop = FALSE])
         rowToWrite <- which(perceiver$labels$word == producedToken$labels$word)[
-          which.max(distance(as.matrix(perceiver$features)[perceiver$labels$word == producedToken$labels$word, ], tdat.mahal, metric = "mahal"))
+          which.max(distance(as.matrix(perceiver$features)[perceiver$labels$word == producedToken$labels$word, , drop = FALSE], tdat.mahal, metric = "mahal"))
           ]
       } else if (params[['memoryRemovalStrategy']] == "random") {
         rowToWrite <- sample(which(perceiver$labels$word == producedToken$labels$word), 1)
