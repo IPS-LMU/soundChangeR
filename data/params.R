@@ -12,7 +12,7 @@
 
 params = list(
   
-  inputDataFile = "data/Antarctica.csv",
+  inputDataFile = "",
   
   ##### Production
   
