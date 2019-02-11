@@ -12,7 +12,7 @@
 
 params = list(
   
-  inputDataFile = "",
+  inputDataFile = "data/Antarctica.csv",
   
   ##### Production
   
@@ -39,9 +39,9 @@ params = list(
   
   ##### Runs
   
-  runMode = "multiple",                         # ... "single" or "multiple"
+  runMode = "single",                         # ... "single" or "multiple"
   nrOfSnapshots = 5,                       # ... or any full positive number, e.g. 20
-  interactionsPerSnapshot = 1000,           # ... or any full positive number, e.g. 125
+  interactionsPerSnapshot = 100,           # ... or any full positive number, e.g. 125
   multipleABMRuns = 100,                      # ... or any full positive number, e.g. 20
   
 

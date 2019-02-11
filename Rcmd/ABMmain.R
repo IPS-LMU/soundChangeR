@@ -21,7 +21,7 @@ setwd(ABMpath)
 # load libraries
 source(file.path("Rcmd", "loadLibraries.R"))
 # root log dir for this experiment (change manually)
-rootLogDir <- "tests/"
+rootLogDir <- "tmp/"
 dir.create(rootLogDir, showWarnings = FALSE, recursive = TRUE)
 # create simulations register if it does not exist
 createSimulationRegister(rootLogDir)

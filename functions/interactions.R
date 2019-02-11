@@ -179,7 +179,18 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo) 
   perceive_token(perceiver, pt, interactionsLog, nrSim)
 }
 
-
+choose_word <- function(labels, method = "random_index") {
+  if (nrow(labels) == 0) {
+    stop("choose_word: Empty labels table (empty agent memory")
+  }
+  else if (method == "random_index" | is.null(method)) {
+    labels$word[sample(which(labels$valid == TRUE), 1)]
+  }
+  else {
+    stop(paste("choose_word: Unknown method", method))
+  }
+}
+  
 
 produce_token <- function(agent) {
   # This function simulates the production of a token as realisation 
@@ -196,13 +207,10 @@ produce_token <- function(agent) {
   #    - producedToken: a list
   #
   
-  randomIndex <- sample(which(agent$labels$valid == TRUE), 1)
-  producedWord <- agent$labels$word[randomIndex]
-  
-  # sample a random word and get its corresponding labels
-  # producedWord <- agent$labels$word[agent$labels$valid == TRUE] %>% unique() %>% sort %>% sample(1)
-  # randomIndex <- which(agent$labels$word == producedWord)[1]
-  producedLabel <- agent$labels$label[randomIndex]
+  # randomIndex <- sample(which(agent$labels$valid == TRUE), 1)
+  producedWord <- choose_word(agent$labels)
+  producedLabel <- agent$labels$label[agent$labels$word == producedWord][1]
+  nrOfTimesHeard <- agent$labels$nrOfTimesHeard[agent$labels$word == producedWord][1] 
   
   nWordTokens <- sum(agent$labels$word == producedWord, na.rm = TRUE)
   nExtraTokens <- 0
@@ -269,15 +277,14 @@ produce_token <- function(agent) {
   while (!is.positive.definite(tokenGauss$cov)) {
     tokenGauss$cov <- tokenGauss$cov + epsilon_diag * diag(nrow(tokenGauss$cov))
     epsilon_diag <- 2 * epsilon_diag
-    print("non-positive def cov in production")
   }
   # generate producedToken as a list
   producedToken <- list(
     features = rmvnorm(1, tokenGauss$mean, tokenGauss$cov),
-    labels = agent$labels[randomIndex,
-                          .(word, label, nrOfTimesHeard)][
-                            , `:=`(producerID = agent$agentID)][
-                            ]
+    labels = data.table(word = producedWord,
+                        label = producedLabel,
+                        nrOfTimesHeard = nrOfTimesHeard,
+                        producerID = agent$agentID)
   )
   return(producedToken)
 }
@@ -338,7 +345,6 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
           ]
         # ... or the farthest outlier of the token distribution
       } else if (params[['memoryRemovalStrategy']] == "outlierRemoval") {
-        print(sum(perceiver$labels$word == producedToken$labels$word))
         tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$labels$label == perceiverLabel_, , drop = FALSE])
         rowToWrite <- which(perceiver$labels$word == producedToken$labels$word)[
           which.max(distance(as.matrix(perceiver$features)[perceiver$labels$word == producedToken$labels$word, , drop = FALSE], tdat.mahal, metric = "mahal"))
