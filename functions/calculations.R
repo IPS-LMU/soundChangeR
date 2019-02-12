@@ -180,14 +180,17 @@ ellipse_confidence <- function(P, alpha) {
   ))
 }
 
-# synth_tokens_SMOTE <- function(token, cloud, K = 1, n = 1) {
-#   nn <- knearest(cloud, token, K)
-#   rbindlist(lapply(1:n, function(i) {
-#     token + runif(1) * (cloud[nn[sample.int(length(nn), 1)],] - token)
-#   }))
-# }
 
 knearest_Fallback <- function(cloud, targetIndices, K) {
+  if (nrow(cloud) < 1) {
+    stop("knearest_Fallback: Empty input cloud")
+  }
+  if (!all(targetIndices %in% 1:nrow(cloud))) {
+    stop("knearest_Fallback: targetIndices out of bound")
+  }
+  if (K <= 0 | K + 1 > nrow(cloud)) {
+    stop(paste("knearest_Fallback: invalid number of nearest neighbours requested: K =", K))
+  }
   nFallback <- K + 1 - length(targetIndices)
   if (nFallback <= 0) {
     return (targetIndices)
@@ -197,14 +200,6 @@ knearest_Fallback <- function(cloud, targetIndices, K) {
     .[!. %in% targetIndices] %>%
     unique %>%
     sample(nFallback)
-  # candidates <- knearest(cloud, cloud[targetIndices,], K) %>%
-  #   as.vector
-  # fallback <- c(targetIndices, rep(0, nFallback))
-  # while (!is.na(i <- Position(isTRUE, fallback == 0))) {
-  #   if (!(fb <- sample(candidates, 1)) %in% fallback) {
-  #     fallback[i] <- fb
-  #   }
-  # }
   return(c(targetIndices, fallback))
 }
 
