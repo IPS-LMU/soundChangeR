@@ -2,20 +2,20 @@
 #                                                                              #
 # This script contains the following functions that perform the interactions:  #
 #                                                                              #
-# - create_population(input.df, method = "speaker_is_agent", maxMemorySize)    #
+# - create_population(input.df, method = "speaker_is_agent")                   #
 # - create_interactions_log(nrOfInteractions)                                  #
-# - perform_interactions(pop, nrOfInteractions)                                #
-# - perform_single_interaction(pop, interactionsLog, groupsInfo)               #
+# - perform_interactions(pop, logDir)                                          #
+# - perform_single_interaction(pop, interactionsLog, nrSim, groupsInfo)        #
+# - choose_word(labels, methos = "random_index")                               #
 # - produce_token(agent)                                                       #
-# - perceive_token(perceiver, producedToken, interactionsLog                   #
+# - perceive_token(perceiver, producedToken, interactionsLog, nrSim)           #
 #                                                                              #
 # Developed by Florian Schiel and Jonathan Harrington                          #
 # Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
-# Copyright 2018, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
-
 
 create_population <- function(input.df, method = "speaker_is_agent") {
   # This function creates the agent population.
@@ -74,7 +74,6 @@ create_population <- function(input.df, method = "speaker_is_agent") {
   return(population)
 }
 
-
 create_interactions_log <- function(nrOfInteractions) {
   # This function creates a log for every interaction.
   # Function call in perform_interactions().
@@ -123,7 +122,6 @@ perform_interactions <- function(pop, logDir) {
   }
   return(interactionsLog)
 }
-
 
 perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo) {
   # This function performs a single interaction. 
@@ -190,7 +188,6 @@ choose_word <- function(labels, method = "random_index") {
     stop(paste("choose_word: Unknown method", method))
   }
 }
-  
 
 produce_token <- function(agent) {
   # This function simulates the production of a token as realisation 
@@ -289,7 +286,6 @@ produce_token <- function(agent) {
   return(producedToken)
 }
 
-
 perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
   # This function tests whether the produced token is to be 
   # memorized by the listening agent.
@@ -308,9 +304,7 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
   perceiverLabel_ <- unique(perceiver$labels$label[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE])
   # if word is unknown, assign label by looking at perceptionOOVNN nearest neighbours
   if (length(perceiverLabel_) == 0) {
-    perceiverLabel_ <- names(which.max(table(perceiver$labels$label[perceiver$labels$valid == TRUE][
-      knnx.index(perceiver$features[perceiver$labels$valid == TRUE,], producedToken$features, params[['perceptionOOVNN']])
-      ])))
+    return()
   }
   # find out whether the token is recognized or not
   # ... either by maximum posterior probability decision

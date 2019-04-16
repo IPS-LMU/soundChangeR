@@ -3,21 +3,44 @@
 # This script contains the following functions that perform calculations with  #
 # the data:                                                                    #
 #                                                                              #
-# - convert_list_to_df(population, condition)                                  #
+# - convert_pop_list_to_dt(pop, extraCols = list(condition = "x"))             #
+# - convert_pop_dt_to_list(pop.dt)                                             #
+# - savePopulation(pop, extraCols = list(condition = "x"), logDir)             #
+# - saveInteractionsLog(interactionsLog, logDir)                               #
+# - generateSimulationName(prefix = "ABM")                                     #
+# - setFeatureNames(input.df, cols)                                            #
+# - createSimulationRegister(rootLogDir, force = FALSE)                        #
+# - registerSimulation(params, rootLogDir)                                     #
+# - setCompleted(simulationName_, rootLogDir)                                  #
+# - deleteSimulation(simulationName_, rootLogDir)                              #
+# - purgeSimulation(simulationName_, rootLogDir)                               #
+# - purgeNotCompleted(rootLogDir)                                              #
+# - filterSimulations(rootLogDir, ..., condList = NULL)                        #
+# - getFieldFromSimRegister(rootLogDir, ...)                                   #
+# - getParams(rootLogDir, simulationName)                                      #
+# - MAPadaptGaussian(adaptData, priorData, priorAdaptRatio)                    #
+# - ellipse_confidence(P, alpha)                                               #
+# - knearest_Fallback(cloud, targetIndices, K)                                 #
+# - convert_list_to_df(population, condition = "x")                            #
 # - calc_rejection_ratio(population)                                           #
 # - make_equivalence_labels_(originalPopulation)                               #
 # - make_equivalence_labels(labels)                                            #
 # - equal_class(orig, derived)                                                 #
-# - get_equivalence_clusters(population, eLabels, abmName, simulation)         #
+# - get_equivalence_clusters(population, eLabels)                              #
+# - get_equivalence_clusters_(population, eLabels, abmName, simulation)        #
 # - reconstruct_tracks(df)                                                     #
 # - inverse_dct(coeffs)                                                        #
 # - empty_rows(df)                                                             #
 # - expandingList(capacity = 10)                                               #
 #                                                                              #
+# Also this script sets the following variables:                               #
+# - SIM_REG_FILENAME                                                           #
+# - PARAMS_FILENAME                                                            #
+#                                                                              #
 # Developed by Florian Schiel and Jonathan Harrington                          #
 # Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
-# Copyright 2018, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
 
@@ -57,7 +80,6 @@ savePopulation <- function(pop, extraCols = list(condition = "x"), logDir) {
   file = file.path(logDir, paste("pop", unlist(extraCols), "rds", sep = "."))
   )
 }
-
 
 saveInteractionsLog <- function(interactionsLog, logDir) {
   dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
@@ -143,7 +165,6 @@ getParams <- function(rootLogDir, simulationName) {
   list.load(file.path(rootLogDir, simulationName, PARAMS_FILENAME))
 }
 
-
 MAPadaptGaussian <- function(adaptData, priorData, priorAdaptRatio) {
   # https://stats.stackexchange.com/questions/50844/estimating-the-covariance-posterior-distribution-of-a-multivariate-gaussian
   # https://en.wikipedia.org/wiki/Conjugate_prior
@@ -167,7 +188,6 @@ MAPadaptGaussian <- function(adaptData, priorData, priorAdaptRatio) {
   return(res)
 }
 
-
 ellipse_confidence <- function(P, alpha) {
   # only 2-dim P
   eig <- eigen(cov(P), only.values = FALSE)
@@ -179,7 +199,6 @@ ellipse_confidence <- function(P, alpha) {
     theta = atan2(eig$vectors[2,1], eig$vectors[1,1])
   ))
 }
-
 
 knearest_Fallback <- function(cloud, targetIndices, K) {
   if (nrow(cloud) < 1) {
@@ -202,7 +221,6 @@ knearest_Fallback <- function(cloud, targetIndices, K) {
     sample(nFallback)
   return(c(targetIndices, fallback))
 }
-
 
 convert_list_to_df <- function(population, condition = "x") {
   # This function converts the population list into a data.frame 
@@ -247,7 +265,6 @@ convert_list_to_df <- function(population, condition = "x") {
   return(df)
 }
 
-
 calc_rejection_ratio <- function(population) {
   # This function computes the ratio of rejections, 
   # i.e. how many percent of all produced tokens were 
@@ -269,7 +286,6 @@ calc_rejection_ratio <- function(population) {
   }
   return(numRejections/numTokens)
 }
-
 
 make_equivalence_labels_ <- function(originalPopulation) {
   # This function generates equivalence labels from the 
@@ -293,7 +309,6 @@ make_equivalence_labels_ <- function(originalPopulation) {
   return(eLabels)
 }
 
-
 make_equivalence_labels <- function(labels) {
   # This function generates equivalence labels from the 
   # labels of the agents in the population.
@@ -315,7 +330,6 @@ make_equivalence_labels <- function(labels) {
         ) %>% unlist
     )
 }
-
 
 equal_class <- function(orig, derived) {
   # This function generates equivalence labels from 
@@ -366,7 +380,6 @@ get_equivalence_clusters <- function(population, eLabels) {
       ]
 }
 
-
 get_equivalence_clusters_ <- function(population, eLabels, abmName, simulation) {
   # This function calculates in how many of the agents each
   # equivalence label occurs.
@@ -396,7 +409,6 @@ get_equivalence_clusters_ <- function(population, eLabels, abmName, simulation) 
   df <- df[, c("ABM", "simulation", equivalenceLabels)]
   return(df)
 }
-
 
 reconstruct_tracks <- function(df) {
   # This function reconstructs tracks from DCT coefficients.
@@ -435,7 +447,6 @@ reconstruct_tracks <- function(df) {
   return(result)
 }
 
-
 inverse_dct <- function(coeffs) {
   # This function computes the inverse DCT of three DCT coefficients.
   # Function call in reconstruct_tracks() above.
@@ -461,7 +472,6 @@ inverse_dct <- function(coeffs) {
   return(result)
 }
 
-
 empty_rows <- function(df) {
   # This function finds empty rows in a data.frame (or data.table).
   # Currently no function call?
@@ -475,7 +485,6 @@ empty_rows <- function(df) {
   
   apply(df, 1, function(x) all(is.na(x))) %>% which
 }
-
 
 expandingList <- function(capacity = 10) {
   # This function changes the capacity of of a list.
