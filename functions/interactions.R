@@ -45,13 +45,14 @@ create_population <- function(input.df, method = "speaker_is_agent") {
       population[[id]] <- list()
       population[[id]]$agentID <- id
       population[[id]]$labels <- input.df[speaker == sortedSpeakers[id],
-                                               .(word, label, initial)] %>%
+                                               .(word, label)] %>%
         .[, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
         .[, timeStamp := sample(.N), by = word] %>%
         .[]
       population[[id]]$group <-input.df[speaker == sortedSpeakers[id], group][1] 
       population[[id]]$speaker <- input.df[speaker == sortedSpeakers[id], speaker][1] 
       population[[id]]$features <- input.df[speaker == sortedSpeakers[id], .SD, .SDcols = Pcols]
+      population[[id]]$initial <- input.df[speaker == sortedSpeakers[id], .(word, initial)] %>% unique 
       
       bufferRowsCount <- maxMemorySize - nrow(population[[id]]$labels)
       if (bufferRowsCount > 0) {
@@ -361,12 +362,10 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim) {
     # write in memory
     updatedNrOfTimesHeard <- 1 + max(0, perceiver$labels$nrOfTimesHeard[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE][1], na.rm = TRUE)
     receivedTimeStamp <- 1 + max(0, perceiver$labels$timeStamp[perceiver$labels$word == producedToken$labels$word], na.rm = TRUE)
-    perceiverInitial <- perceiver$labels$initial[perceiver$labels$label == perceiverLabel_ & perceiver$labels$valid == TRUE][1]
     perceiver$features[rowToWrite, names(perceiver$features) := as.list(producedToken$features)]
     perceiver$labels[rowToWrite, `:=`(
       word = producedToken$labels$word,
       label = perceiverLabel_,
-      initial = perceiverInitial,
       valid = TRUE,
       producerID = producedToken$labels$producerID,
       timeStamp = receivedTimeStamp

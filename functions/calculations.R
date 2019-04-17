@@ -24,6 +24,10 @@
 convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
   rbindlist(lapply(seq_along(pop), function (i) {
     cbind(pop[[i]]$features, pop[[i]]$labels) %>%
+      .[valid == TRUE] %>%
+      inner_join(pop[[i]]$initial, by = 'word') %>% # preservres row order (for easier inspection)
+      setDT %>%
+      # .[pop[[i]]$initial, on = 'word'] %>% # does not preserve row order
       .[, `:=`(agentID = pop[[i]]$agentID,
                speaker = pop[[i]]$speaker,
                group = pop[[i]]$group)] %>%
@@ -42,11 +46,12 @@ convert_pop_dt_to_list <- function(pop.dt) {
   for (id in pop.dt$agentID %>% unique) {
     population[[id]] <- list()
     population[[id]]$agentID <- id
-    population[[id]]$labels <- pop.dt[agentID == id, .(word, label, initial, valid, nrOfTimesHeard, producerID, timeStamp)]
-    population[[id]]$features <- pop.dt[agentID == id, .SD, .SDcols = Pcols]
-    population[[id]]$cache <- data.table(name = "qda", value = list(), valid = FALSE)
+    population[[id]]$labels <- pop.dt[agentID == id, .(word, label, valid, nrOfTimesHeard, producerID, timeStamp)]
     population[[id]]$group <- pop.dt[agentID == id, group][1]
     population[[id]]$speaker <- pop.dt[agentID == id, speaker][1]
+    population[[id]]$features <- pop.dt[agentID == id, .SD, .SDcols = Pcols]
+    population[[id]]$initial <- pop.dt[valid == TRUE, .(word, initial)] %>% unique 
+    population[[id]]$cache <- data.table(name = "qda", value = list(), valid = FALSE)
   }
   return(population)
 }
@@ -201,50 +206,6 @@ knearest_Fallback <- function(cloud, targetIndices, K) {
     unique %>%
     sample(nFallback)
   return(c(targetIndices, fallback))
-}
-
-
-convert_list_to_df <- function(population, condition = "x") {
-  # This function converts the population list into a data.frame 
-  # with the additional column condition.
-  # Function call in coreABM.R.
-  #
-  # Args:
-  #    - population: result of create_population(), defined in coreABM.R
-  #    - condition: a string denoting the state of the ABM
-  #
-  # Returns:
-  #    - df: a data.frame with columns word, age, speaker, group, initial, condition,
-  #      and P1, P2, etc.
-  #
-  
-  # initiate variables
-  params <- NULL
-  word <- NULL
-  label <- NULL
-  age <- NULL
-  speaker <- NULL
-  group <- NULL
-  initial <- NULL
-  
-  # repetitively fill variables with values from the list population
-  for (j in 1:length(population)) {
-    params <- rbind(params, population[[j]]$memory$P)
-    word <- c(word, population[[j]]$memory$word)
-    label <- c(label, population[[j]]$memory$label)
-    age <- c(age, population[[j]]$memory$age)
-    speaker <- c(speaker, population[[j]]$memory$speaker)
-    group <- c(group, population[[j]]$memory$group)
-    initial <- c(initial, population[[j]]$memory$initial)
-  }
-  
-  # add variable condition and compose data.frame
-  cond <- rep(condition, nrow(params))
-  df <- data.frame(params, word = factor(word), label = factor(label), age, speaker = factor(speaker), 
-                   group = factor(group), initial = factor(initial), condition = factor(cond))
-  names(df) <- c(paste("P", 1:ncol(params), sep = ""), "word", "label", "age", "speaker", "group", 
-                 "initial", "condition")
-  return(df)
 }
 
 
