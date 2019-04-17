@@ -398,6 +398,12 @@ get_equivalence_clusters_ <- function(population, eLabels, abmName, simulation) 
 }
 
 
+library(dtt)
+# inverse DCT function
+inv_dct_from_emuR <- function(X, N = 11) {
+  0.5*(sqrt(2) - 1) * X[1] + dtt::dct(c(X, rep(0, N - length(X))), variant = 3)
+}
+
 reconstruct_tracks <- function(df) {
   # This function reconstructs tracks from DCT coefficients.
   # Function calls in params[['plotting']].R.
