@@ -3,13 +3,12 @@
 # In this script, all packages and functions that will be needed throughout    # 
 # the ABM are loaded. It is sourced in master.R.                               #
 #                                                                              #
-# Developed by Florian Schiel and Jonathan Harrington                          #
+# ABM developed by Florian Schiel and Jonathan Harrington                      #
 # Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
-# Copyright 2018, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
-
 
 Sys.setlocale("LC_COLLATE", "C")
 require("data.table")
@@ -31,14 +30,19 @@ library("rlist")
 
 source(file.path(ABMpath, "functions/interactions.R"))
 source(file.path(ABMpath, "functions/calculations.R"))
+source(file.path(ABMpath, "functions/simulations.R"))
 source(file.path(ABMpath, "functions/splitandmerge.R"))
 
-
 coreABM <- function(logDir) {
-  ### main ABM routine
-  # Assumes params.R and loadLibraries.R sourced, input.df loaded
-  # Only a convenience function to avoid code duplication
-  # for single and multiple run modes (parallel) in ABMmain.R
+  # This function runs the main ABM routine. Assumes that params and input.df have been loaded.
+  # Function call in ABMmain.R.
+  #
+  # Args:
+  #    - logDir: as created in ABMmain.R
+  #
+  # Returns:
+  #    - nothing.
+  #
   
   pop <- create_population(input.df = input.df)
   
