@@ -1,56 +1,62 @@
 ################################################################################
 #                                                                              #
-# Parameter settings                                                           #
+# Parameter settings. Further documentation in GIT REPO                        #
 #                                                                              #
 # Developed by Florian Schiel and Jonathan Harrington                          #
 # Adapted by Johanna Cronenberg                                                #
 #                                                                              #
-# Copyright 2018, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
 
 
 params = list(
   
-  inputDataFile = "data/Antarctica.csv",
+  ##### Input data
+  
+  inputDataFile = "./data/asp.df.txt",        # absolute or relative path to input data
+  features = Cs(pre, post),                   # columns in inputDataFile that are used as features
+  group = Cs(Age),                            # the column in inputDataFile that defines the agents' groups
+  label = Cs(P),                              # the column in inputDataFile that stores the phonetic labels
+  word = Cs(W),                               # the column in inputDataFile that stores the word labels
+  speaker = Cs(Vpn),                          # the column in inputDataFile that stores the speakers' IDs or names
+  subsetSpeakers = NULL,                      # NULL or a vector of strings, e.g. c("spk01", "spk02", "spk03")
+  subsetLabels = NULL,                        # NULL or a vector of strings, e.g. c("a", "i", "u", "o")
   
   ##### Production
   
-  productionStrategy = "SMOTE",           # "targetWordTokens", "meanWords", "extraTokens", "MAP", "SMOTE"
-  productionMinTokens = 20,                 # used if productionStrategy == "SMOTE"
-  productionSMOTENN = 5,                    # used if productionStrategy == "SMOTE"
+  productionStrategy = "meanWords",           # "targetWordTokens" or "meanWords" or "extraTokens" or "MAP" or "SMOTE"
+  productionMinTokens = 20,                   # used only if productionStrategy == "SMOTE"
+  productionSMOTENN = 5,                      # used only if productionStrategy == "SMOTE"
   
   ##### Perception
   
-  memoryIntakeStrategy = "maxPosteriorProb",  # ... or "mahalanobisDistance"
-  memoryRemovalStrategy = "outlierRemoval",        # ... or "timeDecay"
-  maxMemoryExpansion = 1.0,
-  
-  splitAndMerge = FALSE, 
-  perceptionOOVNN = 5,                      # number of nearest neighbours used 
-                                            # to attribute label in case of unknown word
+  memoryIntakeStrategy = "maxPosteriorProb",  # "maxPosteriorProb" or "mahalanobisDistance"
+  memoryRemovalStrategy = "outlierRemoval",   # "outlierRemoval" or "timeDecay"
+  maxMemoryExpansion = 1.0,                   # any decimal number; conditions the agents' maximum memory sizes
+  splitAndMerge = FALSE,                      # apply split & merge algorithm or not
+  perceptionOOVNN = 5,                        # number of nearest neighbours used to attribute label in case of unknown word
   
   ##### Interaction
   
-  interactionPartners = "random",             # ... or "betweenGroups" or "withinGroups"
-  speakerProb = NULL,                         # ... or a vector of numerics
-  listenerProb = NULL,                        # ... or a vector of numerics
-  
+  interactionPartners = "random",             # "random" or "betweenGroups" or "withinGroups"
+  speakerProb = NULL,                         # NULL or a vector of numerics; whether some agents should speak more often than others
+  listenerProb = NULL,                        # NULL or a vector of numerics; whether some agents should listen more often than others
   
   ##### Runs
   
-  runMode = "single",                         # ... "single" or "multiple"
-  nrOfSnapshots = 5,                       # ... or any full positive number, e.g. 20
-  interactionsPerSnapshot = 100,           # ... or any full positive number, e.g. 125
-  multipleABMRuns = 100,                      # ... or any full positive number, e.g. 20
-  
+  runMode = "single",                         # "single" or "multiple"
+  multipleABMRuns = 100,                      # any full positive number; number of ABM runs if runMode == "multiple"
+  nrOfSnapshots = 5,                          # any full positive number; how often the population is archived during the simulation
+  interactionsPerSnapshot = 100,              # any full positive number; how many interactions take place per snapshot
 
   ##### Other options
   
-  splitAndMergeInterval = 100,                # ... or any full positive number, e.g. 75
-  doSplitAndMergeBeforeABM = FALSE            
-  # mahalanobisThreshold = 1.5,                 # ... or any other full positive number, e.g. 5.0
-  # subsetSpeakers = NULL,                      # ... or a vector of strings, e.g. c("spk01", "spk02", "spk03")
-  # subsetSegments = NULL,                      # ... or a vector of strings, e.g. c("a", "i", "u", "o")
-  
+  rootLogDir = "./logs/",                     # absolute or relative path to logging directory
+  doSplitAndMergeBeforeABM = FALSE,           # apply split & merge before the first interaction or not
+  splitAndMergeInterval = 100,                # any full positive number; after how many interactions an agent applies split & merge
+  mahalanobisThreshold = 1.5,                 # any full positive number; threshold if memoryIntakeStrategy == "mahalanobisDistance"
+  notes = "Extended andalusian data set"      # optional: Some further notes on the current simulation for better documentation
+
 )
+
