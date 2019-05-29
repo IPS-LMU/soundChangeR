@@ -1,55 +1,53 @@
-
 ################################################################################
 #                                                                              #
-# This script contains the ABM main routine                                    #
+# This script contains the ABM main routine.                                   #
 #                                                                              #
-# Developed by Florian Schiel and Jonathan Harrington                          #
+# ABM developed by Florian Schiel and Jonathan Harrington                      #
 # Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
-# Copyright 2018, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
 
-
-
-### ABM main routine
-
-# set path (change manually)
-ABMpath <- "/homes/m.gubian/ABM/ABM"
+# set path
+ABMpath <- "/homes/johanna.cronenberg/ABM/localRepo"
 setwd(ABMpath)
 
-# load libraries
+# load libraries and parameters
 source(file.path("Rcmd", "loadLibraries.R"))
-# root log dir for this experiment (change manually)
-rootLogDir <- "tmp/"
-dir.create(rootLogDir, showWarnings = FALSE, recursive = TRUE)
-# create simulations register if it does not exist
-createSimulationRegister(rootLogDir)
-
-# source parameter file
 source(file.path("data", "params.R"))
-params[['prettyName']] <- "Antarctica" # optional
-# load input data.table 
-input.df <- fread(params[['inputDataFile']], stringsAsFactors = F)
-# only session == 0 used in the simulation
-input.df <- input.df[session == 0]
 
-# original feature names (columns in input.df)
-params[['features']] <- Cs(kF10, kF11, kF12, kF20, kF21, kF22)
-# set their names as P1, P2, ... 
-setFeatureNames(input.df, params[['features']])
-# optional extra info
-params[['notes']] <- "All DCT for F1 and F2 (6 dim), phonemes: i:, I:, ju, u, ou, I."
-params[['codeCommit']] <- system("git log -n1 --format=format:\"%H\"", intern = TRUE)
+# create root logging directory and simulations register if they do not yet exist
+dir.create(params[["rootLogDir"]], showWarnings = FALSE, recursive = TRUE)
+createSimulationRegister(params[["rootLogDir"]])
 
-# simulation setup
+# create logging directory for this specific simulation
 params[['simulationName']] <- generateSimulationName()
-logDir <- file.path(rootLogDir, params[['simulationName']])
+logDir <- file.path(params[["rootLogDir"]], params[['simulationName']])
 dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
+
+# load input data.table
+input.df <- fread(params[['inputDataFile']], stringsAsFactors = F)
+input.df %>% setnames(c(params[["word"]], params[["speaker"]], params[["label"]], params[["group"]]), Cs(word, speaker, initial, group))
+input.df[, initial := as.character(initial)]
+input.df[, label := initial]
+input.df[, group := as.character(params[["group"]])]
+if (!is.null(params[["subsetSpeakers"]])) {
+  input.df <- input.df[speaker %in% params[["subsetSpeakers"]]]
+}
+if (!is.null(params[["subsetLabels"]])) {
+  input.df <- input.df[initial %in% params[["subsetLabels"]]]
+}
+setFeatureNames(input.df, params[['features']])
+
 # save input.df
 saveRDS(input.df, file.path(logDir, "input.rds"))
+
+# save commit hash so that it is known which version of the ABM was used here
+params[['commitHash']] <- system("git log -n1 --format=format:\"%H\"", intern = TRUE)
+
 # log simulation in register and save params
-registerSimulation(params, rootLogDir)
+registerSimulation(params, params[["rootLogDir"]])
 
 # run simulations
 if (params[['runMode']] == "single") {
@@ -62,11 +60,7 @@ if (params[['runMode']] == "single") {
   parLapply(cl, seq_len(params[['multipleABMRuns']]), function(abmName) {
     coreABM(file.path(logDir, abmName))
   })
-  stopCluster(cl)  
+  stopCluster(cl)
 }
-setCompleted(params[['simulationName']], rootLogDir)
-
-  
-
-
+setCompleted(params[['simulationName']], params[["rootLogDir"]])
 
