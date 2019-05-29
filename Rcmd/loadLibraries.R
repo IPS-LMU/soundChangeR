@@ -28,6 +28,7 @@ require("tools")
 library("Hmisc")
 library("magrittr")
 library("rlist")
+require("mclust")
 
 source(file.path(ABMpath, "functions/interactions.R"))
 source(file.path(ABMpath, "functions/calculations.R"))

@@ -42,7 +42,7 @@ splitandmerge <- function(agent, params, full = FALSE) {
                         merge = phonmerge)
   for (phoneFunc in c("split", "merge")) {
     didOneSM <- FALSE
-    while (phoneFuncList[[phoneFunc]](agent)) {
+    while (phoneFuncList[[phoneFunc]](agent, params[['splitMergeMethod']])) {
       if (params[['runMode']] == "single" && !didOneSM) {
         cat("Agent", agent$agentID, "did", phoneFunc, "\n")
         didOneSM <- TRUE
@@ -209,7 +209,7 @@ train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
 }
 
 
-phonmerge <- function(agent) {
+phonmerge <- function(agent, splitMergeMethod) {
   # This function performs the actual merge on two phoneme classes.
   # Function call in splitandmerge() in this script (see above).
   #
@@ -244,7 +244,8 @@ phonmerge <- function(agent) {
       ulab.pair.mask <- agent$labels$label %in% ulab.pair
       if (! split_is_justified(as.matrix(agent$features)[ulab.pair.mask,],
                                agent$labels$word[ulab.pair.mask],
-                               as.integer(as.factor(agent$labels$label[ulab.pair.mask])) )) {
+                               as.integer(as.factor(agent$labels$label[ulab.pair.mask])),
+                               splitMergeMethod)) {
         while ((mergeLabel <- paste(sample(letters[1:26])[1:6], collapse = "")) %in% ulab) {}
         # stri_rand_strings(1, 6, "[a-z]")) # this is a bit nicer than paste(sample... collapse = ""))
         # but for testing purpose I keep the original one, otherwise we get different random strings with same params[['seed']].
@@ -428,7 +429,7 @@ split_merge_metric <- function(P) {
 }
 
 
-split_is_justified <- function(P, wordValues, splitValues) {
+split_is_justified <- function(P, wordValues, splitValues, method = "t.test") {
   # This function essentially performs the t.test which 
   # decides whether or not two classes should be splitted.
   # Function calls in phonsplit.sub() and phonmerge() in this script.
@@ -442,22 +443,31 @@ split_is_justified <- function(P, wordValues, splitValues) {
   #    - a boolean; TRUE means that the split should be performed 
   #      according to the t-test and metric
   #
-  
-  metric.split <- numeric(nrow(P))
-  for (spl in 1:2) { # assume 2 clusters labelled as 1, 2
-    metric.split[splitValues == spl] <- split_merge_metric(P[splitValues == spl, ])
+  if (method == "t.test") {
+    metric.split <- numeric(nrow(P))
+    for (spl in 1:2) { # assume 2 clusters labelled as 1, 2
+      metric.split[splitValues == spl] <- split_merge_metric(P[splitValues == spl, ])
+    }
+    metric.merge <- split_merge_metric(P)
+    
+    aggrMetric <- data.table(metric = metric.split - metric.merge, word = wordValues)[
+      , .(mm = mean(metric)), by = word][
+        , mm]
+    
+    return(t.test(aggrMetric)$p.value < 0.05 & mean(aggrMetric) > 0)
+  } else if (method == "bic") {
+    model.merge <- MclustDA(P, "x", G = 1, modelNames = "XXX", verbose = FALSE)
+    model.split <- MclustDA(P, splitValues, G = 1, modelNames = "XXX", verbose = FALSE)
+    npar <- nVarParams("XXX", d = ncol(P), G = 1) + ncol(P)
+    bic.merge <- 2 * model.merge$loglik - npar * log(model.merge$n)
+    bic.split <- 2 * (model.split$models$`1`$loglik + model.split$models$`2`$loglik) -
+      2 * npar * log(model.merge$n)
+    return (bic.split > bic.merge)
   }
-  metric.merge <- split_merge_metric(P)
-  
-  aggrMetric <- data.table(metric = metric.split - metric.merge, word = wordValues)[
-    , .(mm = mean(metric)), by = word][
-      , mm]
-  
-  return(t.test(aggrMetric)$p.value < 0.05 & mean(aggrMetric) > 0)
 }
 
 
-phonsplit.sub <- function(P, wordValues, label) {
+phonsplit.sub <- function(P, wordValues, label, splitMergeMethod) {
   # This function returns the new label if a split is performed.
   # Function call in phonsplit() in this script.
   #
@@ -488,7 +498,7 @@ phonsplit.sub <- function(P, wordValues, label) {
   if (length(unique(cluster)) == 2 & all(sapply(1:2, function(cl) {
     length(unique(wordValues[cluster == cl])) > 1
   }))) {
-    if (split_is_justified(P, wordValues, cluster)) {
+    if (split_is_justified(P, wordValues, cluster, splitMergeMethod)) {
       label <- paste(label, cluster, sep = ".") 
     }
   }
@@ -496,7 +506,7 @@ phonsplit.sub <- function(P, wordValues, label) {
 }
 
 
-phonsplit <- function(agent) {
+phonsplit <- function(agent, splitMergeMethod) {
   # This function performs the actual split on two phoneme classes.
   # Function call in splitandmerge() in this script (see above).
   # 
@@ -511,7 +521,8 @@ phonsplit <- function(agent) {
   for (lab in unique(agent$labels$label[agent$labels$valid])) {
      splitLab <- phonsplit.sub(as.matrix(agent$features)[agent$labels$label == lab & agent$labels$valid, ],
                                agent$labels$word[agent$labels$label == lab & agent$labels$valid],
-                               lab)
+                               lab,
+                               splitMergeMethod)
      if (splitLab[1] != lab) {
        agent$labels[label == lab, label := splitLab]
        didSplit <- TRUE
