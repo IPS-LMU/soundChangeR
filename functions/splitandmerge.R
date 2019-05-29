@@ -1,29 +1,13 @@
 ################################################################################
 #                                                                              #
-# This script contains the following functions that perform splits & mergers:  #
+# This script contains the functions that perform splits & mergers.            #
 #                                                                              #
-# - splitandmerge(agent, full = FALSE)                                         #
-# - splitandmerge_(agent, full = FALSE)                                        #
-# - splitandmergefull(agent)                                                   #
-# - splitandmerge_(agent)                                                      #
-# - train_gaussian_model(x, lab = rep("x", nrow(x)))                           #
-# - phonmerge(agent)                                                           #
-# - phonmerge_(Pdata, wordclass, phonclass)                                    #
-# - phonmerge_.sub(param, wordlab, phonlab, threshold = 0.05)                  #
-# - split_merge_metric(P)                                                      #
-# - split_is_justified(P, wordValues, splitValues)                             #
-# - phonsplit.sub(P, wordValues, label)                                        #
-# - phonsplit(agent)                                                           #
-# - phonsplit_(Pdata, wordclass, phonclass)                                    #
-# - phonsplit_.sub(param, wordlab, phonlab, threshold = 0.05)                  #
-#                                                                              #
-# Developed by Florian Schiel and Jonathan Harrington                          #
+# ABM developed by Florian Schiel and Jonathan Harrington                      #
 # Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
-# Copyright 2018, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
-
 
 splitandmerge <- function(agent, full = FALSE) {
   # This function performs splits and mergers on a perceiving agent.
@@ -51,7 +35,6 @@ splitandmerge <- function(agent, full = FALSE) {
     }
   }
 }
-
 
 splitandmerge_ <- function(agent, full = FALSE) {
   # Another function for split & merge. Currently no function call.
@@ -82,7 +65,6 @@ splitandmerge_ <- function(agent, full = FALSE) {
   }
 }
 
-
 splitandmergefull <- function(agent) {
   # This function performs splits and mergers on an agent until
   # no more changes occur.
@@ -94,6 +76,7 @@ splitandmergefull <- function(agent) {
   # Returns:
   #    - agent: the same except with changed labels, if split&merge occurred
   #
+  
   oldsplitMergeAgentLabel <- agent$memory$label
   agent$memory$label <- phonsplit_(agent$memory$P, agent$memory$word, agent$memory$label)
   if (sum(oldsplitMergeAgentLabel != agent$memory$label) > 0 & params[['runMode']] == "single") {
@@ -129,7 +112,6 @@ splitandmergefull <- function(agent) {
   return(agent)
 }
 
-
 splitandmerge_ <- function(agent) {
   # This function uses the split&merge algorithm on the given agent.
   # Currently no function call.
@@ -156,7 +138,6 @@ splitandmerge_ <- function(agent) {
   }
   return(agent)
 }
-
 
 train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
   # This function builds a Gaussian distribution on the basis of data in x.
@@ -207,7 +188,6 @@ train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
   }
   return(mat)
 }
-
 
 phonmerge <- function(agent) {
   # This function performs the actual merge on two phoneme classes.
@@ -261,7 +241,6 @@ phonmerge <- function(agent) {
   }
   return (didMerge)
 }
-
 
 phonmerge_ <- function(Pdata, wordclass, phonclass) {
   # This function performs the actual merge on two phoneme classes.
@@ -342,7 +321,6 @@ phonmerge_ <- function(Pdata, wordclass, phonclass) {
   return(phonclass)
 }
 
-
 phonmerge_.sub <- function(param, wordlab, phonlab, threshold = 0.05) {
   # This function is part of the merge algorithm and makes the
   # decision on whether or not the merger shall take place based
@@ -403,7 +381,6 @@ phonmerge_.sub <- function(param, wordlab, phonlab, threshold = 0.05) {
   return(mergecat)
 }
 
-
 split_merge_metric <- function(P) {
   # This function computes a metric on each row of P based on a Gaussian model
   # trained on P itself. 
@@ -426,7 +403,6 @@ split_merge_metric <- function(P) {
     as.numeric(distance(P, tdat, metric = "bayes"))
   }
 }
-
 
 split_is_justified <- function(P, wordValues, splitValues) {
   # This function essentially performs the t.test which 
@@ -455,7 +431,6 @@ split_is_justified <- function(P, wordValues, splitValues) {
   
   return(t.test(aggrMetric)$p.value < 0.05 & mean(aggrMetric) > 0)
 }
-
 
 phonsplit.sub <- function(P, wordValues, label) {
   # This function returns the new label if a split is performed.
@@ -495,7 +470,6 @@ phonsplit.sub <- function(P, wordValues, label) {
   return(label)
 }
 
-
 phonsplit <- function(agent) {
   # This function performs the actual split on two phoneme classes.
   # Function call in splitandmerge() in this script (see above).
@@ -520,7 +494,6 @@ phonsplit <- function(agent) {
    return(didSplit)
 }
 
-
 phonsplit_ <- function(Pdata, wordclass, phonclass) {
   # This function performs the actual split on two phoneme classes.
   # Function calls in splitandmergefull() and splitandmerge_()
@@ -544,7 +517,6 @@ phonsplit_ <- function(Pdata, wordclass, phonclass) {
   }
   return(phonclass)
 }
-
 
 phonsplit_.sub <- function(param, wordlab, phonlab) {
   # This function is part of the split algorithm and tests whether a
