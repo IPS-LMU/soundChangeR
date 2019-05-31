@@ -11,14 +11,17 @@
 ################################################################################
 
 convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
-  # This function ...
-  # Function call in simulations.R.
+  # This function converts the population list into a data.table.
+  # Function call in simulations.R, savePopulation().
   #
   # Args:
-  #    - 
+  #    - pop: population list
+  #    - extraCols: a list of attributes that will be part of the 
+  #      population name when it is saved during savePopulation. 
+  #      Default: list(condition = "x")
   #
   # Returns:
-  #    - 
+  #    - the population as a data.table
   #
   
   rbindlist(lapply(seq_along(pop), function (i) {
@@ -40,12 +43,12 @@ convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
 #   # Function call in ...
 #   #
 #   # Args:
-#   #    - 
+#   #    -
 #   #
 #   # Returns:
-#   #    - 
+#   #    -
 #   #
-#   
+# 
 #   population <- list()
 #   Pcols <- grep("^P[[:digit:]]+$", colnames(pop.dt), value = TRUE)
 #   for (id in pop.dt$agentID %>% unique) {
@@ -61,18 +64,20 @@ convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
 # }
 
 MAPadaptGaussian <- function(adaptData, priorData, priorAdaptRatio) {
-  # This function ...
-  # Function call in interactions.R.
+  # This function estimates a Gaussian, taking into account the prior Gaussian across
+  # all word tokens, and then tries to fit that to the few tokens of the target word.
+  # THIS FUNCTION CANNOT BE USED CURRENTLY because params.R misses productionMAPPriorAdaptRatio.
+  # Function call in interactions.R, produce_token().
   #
   # Args:
-  #    - 
+  #    - adaptData: tokens of the target word
+  #    - priorData: tokens of all words in the same phonological class
+  #    - priorAdaptRatio: weight ratio between adaptData and priorData
   #
   # Returns:
-  #    - 
+  #    - res: a list of mean and covariance matrix
   #
   
-  # https://stats.stackexchange.com/questions/50844/estimating-the-covariance-posterior-distribution-of-a-multivariate-gaussian
-  # https://en.wikipedia.org/wiki/Conjugate_prior
   # k_0 == nu_0 == number of prior samples, this is the 'theoretical one'
   # k_0 <- nu_0 <- nrow(priorData)
   n <- nrow(adaptData)
@@ -116,16 +121,23 @@ MAPadaptGaussian <- function(adaptData, priorData, priorAdaptRatio) {
 # }
 
 knearest_Fallback <- function(cloud, targetIndices, K) {
-  # This function ...
-  # Function call in interactions.R.
+  # This function is used as an addition to SMOTE; i.e. if additional values 
+  # (nExtraTokens > 0; see produce_token()) should be used for SMOTE, they are 
+  # sampled in this function by using a K nearest neighbor approach.
+  # Function call in interactions.R, produce_token().
   #
   # Args:
-  #    - 
+  #    - cloud: matrix of feature values
+  #    - targetIndices: list of indices
+  #    - K: number of nearest neighbors
   #
   # Returns:
-  #    - 
+  #    - list of targetIndices and fallback:
   #
   
+  # stop if there is an empty cloud of feature values, if the words from the
+  # targetIndices ar enot part of the cloud, if K <= 0, or if K + 1 is bigger
+  # than the number of data points in the cloud
   if (nrow(cloud) < 1) {
     stop("knearest_Fallback: Empty input cloud")
   }
@@ -135,15 +147,25 @@ knearest_Fallback <- function(cloud, targetIndices, K) {
   if (K <= 0 | K + 1 > nrow(cloud)) {
     stop(paste("knearest_Fallback: invalid number of nearest neighbours requested: K =", K))
   }
+  
+  # compute number of tokens to be sampled 
   nFallback <- K + 1 - length(targetIndices)
+  
+  # if it turns out that there are enough ...
   if (nFallback <= 0) {
-    return (targetIndices)
+    return(targetIndices)
   }
+  
+  # apply a K nearest neighbor algorithm on the cloud,
+  # and sample as many a nFallback tokens from the unique neighbors 
+  # that are not equal to the targetIndices
   fallback <- knnx.index(cloud, cloud[targetIndices, , drop=FALSE], K + 1) %>%
     as.vector %>%
     .[!. %in% targetIndices] %>%
     unique %>%
     sample(nFallback)
+  
+  # return a list of targetIndices and fallback
   return(c(targetIndices, fallback))
 }
 
