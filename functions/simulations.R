@@ -25,7 +25,8 @@ savePopulation <- function(pop, extraCols = list(condition = "x"), logDir) {
   
   dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
   saveRDS(convert_pop_list_to_dt(pop, extraCols),
-          file = file.path(logDir, paste("pop", unlist(extraCols), "rds", sep = ".")))
+          file = file.path(logDir, paste("pop", unlist(extraCols), "rds", sep = "."))
+  )
 }
 
 saveInteractionsLog <- function(interactionsLog, logDir) {
@@ -129,7 +130,7 @@ setCompleted <- function(simulationName_, rootLogDir) {
 
 deleteSimulation <- function(simulationName_, rootLogDir) {
   # This function ...
-  # Function call in simulations.R. Utility function.
+  # Function call in ...
   #
   # Args:
   #    - 
@@ -146,7 +147,7 @@ deleteSimulation <- function(simulationName_, rootLogDir) {
 
 purgeSimulation <- function(simulationName_, rootLogDir) {
   # This function ...
-  # Function call in simulation.R. Utility function.
+  # Function call in ...
   #
   # Args:
   #    - 
@@ -178,7 +179,7 @@ purgeNotCompleted <- function(rootLogDir) {
 
 filterSimulations <- function(rootLogDir, ..., condList = NULL) {
   # This function ...
-  # Function call in simulations.R. Utility function.
+  # Function call in ...
   #
   # Args:
   #    - 
@@ -199,33 +200,33 @@ filterSimulations <- function(rootLogDir, ..., condList = NULL) {
   reg[matching] %>% list.select(simulationName) %>% unlist
 }
 
-# getFieldFromSimRegister <- function(rootLogDir, ...) {
-#   # This function ...
-#   # Function call in ... Utility function?
-#   #
-#   # Args:
-#   #    - 
-#   #
-#   # Returns:
-#   #    - 
-#   #
-#   
-#   regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
-#   reg <- list.load(regFile)
-#   list.map(reg, ...)
-# }
+getFieldFromSimRegister <- function(rootLogDir, ...) {
+  # This function ...
+  # Function call in ...
+  #
+  # Args:
+  #    - 
+  #
+  # Returns:
+  #    - 
+  #
+  
+  regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
+  reg <- list.load(regFile)
+  list.map(reg, ...)
+}
 
-# getParams <- function(rootLogDir, simulationName) {
-#   # This function ...
-#   # Function call in ...
-#   #
-#   # Args:
-#   #    - 
-#   #
-#   # Returns:
-#   #    - 
-#   #
-#   
-#   list.load(file.path(rootLogDir, simulationName, PARAMS_FILENAME))
-# }
+getParams <- function(rootLogDir, simulationName) {
+  # This function ...
+  # Function call in ...
+  #
+  # Args:
+  #    - 
+  #
+  # Returns:
+  #    - 
+  #
+  
+  list.load(file.path(rootLogDir, simulationName, PARAMS_FILENAME))
+}
 

@@ -9,7 +9,7 @@
 #                                                                              #
 ################################################################################
 
-splitandmerge <- function(agent, full = FALSE) {
+splitandmerge <- function(agent, params, full = FALSE) {
   # This function performs splits and mergers on a perceiving agent.
   # Function call in interactions.R.
   #

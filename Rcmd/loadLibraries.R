@@ -27,6 +27,7 @@ require("tools")
 library("Hmisc")
 library("magrittr")
 library("rlist")
+library("dtt")
 
 source(file.path(ABMpath, "functions/interactions.R"))
 source(file.path(ABMpath, "functions/calculations.R"))
@@ -44,18 +45,18 @@ coreABM <- function(logDir) {
   #    - nothing.
   #
   
-  pop <- create_population(input.df = input.df)
+  pop <- create_population(input.df = input.df, params = params)
   
   if (params[['splitAndMerge']] == TRUE & params[['doSplitAndMergeBeforeABM']] == TRUE) {
     for (j in seq_along(pop)) {
-      splitandmerge(pop[[j]], TRUE)
+      splitandmerge(pop[[j]], params, full = TRUE)
     }
   }
   savePopulation(pop,
                  extraCols = list(condition = 0),
                  logDir = logDir)
   
-  interactionsLog <- perform_interactions(pop, logDir)
+  interactionsLog <- perform_interactions(pop, logDir, params)
   saveInteractionsLog(interactionsLog, logDir = logDir)
 }
 
