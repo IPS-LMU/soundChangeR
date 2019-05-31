@@ -28,14 +28,13 @@ dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
 
 # load input data.table
 input.df <- fread(params[['inputDataFile']], stringsAsFactors = F)
-input.df %>% setnames(c(params[["word"]], params[["speaker"]], params[["label"]], params[["group"]]), Cs(word, speaker, initial, group))
-input.df[, initial := as.character(initial)]
-input.df[, label := initial]
+input.df %>% setnames(c(params[["word"]], params[["speaker"]], params[["label"]], params[["initial"]], params[["group"]]), 
+                      Cs(word, speaker, label, initial, group))
 if (!is.null(params[["subsetSpeakers"]])) {
   input.df <- input.df[speaker %in% params[["subsetSpeakers"]]]
 }
 if (!is.null(params[["subsetLabels"]])) {
-  input.df <- input.df[initial %in% params[["subsetLabels"]]]
+  input.df <- input.df[label %in% params[["subsetLabels"]]]
 }
 setFeatureNames(input.df, params[['features']])
 

@@ -17,11 +17,12 @@ params = list(
   inputDataFile = "./data/asp.df.txt",        # absolute or relative path to input data
   features = Cs(pre, post),                   # columns in inputDataFile that are used as features
   group = Cs(Age),                            # the column in inputDataFile that defines the agents' groups
-  label = Cs(P),                              # the column in inputDataFile that stores the phonetic labels
+  label = Cs(P),                              # the column in inputDataFile that stores the phonological labels; these labels will be changed during the interactions
+  initial = Cs(Place),                            # the column in inputDataFile that stores the phonological labels; these labels will remain unchanged
   word = Cs(W),                               # the column in inputDataFile that stores the word labels
   speaker = Cs(Vpn),                          # the column in inputDataFile that stores the speakers' IDs or names
   subsetSpeakers = NULL,                      # NULL or a vector of strings, e.g. c("spk01", "spk02", "spk03")
-  subsetLabels = NULL,                        # NULL or a vector of strings, e.g. c("a", "i", "u", "o")
+  subsetLabels = c("st", "t"),                        # NULL or a vector of strings, e.g. c("a", "i", "u", "o")
   
   ##### Production
   
