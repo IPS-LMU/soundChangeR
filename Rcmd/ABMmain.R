@@ -46,7 +46,7 @@ saveRDS(input.df, file.path(logDir, "input.rds"))
 params[['commitHash']] <- system("git log -n1 --format=format:\"%H\"", intern = TRUE)
 
 # log simulation in register and save params
-registerSimulation(params, params[["rootLogDir"]])
+registerSimulation(params)
 
 # run simulations
 if (params[['runMode']] == "single") {
