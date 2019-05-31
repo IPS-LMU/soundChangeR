@@ -31,7 +31,6 @@ input.df <- fread(params[['inputDataFile']], stringsAsFactors = F)
 input.df %>% setnames(c(params[["word"]], params[["speaker"]], params[["label"]], params[["group"]]), Cs(word, speaker, initial, group))
 input.df[, initial := as.character(initial)]
 input.df[, label := initial]
-input.df[, group := as.character(params[["group"]])]
 if (!is.null(params[["subsetSpeakers"]])) {
   input.df <- input.df[speaker %in% params[["subsetSpeakers"]]]
 }
