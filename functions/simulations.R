@@ -106,7 +106,7 @@ registerSimulation <- function(params) {
   params[["label"]] <- as.character(params[["label"]])
   list.save(params, file.path(params[["rootLogDir"]], params[['simulationName']], PARAMS_FILENAME))
   params[['completed']] <- FALSE
-  regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
+  regFile <- file.path(params[["rootLogDir"]], SIM_REG_FILENAME)
   list.load(regFile) %>%
     list.append(params) %>%
     list.save(regFile)
