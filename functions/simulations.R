@@ -91,7 +91,7 @@ createSimulationRegister <- function(rootLogDir, force = FALSE) {
   }
 }
 
-registerSimulation <- function(params, rootLogDir) {
+registerSimulation <- function(params) {
   # This function ...
   # Function call in ABMmain.R.
   #
@@ -102,8 +102,10 @@ registerSimulation <- function(params, rootLogDir) {
   #    - 
   #
   
-  list.save(params, file.path(rootLogDir, params[['simulationName']], PARAMS_FILENAME))
-  params['completed'] <- FALSE
+  params[["initial"]] <- as.character(params[["initial"]])
+  params[["label"]] <- as.character(params[["label"]])
+  list.save(params, file.path(params[["rootLogDir"]], params[['simulationName']], PARAMS_FILENAME))
+  params[['completed']] <- FALSE
   regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
   list.load(regFile) %>%
     list.append(params) %>%
