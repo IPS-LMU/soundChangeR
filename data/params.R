@@ -33,7 +33,8 @@ params = list(
   ##### Perception
   
   memoryIntakeStrategy = "maxPosteriorProb",  # "maxPosteriorProb" or "mahalanobisDistance"
-  memoryRemovalStrategy = "outlierRemoval",   # "outlierRemoval" or "timeDecay"
+  decisionProcess = 1,                        # 1 (producedLabel vs. all other Labels) or 2 (producedLabel vs. all other labels AND producedInitial vs. initials with same POA)
+  memoryRemovalStrategy = "timeDecay",        # "outlierRemoval" or "timeDecay"
   maxMemoryExpansion = 1.0,                   # any decimal number; conditions the agents' maximum memory sizes
   splitAndMerge = FALSE,                      # apply split & merge algorithm or not
   perceptionOOVNN = 5,                        # number of nearest neighbours used to attribute label in case of unknown word
@@ -47,13 +48,13 @@ params = list(
   ##### Runs
   
   runMode = "single",                         # "single" or "multiple"
-  multipleABMRuns = 100,                      # any full positive number; number of ABM runs if runMode == "multiple"
-  nrOfSnapshots = 5,                          # any full positive number; how often the population is archived during the simulation
-  interactionsPerSnapshot = 100,              # any full positive number; how many interactions take place per snapshot
+  multipleABMRuns = 10,                       # any full positive number; number of ABM runs if runMode == "multiple"
+  nrOfSnapshots = 50,                         # any full positive number; how often the population is archived during the simulation
+  interactionsPerSnapshot = 150,              # any full positive number; how many interactions take place per snapshot
 
   ##### Other options
   
-  rootLogDir = "./logs/",                     # absolute or relative path to logging directory
+  rootLogDir = "./logs",                      # absolute or relative path to logging directory
   doSplitAndMergeBeforeABM = FALSE,           # apply split & merge before the first interaction or not
   splitAndMergeInterval = 100,                # any full positive number; after how many interactions an agent applies split & merge
   mahalanobisThreshold = 1.5,                 # any full positive number; threshold if memoryIntakeStrategy == "mahalanobisDistance"
