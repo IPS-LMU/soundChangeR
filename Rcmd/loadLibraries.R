@@ -39,7 +39,7 @@ coreABM <- function(logDir) {
   # Function call in ABMmain.R.
   #
   # Args:
-  #    - logDir: as created in ABMmain.R
+  #    - logDir: path to logDir
   #
   # Returns:
   #    - nothing.
@@ -52,11 +52,11 @@ coreABM <- function(logDir) {
       splitandmerge(pop[[j]], params, full = TRUE)
     }
   }
-  savePopulation(pop,
+  save_population(pop,
                  extraCols = list(condition = 0),
                  logDir = logDir)
   
   interactionsLog <- perform_interactions(pop, logDir, params)
-  saveInteractionsLog(interactionsLog, logDir = logDir)
+  save_interactions_log(interactionsLog, logDir = logDir)
 }
 
