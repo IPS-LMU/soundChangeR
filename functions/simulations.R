@@ -12,15 +12,19 @@
 SIM_REG_FILENAME <- "simulations_register.rds"
 PARAMS_FILENAME <- "params.yaml"
 
-savePopulation <- function(pop, extraCols = list(condition = "x"), logDir) {
-  # This function ...
-  # Function call in interactions.R.
+save_population <- function(pop, extraCols = list(condition = "x"), logDir) {
+  # This function saves the population as an RDS archive.
+  # Function call in interactions.R, perform_interactions(); and 
+  # loadLibraries.R, coreABM().
   #
   # Args:
-  #    - 
+  #    - pop: list of the population
+  #    - extraCols: a list of columns to be added to the final 
+  #      pop data.table. Default: list(condition = "x")
+  #    - logDir: path to the logging directory
   #
   # Returns:
-  #    - 
+  #    - nothing.
   #
   
   dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
@@ -29,15 +33,17 @@ savePopulation <- function(pop, extraCols = list(condition = "x"), logDir) {
   )
 }
 
-saveInteractionsLog <- function(interactionsLog, logDir) {
-  # This function ...
-  # Function call in loadLibraries.R.
+save_interactions_log <- function(interactionsLog, logDir) {
+  # This function saves the interaction log as a RDS archive.
+  # Function call in loadLibraries.R, coreABM().
   #
   # Args:
-  #    - 
+  #    - interactionsLog: a data table that contains information
+  #      on the interactions
+  #    - logDir: path to the logging directory
   #
   # Returns:
-  #    - 
+  #    - nothing.
   #
   
   dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
@@ -46,44 +52,51 @@ saveInteractionsLog <- function(interactionsLog, logDir) {
   )
 }
 
-generateSimulationName <- function(prefix = "ABM") {
-  # This function ...
+generate_simulation_name <- function(prefix = "ABM") {
+  # This function generates a name for the simulation out of
+  # a given prefix and the system time.
   # Function call in ABMmain.R.
   #
   # Args:
-  #    - 
+  #    - prefix: string to be added at the beginning of
+  #      the simulation name. Default: "ABM"
   #
   # Returns:
-  #    - 
+  #    - the full simulation name as a string.
   #
   
   paste0(prefix, format(Sys.time(), "%Y%m%d%H%M%S"))
 }
 
-setFeatureNames <- function(input.df, cols) {
-  # This function ...
+set_feature_names <- function(input.df, cols) {
+  # This function renames the feature columns to P1, P2, P3, etc.
   # Function call in ABMmain.R.
   #
   # Args:
-  #    - 
+  #    - input.df: the input data.frame
+  #    - cols: a list of column names from input.df
   #
   # Returns:
-  #    - 
+  #    - the input.df with changed column names
   #
   
   stopifnot(all(cols %in% colnames(input.df)))
   input.df %>% setnames(cols, paste0("P", seq_along(cols)))
 }
 
-createSimulationRegister <- function(rootLogDir, force = FALSE) {
-  # This function ...
+create_simulation_register <- function(rootLogDir, force = FALSE) {
+  # This function creates the central simulation register if 
+  # it does not yet exist.
   # Function call in ABMmain.R.
   #
   # Args:
-  #    - 
+  #    - rootLogDir: path to the root logging directory
+  #    - force: a boolean that indicates whether or not to force
+  #      the creation of the register even if it already exists.
+  #      Default: FALSE.
   #
   # Returns:
-  #    - 
+  #    - nothing.
   #
   
   if (!file.exists(file.path(rootLogDir, SIM_REG_FILENAME)) | force) {
@@ -91,15 +104,16 @@ createSimulationRegister <- function(rootLogDir, force = FALSE) {
   }
 }
 
-registerSimulation <- function(params) {
-  # This function ...
+register_simulation <- function(params) {
+  # This function adds the parameters of current simulation 
+  # to the central simulation register.
   # Function call in ABMmain.R.
   #
   # Args:
-  #    - 
+  #    - params: a list of params from params.R
   #
   # Returns:
-  #    - 
+  #    - nothing.
   #
   
   params[["initial"]] <- as.character(params[["initial"]])
@@ -112,15 +126,16 @@ registerSimulation <- function(params) {
     list.save(regFile)
 }
 
-setCompleted <- function(simulationName_, rootLogDir) {
-  # This function ...
+set_completed <- function(simulationName_, rootLogDir) {
+  # This function registers the current simulation as completed.
   # Function call in ABMmain.R.
   #
   # Args:
-  #    - 
+  #    - simulationName_: the simulation name as a string
+  #    - rootLogDir: the path to the root logging directory
   #
   # Returns:
-  #    - 
+  #    - nothing.
   #
   
   regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
@@ -130,15 +145,16 @@ setCompleted <- function(simulationName_, rootLogDir) {
   list.save(reg, regFile)
 }
 
-deleteSimulation <- function(simulationName_, rootLogDir) {
-  # This function ...
-  # Function call in ...
+delete_simulation <- function(simulationName_, rootLogDir) {
+  # This function deletes a simulation from the central simulation register.
+  # Function call in simulations.R, purge_simulation().
   #
   # Args:
-  #    - 
+  #    - simulationName_: the simulation name as a string
+  #    - rootLogDir: the path to the root logging directory
   #
   # Returns:
-  #    - 
+  #    - nothing.
   #
   
   regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
@@ -147,47 +163,53 @@ deleteSimulation <- function(simulationName_, rootLogDir) {
     list.save(regFile)
 }
 
-purgeSimulation <- function(simulationName_, rootLogDir) {
-  # This function ...
-  # Function call in ...
+purge_simulation <- function(simulationName_, rootLogDir) {
+  # This function deletes the simulation from the 
+  # register and also deletes the simulation results themselves.
+  # Function call in simulations.R, purge_uncompleted_simulations().
   #
   # Args:
-  #    - 
+  #    - simulationName_: the simulation name as a string
+  #    - rootLogDir: the path to the root logging directory
   #
   # Returns:
-  #    - 
+  #    - nothing.
   #
   
-  deleteSimulation(simulationName_, rootLogDir)
+  delete_simulation(simulationName_, rootLogDir)
   system(paste("rm -rf", file.path(rootLogDir, simulationName_)))
 }
 
-purgeNotCompleted <- function(rootLogDir) {
-  # This function ...
-  # Currently no function call. Utility function.
+purge_uncompleted_simulations <- function(rootLogDir) {
+  # This function purges all simulations that have not been completed.
+  # No function call (utility function).
   #
   # Args:
-  #    - 
+  #    - rootLogDir: the path to the root logging directory
   #
   # Returns:
-  #    - 
+  #    - nothing.
   #
   
-  lapply(filterSimulations(rootLogDir, completed == FALSE),
+  lapply(filter_simulations(rootLogDir, completed == FALSE),
          function(simName) {
-           purgeSimulation(simName, rootLogDir)
+           purge_simulation(simName, rootLogDir)
          })
 }
 
-filterSimulations <- function(rootLogDir, ..., condList = NULL) {
-  # This function ...
-  # Function call in ...
+filter_simulations <- function(rootLogDir, ..., condList = NULL) {
+  # This function searches for simulations in the central register
+  # that match certain params or conditions.
+  # Function call in simulations.R, purge_uncompleted_simulations().
   #
   # Args:
-  #    - 
+  #    - rootLogDir: the path to the root logging directory
+  #    - ...: parameters that characterise the searched simulation(s)
+  #    - condList: list of parameters that characterise the 
+  #      searched simulation(s). Default: NULL.
   #
   # Returns:
-  #    - 
+  #    - the name of the matching simulation(s).
   #
   
   regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
@@ -202,15 +224,17 @@ filterSimulations <- function(rootLogDir, ..., condList = NULL) {
   reg[matching] %>% list.select(simulationName) %>% unlist
 }
 
-getFieldFromSimRegister <- function(rootLogDir, ...) {
-  # This function ...
-  # Function call in ...
+get_field_from_sim_register <- function(rootLogDir, ...) {
+  # This function returns the values of any parameter for all simulations 
+  # that are stored in the central register.
+  # No function call (utility function).
   #
   # Args:
-  #    - 
+  #    - rootLogDir: the path to the root logging directory
+  #    - ...: parameters that characterise the simulation(s)
   #
   # Returns:
-  #    - 
+  #    - a list of the parameter values for all simulations.
   #
   
   regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
@@ -218,15 +242,17 @@ getFieldFromSimRegister <- function(rootLogDir, ...) {
   list.map(reg, ...)
 }
 
-getParams <- function(rootLogDir, simulationName) {
-  # This function ...
-  # Function call in ...
+get_params <- function(rootLogDir, simulationName) {
+  # This function loads the list of parameters in params.yaml 
+  # for a specific simulation.
+  # No function call (utility function).
   #
   # Args:
-  #    - 
+  #    - rootLogDir: the path to the root logging directory
+  #    - simulationName: name of the simulation as a string
   #
   # Returns:
-  #    - 
+  #    - nothing.
   #
   
   list.load(file.path(rootLogDir, simulationName, PARAMS_FILENAME))
