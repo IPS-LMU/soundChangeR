@@ -19,10 +19,10 @@ source(file.path("data", "params.R"))
 
 # create root logging directory and simulations register if they do not yet exist
 dir.create(params[["rootLogDir"]], showWarnings = FALSE, recursive = TRUE)
-createSimulationRegister(params[["rootLogDir"]])
+create_simulation_register(params[["rootLogDir"]])
 
 # create logging directory for this specific simulation
-params[['simulationName']] <- generateSimulationName()
+params[['simulationName']] <- generate_simulation_name()
 logDir <- file.path(params[["rootLogDir"]], params[['simulationName']])
 dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
 
@@ -37,7 +37,7 @@ if (!is.null(params[["subsetSpeakers"]])) {
 if (!is.null(params[["subsetLabels"]])) {
   input.df <- input.df[label %in% params[["subsetLabels"]]]
 }
-setFeatureNames(input.df, params[['features']])
+set_feature_names(input.df, params[['features']])
 
 # save input.df
 saveRDS(input.df, file.path(logDir, "input.rds"))
@@ -46,7 +46,7 @@ saveRDS(input.df, file.path(logDir, "input.rds"))
 params[['commitHash']] <- system("git log -n1 --format=format:\"%H\"", intern = TRUE)
 
 # log simulation in register and save params
-registerSimulation(params)
+register_simulation(params)
 
 # run simulations
 if (params[['runMode']] == "single") {
@@ -61,5 +61,7 @@ if (params[['runMode']] == "single") {
   })
   stopCluster(cl)
 }
-setCompleted(params[['simulationName']], params[["rootLogDir"]])
+system(paste("cp", file.path(ABMpath, "Rcmd/ABMmain.R"), logDir))
+system(paste("cp", file.path(ABMpath, "data/params.R"), logDir))
+set_completed(params[['simulationName']], params[["rootLogDir"]])
 
