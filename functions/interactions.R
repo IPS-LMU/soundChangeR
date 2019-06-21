@@ -31,7 +31,9 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   population <- list()
   Pcols <- grep("^P[[:digit:]]+$", colnames(input.df), value = TRUE)
   
-  # currently no other possibility than method == "speaker_is_agent"
+  # currently no other possibility than method == "speaker_is_agent";
+  # however, it is planned to implement the possibility that an agent does not only have 
+  # tokens from one real speaker, but also some tokens from other speakers of the same group
   if (method == "speaker_is_agent") {
     sortedSpeakers <- input.df$speaker %>% unique %>% sort
     nrOfAgents <- length(sortedSpeakers)
@@ -202,6 +204,8 @@ choose_word <- function(labels, method = "random_index") {
     stop("choose_word: Empty labels table (empty agent memory")
   } 
   
+  # currently, there is no other method than random_index;
+  # however, it is planned to implement lexical frequencies here.
   if (method == "random_index" | is.null(method)) {
     labels$word[sample(which(labels$valid == TRUE), 1)]
   } else {
@@ -282,17 +286,9 @@ produce_token <- function(agent, params) {
   }
   
   # estimate Gaussian distributions from wordFeatures
-  if (params[['productionStrategy']] %in% c("targetWordTokens", "meanWords", "extraTokens", "SMOTE")) {
-    tokenGauss <- list(
-      mean = apply(wordFeatures, 2, mean),
-      cov = cov(wordFeatures))
-    
-    # MAP is UNAVAILABLE currently as productionMAPPriorAdaptRatio is missing from params.R
-  } else if (params[['productionStrategy']] == "MAP") {
-    tokenGauss <- MAP_adapt_gaussian(wordFeatures, as.matrix(agent$features)[agent$labels$label == producedLabel & 
-                                                                               agent$labels$valid == TRUE, , drop = FALSE], 
-                                     params[['productionMAPPriorAdaptRatio']])
-  }
+  tokenGauss <- list(
+    mean = apply(wordFeatures, 2, mean),
+    cov = cov(wordFeatures))
   
   # trick to ensure that covariance of tokenGauss is positive
   epsilon_diag <- 1e-6
@@ -341,58 +337,24 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
   if (params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr")) {
     # execute the QDA (Quadrativ Discriminant Analysis)
     if (!{cacheRow <- which(perceiver$cache$name == "qda"); perceiver$cache$valid[cacheRow]}) {
-      # decision is a 1-step-process (original way of making the perceptual decision)
-      if (params[["decisionProcess"]] == 1) {
-        perceiver$cache[cacheRow,  `:=`(value1 = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, , drop = FALSE],
-                               grouping = perceiver$labels$label[perceiver$labels$valid == TRUE])),
-                               valid = TRUE)]
-        # decision is a 2-step process (based on both label and initial; temporary solution for Andalusian data)
-      } else if (params[["decisionProcess"]] == 2) {
-        if (producedToken$labels$initial %in% c("sk", "k")) {
-          grouping <- c("sk", "k")
-        } else if (producedToken$labels$initial %in% c("st", "t")) {
-          grouping <- c("st", "t")
-        } else if (producedToken$labels$initial %in% c("sp", "p")) {
-          grouping <- c("sp", "p")
-        }
-        
-        data <- cbind(perceiver$features, perceiver$labels) %>%
-          .[valid == TRUE] %>%
-          inner_join(perceiver$initial, by = "word")
-        
-        data1 = as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, , drop = FALSE]
-        data2 = as.matrix(data[data$initial %in% grouping, c(colnames(perceiver$features))])
-        grouping1 = perceiver$labels$label[perceiver$labels$valid == TRUE]
-        grouping2 = data[data$initial %in% grouping,]$initial
-        perceiver$cache[cacheRow,  `:=`(value1 = list(qda(data1, grouping = grouping1)), valid = TRUE)]
-        perceiver$cache[cacheRow,  `:=`(value2 = list(qda(data2, grouping = grouping2)), valid = TRUE)]
-      }
+      perceiver$cache[cacheRow,  `:=`(value1 = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, , drop = FALSE],
+                             grouping = perceiver$labels$label[perceiver$labels$valid == TRUE])),
+                             valid = TRUE)]
     } 
     
     # compute posterior probabilities
-    if (params[["decisionProcess"]] == 1) {
-      posteriorProbAll <- predict(perceiver$cache$value1[cacheRow][[1]], producedToken$features)$posterior
-    } else if (params[["decisionProcess"]] == 2) {
-      posteriorProbAll1 <- predict(perceiver$cache$value1[cacheRow][[1]], producedToken$features)$posterior
-      posteriorProbAll2 <- predict(perceiver$cache$value2[cacheRow][[1]], producedToken$features)$posterior
-    }
+    posteriorProbAll <- predict(perceiver$cache$value1[cacheRow][[1]], producedToken$features)$posterior
     
     # decide if token is recognized
     # ... either based on maximum posterior probabilities
     if (params[['memoryIntakeStrategy']] == "maxPosteriorProb") {
-      if (params[["decisionProcess"]] == 1) {
-        recognized <- colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_
-      } else if (params[["decisionProcess"]] == 2) {
-        decision1 <- colnames(posteriorProbAll1)[which.max(posteriorProbAll1)] == perceiverLabel_
-        decision2 <- colnames(posteriorProbAll2)[which.max(posteriorProbAll2)] == producedToken$labels$initial
-        recognized <- decision1 && decision2
-        write.table(data.frame(decision1, decision2), file.path(logDir, "decisions.txt"), append = TRUE, row.names = F, col.names = F)
-      }
+      recognized <- colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_
+      # ... or based on posterior probability threshold
     } else if (params[['memoryIntakeStrategy']] == "posteriorProbThr") {
       recognized <- posteriorProbAll[, perceiverLabel_] >= params[['posteriorProbThr']]
     }
     
-    # ... or based on a Mahalanobis distance measurement
+  # ... or based on a Mahalanobis distance measurement
   } else if (params[['memoryIntakeStrategy']] == "mahalanobisDistance") {
     mahalaDistanceLabel <- mahalanobis(producedToken$features,
                                            apply(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & 
