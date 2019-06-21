@@ -199,12 +199,12 @@ purge_uncompleted_simulations <- function(rootLogDir) {
 
 filter_simulations <- function(rootLogDir, ..., condList = NULL) {
   # This function searches for simulations in the central register
-  # that match certain params or conditions.
+  # that match certain standard params or conditions.
   # Function call in simulations.R, purge_uncompleted_simulations().
   #
   # Args:
   #    - rootLogDir: the path to the root logging directory
-  #    - ...: parameters that characterise the searched simulation(s)
+  #    - ...: any standard parameters that characterise the searched simulation(s)
   #    - condList: list of parameters that characterise the 
   #      searched simulation(s). Default: NULL.
   #
