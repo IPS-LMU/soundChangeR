@@ -9,7 +9,6 @@
 #                                                                              #
 ################################################################################
 
-
 params = list(
   
   ##### Input data
@@ -26,14 +25,13 @@ params = list(
   
   ##### Production
   
-  productionStrategy = "meanWords",           # "targetWordTokens" or "meanWords" or "extraTokens" or "MAP" or "SMOTE"
+  productionStrategy = "meanWords",           # "targetWordTokens" or "meanWords" or "extraTokens" or "SMOTE"
   productionMinTokens = 20,                   # used only if productionStrategy == "SMOTE"
   productionSMOTENN = 5,                      # used only if productionStrategy == "SMOTE"
   
   ##### Perception
   
   memoryIntakeStrategy = "maxPosteriorProb",  # "maxPosteriorProb" or "mahalanobisDistance"
-  decisionProcess = 1,                        # 1 (producedLabel vs. all other Labels) or 2 (producedLabel vs. all other labels AND producedInitial vs. initials with same POA)
   memoryRemovalStrategy = "timeDecay",        # "outlierRemoval" or "timeDecay"
   maxMemoryExpansion = 1.0,                   # any decimal number; conditions the agents' maximum memory sizes
   splitAndMerge = FALSE,                      # apply split & merge algorithm or not
