@@ -61,7 +61,5 @@ if (params[['runMode']] == "single") {
   })
   stopCluster(cl)
 }
-system(paste("cp", file.path(ABMpath, "Rcmd/ABMmain.R"), logDir))
-system(paste("cp", file.path(ABMpath, "data/params.R"), logDir))
 set_completed(params[['simulationName']], params[["rootLogDir"]])
 
