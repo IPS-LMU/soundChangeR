@@ -15,12 +15,12 @@ params = list(
   ##### Input data
   
   inputDataFile = "./data/asp.df.txt",        # absolute or relative path to input data
-  features = Cs(pre, post),                   # columns in inputDataFile that are used as features
-  group = Cs(Age),                            # the column in inputDataFile that defines the agents' groups
-  label = quote(P),                           # the column in inputDataFile that stores the phonological labels; these labels will be changed during the interactions
-  initial = quote(P),                         # the column in inputDataFile that stores the phonological labels; these labels will remain unchanged
-  word = Cs(W),                               # the column in inputDataFile that stores the word labels
-  speaker = Cs(Vpn),                          # the column in inputDataFile that stores the speakers' IDs or names
+  features = c("pre", "post"),                   # columns in inputDataFile that are used as features
+  group = "Age",                            # the column in inputDataFile that defines the agents' groups
+  label = "P",                           # the column in inputDataFile that stores the phonological labels; these labels will be changed during the interactions
+  initial = "P",                         # the column in inputDataFile that stores the phonological labels; these labels will remain unchanged
+  word = "W",                               # the column in inputDataFile that stores the word labels
+  speaker = "Vpn",                          # the column in inputDataFile that stores the speakers' IDs or names
   subsetSpeakers = NULL,                      # NULL or a vector of strings, e.g. c("spk01", "spk02", "spk03")
   subsetLabels = NULL,                        # NULL or a vector of strings, e.g. c("a", "i", "u", "o")
   
@@ -49,8 +49,8 @@ params = list(
   
   runMode = "single",                         # "single" or "multiple"
   multipleABMRuns = 10,                       # any full positive number; number of ABM runs if runMode == "multiple"
-  nrOfSnapshots = 50,                         # any full positive number; how often the population is archived during the simulation
-  interactionsPerSnapshot = 150,              # any full positive number; how many interactions take place per snapshot
+  nrOfSnapshots = 5,                         # any full positive number; how often the population is archived during the simulation
+  interactionsPerSnapshot = 100,              # any full positive number; how many interactions take place per snapshot
 
   ##### Other options
   

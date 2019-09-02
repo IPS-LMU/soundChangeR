@@ -10,12 +10,12 @@
 ################################################################################
 
 # set path
-ABMpath <- "/homes/johanna.cronenberg/ABM/localRepo"
+ABMpath <- "/homes/m.gubian/ABM/ABM" # "/homes/johanna.cronenberg/ABM/localRepo"
 setwd(ABMpath)
 
 # load libraries and parameters
 source(file.path("Rcmd", "loadLibraries.R"))
-source(file.path("data", "params.R"))
+source(file.path("data", "u-fronting.params.R"))
 
 # create root logging directory and simulations register if they do not yet exist
 dir.create(params[["rootLogDir"]], showWarnings = FALSE, recursive = TRUE)
@@ -29,8 +29,8 @@ dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
 # load input data.table
 input.df <- fread(params[['inputDataFile']], stringsAsFactors = F)
 input.df %>% setnames(c(params[["word"]], params[["speaker"]], params[["group"]]), c("word", "speaker", "group"))
-input.df$initial <- input.df[, eval(params[["initial"]])]
-input.df$label <- input.df[, eval(params[["label"]])]
+input.df$initial <- input.df[, params[["initial"]], with = FALSE]
+input.df$label <- input.df[, params[["label"]], with = FALSE]
 if (!is.null(params[["subsetSpeakers"]])) {
   input.df <- input.df[speaker %in% params[["subsetSpeakers"]]]
 }
