@@ -243,6 +243,10 @@ produce_token <- function(agent, params) {
     otherWords <- unique(agent$labels$word[agent$labels$label == producedLabel & agent$labels$word != producedWord & 
                                              agent$labels$valid == TRUE])
     nExtraTokens <- length(otherWords)
+    if (nExtraTokens == 0) {
+      stop("The current speaker, ", agent$labels$speaker, " knows only one word, so that no further mean tokens can be used
+           with production strategy meanWords. Either exclude the speaker or change production strategy.")
+    }
     # print(paste(agent$speaker, producedLabel, producedWord, "nExtraTokens", nExtraTokens))
     
     # extraTokens: CURRENTLY UNAVAILABLE as productionExtraTokensRatio is missing in params.R
@@ -349,7 +353,7 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
     # ... either based on maximum posterior probabilities
     if (params[['memoryIntakeStrategy']] == "maxPosteriorProb") {
       recognized <- colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_
-      # ... or based on posterior probability threshold
+      # ... or based on posterior probability threshold (parameter is missing from params.R!)
     } else if (params[['memoryIntakeStrategy']] == "posteriorProbThr") {
       recognized <- posteriorProbAll[, perceiverLabel_] >= params[['posteriorProbThr']]
     }
