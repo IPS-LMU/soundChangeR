@@ -37,43 +37,12 @@ splitandmerge <- function(agent, params, full = FALSE) {
   }
 }
 
-splitandmerge_ <- function(agent, full = FALSE) {
-  # Another function for split & merge.
-  # Currently no function call.
-  #
-  # Args:
-  #    - agent: a list that is part of the population
-  #    - full: boolean which tells you whether or not split&merge shall be
-  #      performed until there are no further changes or not
-  #
-  # Returns:
-  #    - nothing.
-  #
-  
-  phoneFuncList <- list(split = phonsplit_, merge = phonmerge_)
-  validRows <- which(agent$labels$valid == TRUE)
-  for (phoneFunc in c("split", "merge")) {
-    while(!identical(lab <- phoneFuncList[[phoneFunc]](as.matrix(agent$features[validRows,]),
-                                                       agent$labels[validRows, word],
-                                                       agent$labels[validRows, label]),
-                     agent$labels[validRows, label])) {
-      agent$labels[validRows, label := lab]
-      if (params[['runMode']] == "single") {
-        cat("Agent", agent$agentID, "did", phoneFunc, "\n")
-      }
-      if (!full) break
-    }
-  }
-}
-
 train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
   # This function builds a Gaussian distribution on the basis of data in x.
-  # Function call in splitandmerge.R, phonmerge_.sub(), phonsplit_.sub(), and 
-  # split_merge_metric().
+  # Function call in splitandmerge.R, split_merge_metric().
   #
   # Args:
-  #    - x: data to calculate the Gaussian distribution from; see phonmerge_.sub() or
-  #      phonsplit_.sub() for the kind of data this function can be used with
+  #    - x: data to calculate the Gaussian distribution from
   #    - lab: a vector of strings as long as nrow(x)
   #
   # Returns:
@@ -81,7 +50,7 @@ train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
   #
   
   mat <- NULL
-  if (ncol(x) != 1) {
+  if (!is.null(ncol(x))) {
     summeanvals <- NULL
     sumcovvals <- NULL
     sumcovvals.inv <- NULL
@@ -144,7 +113,11 @@ phonmerge <- function(agent) {
   while(didOneMerge) {
     ulab <- unique(agent$labels$label[agent$labels$valid])
     distCentroids <- dist(t(sapply(ulab, function(lab) {
-      apply(as.matrix(agent$features)[agent$labels$label == lab & agent$labels$valid, ], 2, mean) 
+      if(!is.null(ncol(as.matrix(agent$features)[agent$labels$label == lab & agent$labels$valid, ]))) {
+        apply(as.matrix(agent$features)[agent$labels$label == lab & agent$labels$valid, ], 2, mean) 
+      } else {
+        mean(as.matrix(agent$features)[agent$labels$label == lab & agent$labels$valid, ])
+      }
     })))
     didOneMerge <- FALSE
     for (i in order(distCentroids)) {
@@ -170,144 +143,6 @@ phonmerge <- function(agent) {
   return (didMerge)
 }
 
-phonmerge_ <- function(Pdata, wordclass, phonclass) {
-  # This function performs the actual merge on two phoneme classes.
-  # Function call in splitandmerge.R, splitandmerge_().
-  #
-  # Args:
-  #    - Pdata: the P1, P2, etc. features of a specific agent
-  #    - wordclass: the corresponding word
-  #    - phonclass: the corresponding phoneme label
-  #
-  # Returns:
-  #    - phonclass: the new phoneme label
-  #
-  
-  phonclass <- as.character(phonclass)
-  wordclass <- as.character(wordclass)
-  flagmult <- T
-  if (ncol(Pdata) == 1) {
-    flagmult <- F
-  }
-  if (length(unique(phonclass)) < 2) {
-    stop("you must have at least two phonological categories to do the merger")
-  }
-  euc <- function(a, b) {
-    sqrt(sum((a - b)^2))
-  }
-  flag <- T
-  while (flag == T) {
-    ulab <- unique(phonclass)
-    if (length(ulab) < 2) {
-      flag <- F
-    } else {
-      ulab.comb <- combn(ulab, 2, simplify = T)
-      ulab.cen <- NULL
-      for (j in 1:ncol(ulab.comb)) {
-        temp <- ulab.comb == j
-        c1 <- apply(as.matrix(Pdata[phonclass == ulab.comb[1, j], ]), 2, mean)
-        c2 <- apply(as.matrix(Pdata[phonclass == ulab.comb[2, j], ]), 2, mean)
-        ulab.cen <- c(ulab.cen, euc(c1, c2))
-      }
-      z <- sort.list(ulab.cen)
-      if (length(z) != 1) {
-        ulab.comb <- ulab.comb[, z]
-      }
-      n <- ncol(ulab.comb)
-      for (i in 1:n) {
-        temp1 <- phonclass == ulab.comb[1, i]
-        Pdata1 <- Pdata[temp1, ]
-        word1 <- wordclass[temp1]
-        phon1 <- rep(ulab.comb[1, i], sum(temp1))
-        temp2 <- phonclass == ulab.comb[2, i]
-        Pdata2 <- Pdata[temp2, ]
-        word2 <- wordclass[temp2]
-        phon2 <- rep(ulab.comb[2, i], sum(temp2))
-        if (flagmult) {
-          d <- rbind(Pdata1, Pdata2)
-        } else {
-          d <- c(Pdata1, Pdata2)
-          d <- cbind(d)
-        }
-        w <- c(word1, word2)
-        p <- c(phon1, phon2)
-        if (phonmerge_.sub(d, w, p)) {
-          newclasslab <- paste(sample(letters[1:26])[1:6], collapse = "")
-          while (sum(newclasslab == phonclass) != 0) {
-            newclasslab <- paste(sample(letters[1:26])[1:6], collapse = "")
-          }
-          phonclass[temp1] <- newclasslab
-          phonclass[temp2] <- newclasslab
-          break
-        }
-        if (i == n) {
-          flag <- F
-        }
-      }
-    }
-  }
-  return(phonclass)
-}
-
-phonmerge_.sub <- function(param, wordlab, phonlab, threshold = 0.05) {
-  # This function is part of the merge algorithm and makes the decision on 
-  # whether or not the merger shall take place based on statistics.
-  # Function call in splitandmerge.R, phonmerge_().
-  #
-  # Args:
-  #    - param: a matrix of values (one row per observation),
-  #      must be a matrix even if only one column!
-  #    - wordlab: a parallel set of word labels
-  #    - phonlab: a parallel set of phoneme labels consisting of
-  #      two and only two phoneme types
-  #    - threshold: the probability threshold of the t-statistic
-  #      for deciding whether or not merge the two clusters. Default: 0.05.
-  #
-  # Returns:
-  #    - mergecat: logical value, either TRUE or FALSE
-  #
-  
-  flagmult <- T
-  if (ncol(param) == 1) {
-    flagmult <- F
-  }
-  
-  mergecat <- F
-  if (length(unique(phonlab)) != 2) {
-    stop("phonlab must have exactly two categories")
-  }
-  # calculate Bayesian distances to the medoid of the two clusters
-  distance.cluster <- rep(0, nrow(param))
-  for (j in unique(phonlab)) {
-    temp.cluster <- phonlab == j
-    tdat.cluster <- train_gaussian_model(cbind(param[temp.cluster,]))
-    if (flagmult) {
-      distance.cluster[temp.cluster] <- c(distance(param[temp.cluster, ], tdat.cluster, metric = "bayes"))
-    } else {
-      distance.cluster[temp.cluster] <- log(abs((param[temp.cluster, ] - tdat.cluster$means)/tdat.cluster$cov))
-    }
-  }
-  
-  # calculate the distance to the combined data
-  tdat.orig <- train_gaussian_model(param)
-  if (flagmult) {
-    distance.orig <- c(distance(param, tdat.orig, metric = "bayes"))
-  } else {
-    distance.orig <- c(log(abs((param - tdat.orig$means)/tdat.orig$cov)))
-  }
-  
-  # run t-test aggregated by word to test whether the Bayesian distances to the two clusters 
-  # are significantly greater than the Bayesian distances to the combination of the two; 
-  # if not, return the same phoneme labels for all observations
-  distance.df <- data.frame(d = distance.cluster - distance.orig, W = factor(wordlab))
-  dm.df <- aggregate(d ~ W, mean, data = distance.df)
-  dm.t <- t.test(dm.df$d)
-  if ((dm.t$p.value > threshold) | ( (mean(dm.df$d) < 0))) {
-    mergecat <- T
-  }
-  return(mergecat)
-}
-
 split_merge_metric <- function(P) {
   # This function computes a metric on each row of P based on a Gaussian model
   # trained on P itself. In this version the metric is a linear transformation of the log likelihood.
@@ -322,11 +157,12 @@ split_merge_metric <- function(P) {
   #    - a numeric vector of length nrow(P) providing the metric for each row of P.
   #
 
-  tdat <- train_gaussian_model(P);
-  if (ncol(P) == 1) {
-    as.numeric(log(abs((P - tdat$means)/tdat$cov)))
-  } else {
+  if (!is.null(nrow(P))) {
+    tdat <- train_gaussian_model(P)
     as.numeric(distance(P, tdat, metric = "bayes"))
+  } else {
+    tdat <- train_gaussian_model(P, lab = rep("x", length(P)))
+    as.numeric(log(abs((P - tdat$means)/tdat$cov)))
   }
 }
 
@@ -346,14 +182,31 @@ split_is_justified <- function(P, wordValues, splitValues) {
   #
   
   # abort split & merge if there are 3 or less tokens in P that represent any of the 2 classes generated by PAM
-  if (nrow(P[splitValues == 1, ]) <= 3 || nrow(P[splitValues == 2, ]) <= 3) {
-    cat("There are 3 or less acoustic tokens for one of the classes proposed by PAM. Aborting split and merge.\n")
-    return(FALSE)
+  if(!is.null(nrow(P))) {
+    if (nrow(P[splitValues == 1, ]) <= 3 || nrow(P[splitValues == 2, ]) <= 3) {
+      cat("There are 3 or less acoustic tokens for one of the classes proposed by PAM. Aborting split and merge.\n")
+      return(FALSE)
+    }
+  } else {
+    if (length(P[splitValues == 1]) <= 3 || length(P[splitValues == 2]) <= 3) {
+      cat("There are 3 or less acoustic tokens for one of the classes proposed by PAM. Aborting split and merge.\n")
+      return(FALSE)
+    }
   }
   
-  metric.split <- numeric(nrow(P))
+  if(!is.null(nrow(P))) {
+    metric.split <- numeric(nrow(P))
+  } else {
+    metric.split <- numeric(length(P))
+  }
+  
   for (spl in 1:2) { # assume 2 clusters labelled as 1, 2
-    metric.split[splitValues == spl] <- split_merge_metric(P[splitValues == spl, ])
+    if(!is.null(nrow(P))) {
+      metric.split[splitValues == spl] <- split_merge_metric(P[splitValues == spl, ])
+    } else {
+      metric.split[splitValues == spl] <- split_merge_metric(P[splitValues == spl])
+    }
+    
   }
   metric.merge <- split_merge_metric(P)
   
@@ -388,7 +241,11 @@ phonsplit.sub <- function(P, wordValues, label) {
       # with an identical P with different order or rows
       if (sum(cluster[word.mask] == 1) == sum(word.mask) / 2) {
         # print (paste("tie", label, w))
-        cluster[word.mask][which.min(P[word.mask, 1])]
+        if(!is.null(ncol(P))) {
+          cluster[word.mask][which.min(P[word.mask, 1])]
+        } else {
+          cluster[word.mask][which.min(P[word.mask])]
+        }
       }
       else if (sum(cluster[word.mask] == 1) > sum(word.mask) / 2) 1 else 2
     }
@@ -427,131 +284,3 @@ phonsplit <- function(agent) {
    }
    return(didSplit)
 }
-
-phonsplit_ <- function(Pdata, wordclass, phonclass) {
-  # This function performs the actual split on two phoneme classes.
-  # Function calls in splitandmerge.R, splitandmerge_().
-  #
-  # Args:
-  #    - Pdata: the P1, P2, etc. features of a specific agent
-  #    - wordclass: the corresponding word
-  #    - phonclass: the corresponding phoneme label
-  #
-  # Returns:
-  #    - phonclass: a vector of the new phoneme labels
-  #
-  
-  Pdata <- as.matrix(Pdata)
-  phonclass <- as.character(phonclass)
-  wordclass <- as.character(wordclass)
-  for (j in unique(phonclass)) {
-    temp <- phonclass == j
-    phonclass[temp] <- phonsplit_.sub(Pdata[temp, ], wordclass[temp], phonclass[temp])
-  }
-  return(phonclass)
-}
-
-phonsplit_.sub <- function(param, wordlab, phonlab) {
-  # This function is part of the split algorithm and tests whether a
-  # given phoneme class should split into two clusters.
-  # Function call in splitandmerge.R, phonsplit_().
-  #
-  # Args:
-  #    - param: a matrix of values (one row per observation),
-  #      must be a matrix even if only one column!
-  #    - wordlab: a parallel set of word labels
-  #    - phonlab: a parallel set of phoneme labels consisting of
-  #      two phoneme types
-  #
-  # Returns:
-  #    - phonlab: the new phoneme label
-  #
-  
-  if (!is.matrix(param)) {
-    param <- cbind(param)
-  }
-  
-  # split the data into two clusters using (unsupervised) k-means clustering
-  param.k <- NULL
-  param.k$cluster <- pam(param, 2, cluster.only = T)
-  
-  # assign each word to one or the other cluster depending on whichever cluster 
-  # includes the majority of that word's tokens
-  cluster.vec <- rep("", nrow(param))
-  for (j in unique(wordlab)) {
-    temp.1 <- wordlab == j & param.k$cluster == 1
-    temp.2 <- wordlab == j & param.k$cluster == 2
-    # this is temp, only to make it possible to use params[['seed']] and compare results
-    # break ties with an arbitrary criterion (which.min) indep of pam label, which can flip
-    # with an identical param with different order of rows
-    if (sum(temp.1) == sum(temp.2)) {
-      cluster.vec[wordlab == j] <- param.k$cluster[wordlab == j][which.min(param[wordlab == j, 1])]
-      # print (paste("tie", phonlab[1], j))
-    } else if (sum(temp.1) > sum(temp.2)) {
-      cluster.vec[wordlab == j] <- "1"
-    } else {
-      cluster.vec[wordlab == j] <- "2"
-    }
-  }
-  
-  # do not allow a cluster to consist of just one word - so only apply all of 
-  # the rest of the code if there is more than one word in each cluster
-  if ((length(unique(wordlab[cluster.vec == "1"])) > 1) & (length(unique(wordlab[cluster.vec == "2"])) > 1)) {
-    
-    # calculate Bayesian distances to the medoid of cluster 1
-    distance.cluster <- rep(0, nrow(param))
-    if (any(cluster.vec == "1")) {
-      temp.1 <- cluster.vec == "1"
-      tdat.1 <- train_gaussian_model(param[temp.1,])
-      # tdat.1 <- mclust::mvn("XXX",param[temp.1,])
-      # 4.
-      flagmult <- T
-      if (ncol(param) == 1) {
-        flagmult <- F
-      }
-      if (flagmult) {
-        distance.cluster[temp.1] <- distance(param[temp.1,], tdat.1, metric = "bayes")
-        # distance.cluster[temp.1] <- dmvnorm(param[temp.1,], tdat.1$parameters$mean, tdat.1$parameters$variance$Sigma, log = TRUE)
-      } else {
-        distance.cluster[temp.1] <- log(abs((param[temp.1,] - tdat.1$means)/tdat.1$cov))
-      }
-    }
-    
-    # calculate Bayesian distances to the medoid of cluster 2
-    if(any(cluster.vec == "2")) {
-      temp.2 <- cluster.vec == "2"
-      tdat.2 <- train_gaussian_model(param[temp.2,])
-      # tdat.2 <- mclust::mvn("XXX",param[temp.2,])
-      if (flagmult) {
-        distance.cluster[temp.2] <- distance(param[temp.2,], tdat.2, metric = "bayes")
-        # distance.cluster[temp.2] <- dmvnorm(param[temp.2,], tdat.2$parameters$mean, tdat.2$parameters$variance$Sigma, log = TRUE)
-        
-      } else {
-        distance.cluster[temp.2] <- log(abs((param[temp.2,] - tdat.2$means)/tdat.2$cov))
-      }
-    }
-
-    # calculate Bayesian distances to the medoid of the original data of all tokens
-    tdat.orig <- train_gaussian_model(param)
-    # tdat.orig <- mclust::mvn("XXX",param)
-    if (flagmult) {
-      distance.orig <- c(distance(param, tdat.orig, metric = "bayes"))
-      # distance.orig <- dmvnorm(param, tdat.orig$parameters$mean, tdat.orig$parameters$variance$Sigma, log = TRUE)
-      
-    } else {
-      distance.orig <- c(log(abs((param - tdat.orig$means)/tdat.orig$cov)))
-    }
-    
-    # run t-test aggregated by word to test whether the Bayesian distances to the two 
-    # clusters are significantly greater than the Bayesian distances to the original; 
-    # if so, return a vector of phonological labels, split into two categories
-    distance.df <- data.frame(d = distance.cluster - distance.orig, W = factor(wordlab))
-    dm.df <- aggregate(d ~ W, mean, data = distance.df)
-    dm.t <- t.test(dm.df$d)
-    if (dm.t$p.value < 0.05 & mean(dm.df$d) > 0) {
-      phonlab <- paste(phonlab, cluster.vec, sep = ".")
-    }
-  }
-  return(phonlab)
-}
-
