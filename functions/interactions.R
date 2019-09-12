@@ -31,41 +31,54 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   population <- list()
   Pcols <- grep("^P[[:digit:]]+$", colnames(input.df), value = TRUE)
   
-  # currently no other possibility than method == "speaker_is_agent"
+  if (!("createPopulationMethod" %in% names(params)) ||
+      is.null(params[['createPopulationMethod']]) ) {
+    method <- "speaker_is_agent"
+  } else {
+    method <- params[['createPopulationMethod']]
+  }
+  sortedSpeakers <- input.df$speaker %>% unique %>% sort
+  
   if (method == "speaker_is_agent") {
-    sortedSpeakers <- input.df$speaker %>% unique %>% sort
     nrOfAgents <- length(sortedSpeakers)
+  } else if (method == "bootstrap") {
+    nrOfAgents <- params[['bootstrapPopulationSize']]
+  }
+  
+  
+  # for every agent in population, create a list and add information from input.df
+  for (id in seq_len(nrOfAgents)) {
+    if (method == "speaker_is_agent") {
+      selectedSpeaker <- sortedSpeakers[id]
+    } else if (method == "bootstrap") {
+      selectedSpeaker <- sample(sortedSpeakers, 1)
+    }
+    population[[id]] <- list()
+    population[[id]]$agentID <- id
+    population[[id]]$labels <- input.df[speaker == selectedSpeaker, .(word, label)] %>%
+      .[, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
+      .[, timeStamp := sample(.N), by = word] %>%
+      .[]
+    population[[id]]$group <-input.df[speaker == selectedSpeaker, group][1]
+    population[[id]]$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
+    population[[id]]$features <- input.df[speaker == selectedSpeaker, .SD, .SDcols = Pcols]
+    population[[id]]$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
+    population[[id]]$cache <- data.table(name = "qda", value1 = list(), value2 = list(), valid = FALSE)
     
-    # for every agent in population, create a list and add information from input.df
-    for (id in seq_len(nrOfAgents)) {
-      population[[id]] <- list()
-      population[[id]]$agentID <- id
-      population[[id]]$labels <- input.df[speaker == sortedSpeakers[id], .(word, label)] %>%
-        .[, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
-        .[, timeStamp := sample(.N), by = word] %>%
-        .[]
-      population[[id]]$group <-input.df[speaker == sortedSpeakers[id], group][1]
-      population[[id]]$speaker <- input.df[speaker == sortedSpeakers[id], speaker][1]
-      population[[id]]$features <- input.df[speaker == sortedSpeakers[id], .SD, .SDcols = Pcols]
-      population[[id]]$initial <- input.df[speaker == sortedSpeakers[id], .(word, initial)] %>% unique
-      population[[id]]$cache <- data.table(name = "qda", value1 = list(), value2 = list(), valid = FALSE)
-      
-      bufferRowsCount <- maxMemorySize - nrow(population[[id]]$labels)
-      # if an agent's memory is not yet as long as maxMemorySize allocate some more space by adding the
-      # appropriate amount of empty rows to the data.table
-      if (bufferRowsCount > 0) {
-        population[[id]]$labels <- rbindlist(list(
-          population[[id]]$labels,
-          matrix(nrow = bufferRowsCount, ncol = ncol(population[[id]]$labels)) %>%
-            data.table() %>%
-            setnames(colnames(population[[id]]$labels)) %>%
-            .[, valid := FALSE]
-        ))
-        population[[id]]$features <- rbindlist(list(population[[id]]$features,
-                                                    matrix(nrow = bufferRowsCount, ncol = length(Pcols)) %>% 
-                                                      data.table()))
-      }
-      # setnames(population[[id]]$labels, "labels", "label")
+    bufferRowsCount <- maxMemorySize - nrow(population[[id]]$labels)
+    # if an agent's memory is not yet as long as maxMemorySize allocate some more space by adding the
+    # appropriate amount of empty rows to the data.table
+    if (bufferRowsCount > 0) {
+      population[[id]]$labels <- rbindlist(list(
+        population[[id]]$labels,
+        matrix(nrow = bufferRowsCount, ncol = ncol(population[[id]]$labels)) %>%
+          data.table() %>%
+          setnames(colnames(population[[id]]$labels)) %>%
+          .[, valid := FALSE]
+      ))
+      population[[id]]$features <- rbindlist(list(population[[id]]$features,
+                                                  matrix(nrow = bufferRowsCount, ncol = length(Pcols)) %>% 
+                                                    data.table()))
     }
   }
   return(population)

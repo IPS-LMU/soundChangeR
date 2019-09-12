@@ -15,7 +15,7 @@ setwd(ABMpath)
 
 # load libraries and parameters
 source(file.path("Rcmd", "loadLibraries.R"))
-source(file.path("data", "u-fronting.params.R"))
+source(file.path("data", "antarctica.params.R"))
 
 # create root logging directory and simulations register if they do not yet exist
 dir.create(params[["rootLogDir"]], showWarnings = FALSE, recursive = TRUE)

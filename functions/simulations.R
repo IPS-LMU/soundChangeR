@@ -219,6 +219,7 @@ filter_simulations <- function(rootLogDir, ..., condList = NULL) {
       sapply(names(condList), function(k) r[[k]] == condList[[k]]) %>% all()
     })
   } else {
+    # matching <- list.is(reg, tryEval(..., FALSE))
     matching <- list.is(reg, ...)
   }
   reg[matching] %>% list.select(simulationName) %>% unlist
