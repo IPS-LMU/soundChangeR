@@ -366,7 +366,9 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
                                            cov(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & 
                                                                                perceiver$labels$label == perceiverLabel_, , drop = FALSE]))
     recognized <- mahalaDistanceLabel <= params[['mahalanobisThreshold']]
-  }
+  } else if (params[['memoryIntakeStrategy']] == "acceptAll") {
+    recognized <- TRUE
+  } 
   
   # if the token is recognized, test for memory capacity
   if (recognized) {
