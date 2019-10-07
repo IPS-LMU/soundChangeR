@@ -338,7 +338,7 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
   
   # find out whether the token is recognized or not
   # ... either by maximum posterior probability decision
-  if (params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr")) {
+  if (params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "rel+abs", "posteriorProbThr")) {
     # execute the QDA (Quadrativ Discriminant Analysis)
     if (!{cacheRow <- which(perceiver$cache$name == "qda"); perceiver$cache$valid[cacheRow]}) {
       perceiver$cache[cacheRow,  `:=`(value1 = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, , drop = FALSE],
@@ -356,9 +356,18 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
       # ... or based on posterior probability threshold (parameter is missing from params.R!)
     } else if (params[['memoryIntakeStrategy']] == "posteriorProbThr") {
       recognized <- posteriorProbAll[, perceiverLabel_] >= params[['posteriorProbThr']]
+      # ... or based on maximum posterior probabilities and Mahalanobis distance
+    } else if (params[['memoryIntakeStrategy']] == "rel+abs") {
+      recognized_rel <- colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_
+      mahalaDistanceLabel <- mahalanobis(producedToken$features,
+                                         apply(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & 
+                                                                               perceiver$labels$label == perceiverLabel_, , drop = FALSE], 2, mean),
+                                         cov(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & 
+                                                                             perceiver$labels$label == perceiverLabel_, , drop = FALSE]))
+      recognized <- mahalaDistanceLabel <= params[['mahalanobisThreshold']] & recognized_rel
     }
     
-  # ... or based on a Mahalanobis distance measurement
+  # ... or based solely on a Mahalanobis distance measurement
   } else if (params[['memoryIntakeStrategy']] == "mahalanobisDistance") {
     mahalaDistanceLabel <- mahalanobis(producedToken$features,
                                            apply(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & 
@@ -366,9 +375,10 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
                                            cov(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & 
                                                                                perceiver$labels$label == perceiverLabel_, , drop = FALSE]))
     recognized <- mahalaDistanceLabel <= params[['mahalanobisThreshold']]
+    # ... or just accept everything
   } else if (params[['memoryIntakeStrategy']] == "acceptAll") {
     recognized <- TRUE
-  } 
+  }
   
   # if the token is recognized, test for memory capacity
   if (recognized) {
