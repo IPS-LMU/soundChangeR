@@ -347,9 +347,8 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
     return()
   }
   
-  # find out whether the token is recognized or not
-  # ... either by maximum posterior probability decision
-  if (params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "rel+abs", "posteriorProbThr")) {
+  recognized <- TRUE
+  if (recognized && any(c("maxPosteriorProb", "posteriorProbThr") %in% params[['memoryIntakeStrategy']])) { 
     # execute the QDA (Quadrativ Discriminant Analysis)
     if (!{cacheRow <- which(perceiver$cache$name == "qda"); perceiver$cache$valid[cacheRow]}) {
       perceiver$cache[cacheRow,  `:=`(value1 = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, , drop = FALSE],
@@ -362,32 +361,30 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
     
     # decide if token is recognized
     # ... either based on maximum posterior probabilities
-    if (params[['memoryIntakeStrategy']] == "maxPosteriorProb") {
-      recognized <- colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_
+    if ("maxPosteriorProb" %in% params[['memoryIntakeStrategy']]) {
+      recognized %<>% `&`(colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_)
       # ... or based on posterior probability threshold (parameter is missing from params.R!)
     } else if (params[['memoryIntakeStrategy']] == "posteriorProbThr") {
-      recognized <- posteriorProbAll[, perceiverLabel_] >= params[['posteriorProbThr']]
-      # ... or based on maximum posterior probabilities and Mahalanobis distance
-    } else if (params[['memoryIntakeStrategy']] == "rel+abs") {
-      recognized_rel <- colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_
-      mahalaDistanceLabel <- mahalanobis(producedToken$features,
-                                         apply(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & 
-                                                                               perceiver$labels$label == perceiverLabel_, , drop = FALSE], 2, mean),
-                                         cov(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & 
-                                                                             perceiver$labels$label == perceiverLabel_, , drop = FALSE]))
-      recognized <- mahalaDistanceLabel <= params[['mahalanobisThreshold']] & recognized_rel
+      recognized %<>% `&`(posteriorProbAll[, perceiverLabel_] >= params[['posteriorProbThr']])
     }
+  }
     
-  # ... or based solely on a Mahalanobis distance measurement
-  } else if (params[['memoryIntakeStrategy']] == "mahalanobisDistance") {
+  # ... or based on Mahalanobis distance
+  if (recognized && any(c("mahalanobisDistance", "highestDensityRegion") %in% params[['memoryIntakeStrategy']])) {
     mahalaDistanceLabel <- mahalanobis(producedToken$features,
                                            apply(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & 
                                                                                  perceiver$labels$label == perceiverLabel_, , drop = FALSE], 2, mean),
                                            cov(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & 
                                                                                perceiver$labels$label == perceiverLabel_, , drop = FALSE]))
-    recognized <- mahalaDistanceLabel <= params[['mahalanobisThreshold']]
-    # ... or just accept everything
-  } else if (params[['memoryIntakeStrategy']] == "acceptAll") {
+    if ("mahalanobisDistance" %in% params[['memoryIntakeStrategy']]) {
+      recognized %<>% `&`(mahalaDistanceLabel <= params[['mahalanobisThreshold']])
+    } else if ("highestDensityRegion" %in% params[['memoryIntakeStrategy']]) {
+      recognized %<>% `&`(runif(1) < pchisq(q = mahalaDistanceLabel, df = ncol(perceiver$features), lower.tail = FALSE))
+    }
+  }
+  
+  # ... or just accept everything
+  if ("acceptAll" %in% params[['memoryIntakeStrategy']]) {
     recognized <- TRUE
   }
   

@@ -45,6 +45,11 @@ coreABM <- function(logDir) {
   #    - nothing.
   #
   
+  # backward compatibility
+  if (params[['memoryIntakeStrategy']] == "rel+abs") {
+    params[['memoryIntakeStrategy']] <- c("mahalanobisDistance", "maxPosteriorProb")
+  }
+  
   pop <- create_population(input.df = input.df, params = params)
   
   if (params[['splitAndMerge']] == TRUE & params[['doSplitAndMergeBeforeABM']] == TRUE) {
