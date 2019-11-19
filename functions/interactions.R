@@ -427,21 +427,20 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
   recognized <- TRUE
   if (recognized && any(c("maxPosteriorProb", "posteriorProbThr") %in% params[['memoryIntakeStrategy']])) { 
     # execute the QDA (Quadrativ Discriminant Analysis)
-    if (!{cacheRow <- which(perceiver$cache$name == "qda"); perceiver$cache$valid[cacheRow]}) {
-      perceiver$cache[cacheRow,  `:=`(value = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, , drop = FALSE],
-                             grouping = perceiver$labels$label[perceiver$labels$valid == TRUE])),
-                             valid = TRUE)]
-    } 
+    if (!is_cache_valid(perceiver, "qda")) {
+      update_cache(perceiver, "qda", compute_qda)
+      # cacheMissCounter <<- cacheMissCounter + 1
+    }
     
     # compute posterior probabilities
-    posteriorProbAll <- predict(perceiver$cache$value[cacheRow][[1]], producedToken$features)$posterior
+    posteriorProbAll <- predict(get_cache_value(perceiver, "qda"), producedToken$features)$posterior
     
     # decide if token is recognized
     # ... either based on maximum posterior probabilities
     if ("maxPosteriorProb" %in% params[['memoryIntakeStrategy']]) {
       recognized %<>% `&`(colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_)
       # ... or based on posterior probability threshold (parameter is missing from params.R!)
-    } else if (params[['memoryIntakeStrategy']] == "posteriorProbThr") {
+    } else if ("posteriorProbThr" %in% params[['memoryIntakeStrategy']]) {
       recognized %<>% `&`(posteriorProbAll[, perceiverLabel_] >= params[['posteriorProbThr']])
     }
   }
@@ -509,8 +508,8 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
     )]
     perceiver$labels[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE, 
                      nrOfTimesHeard := updatedNrOfTimesHeard]
-    if (params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr")) {
-      perceiver$cache[cacheRow, valid := FALSE]
+    if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr"))) {
+      invalidate_cache(perceiver, "qda")
     }
   }
   
@@ -539,8 +538,8 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
   numReceivedTokens <- sum(interactionsLog$valid[interactionsLog$perceiverID == perceiver$agentID], na.rm = TRUE)
   if (params[['splitAndMerge']] == T & numReceivedTokens %% params[['splitAndMergeInterval']] == 0) {
     splitandmerge(perceiver, params, full = FALSE)
-    if (params[['memoryIntakeStrategy']] == "maxPosteriorProb") {
-      perceiver$cache[cacheRow, valid := FALSE]
+    if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr"))) {
+      invalidate_cache(perceiver, "qda")
     }
   }
 }

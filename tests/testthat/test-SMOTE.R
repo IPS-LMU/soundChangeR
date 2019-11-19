@@ -2,7 +2,7 @@
 ABMpath <- "/homes/m.gubian/ABM/ABM" # your ABM home dir here
 testDir <- file.path(ABMpath, "tests", "testthat")
 # load all the funcions and libraries (this may not be needed when the code becomes a package)
-source(file.path(rootDir, "Rcmd", "loadLibraries.R"))
+source(file.path(ABMpath, "Rcmd", "loadLibraries.R"))
 
 
 context("SMOTE")

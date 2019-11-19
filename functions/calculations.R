@@ -10,6 +10,28 @@
 #                                                                              #
 ################################################################################
 
+is_cache_valid <- function(agent, cacheName) {
+  agent$cache[name == cacheName, valid]
+}
+
+update_cache <- function(agent, cacheName, method, ...) {
+  agent$cache[name == cacheName, `:=`(value = list(method(agent, ...)), valid = TRUE)]
+}
+
+get_cache_value <- function(agent, cacheName) {
+  agent$cache[name == cacheName, value][[1]]
+}
+
+invalidate_cache <- function(agent, cacheName) {
+  agent$cache[name == cacheName, valid := FALSE]
+}
+
+compute_qda <- function(agent) {
+  # a wrapper for qda()
+  qda(as.matrix(agent$features)[agent$labels$valid == TRUE, , drop = FALSE],
+      grouping = agent$labels$label[agent$labels$valid == TRUE])
+}
+
 convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
   # This function converts the population list into a data.table.
   # Function call in simulations.R, save_population().
