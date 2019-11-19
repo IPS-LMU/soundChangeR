@@ -22,21 +22,14 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   #    - population: a list
   #
   
-  setDT(input.df)
-  
-  # set maxMemorySize
-  maxMemorySize <- round(params[['maxMemoryExpansion']] * input.df[, .N, by = speaker][, max(N)])
-  
-  # initiate a list called population and search for P-columns in input.df
-  population <- list()
-  Pcols <- grep("^P[[:digit:]]+$", colnames(input.df), value = TRUE)
-  
   if (!("createPopulationMethod" %in% names(params)) ||
       is.null(params[['createPopulationMethod']]) ) {
     method <- "speaker_is_agent"
   } else {
     method <- params[['createPopulationMethod']]
   }
+  
+  setDT(input.df)
   sortedSpeakers <- input.df$speaker %>% unique %>% sort
   
   if (method == "speaker_is_agent") {
@@ -44,6 +37,31 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   } else if (method == "bootstrap") {
     nrOfAgents <- params[['bootstrapPopulationSize']]
   }
+  
+  nrOfInteractions <- params[['nrOfSnapshots']] * params[['interactionsPerSnapshot']]
+  
+  # memory resampling will generate extra artificial tokens (exemplars).
+  # Each agent will grow its initial exemplars endowment by a factor of 'initialMemoryResanpling'
+  # The max number of initial exemplars is taken to compute the final number of tokens, 
+  # the same for each agent.
+  initialMemorySize <- ceiling(input.df[, .N, by = speaker][, max(N)] * params[['initialMemoryResanpling']])
+  
+  # memoryBuffer defines a buffer of empty memory space
+  # so that it is unlikely that an agent will exceed its memory limit during the simulation.
+  # This is to decouple the forgetting rate from the memory capacity.
+  # maxMemorySize is approx = mean + 5 st. dev. of the expected number of received tokens during the simulation.
+  # Num. received tokens is Bin(nrOfInteractions, 1/nrOfAgents) approx = Normal,
+  # ignoring the (1-nrOfInteractions/nrOfAgents) factor in var and taking worst case of zero forgetting rate.
+  memoryBuffer <- ceiling(nrOfInteractions/nrOfAgents + 5 * sqrt(nrOfInteractions/nrOfAgents))
+  
+  # maxMemorySize <- round(params[['maxMemoryExpansion']] * input.df[, .N, by = speaker][, max(N)])
+  
+  # stub
+  maxMemorySize <- initialMemorySize + memoryBuffer  
+  
+  # initiate a list called population and search for P-columns in input.df
+  population <- list()
+  Pcols <- grep("^P[[:digit:]]+$", colnames(input.df), value = TRUE)
   
   
   # for every agent in population, create a list and add information from input.df
@@ -63,7 +81,7 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
     population[[id]]$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
     population[[id]]$features <- input.df[speaker == selectedSpeaker, .SD, .SDcols = Pcols]
     population[[id]]$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
-    population[[id]]$cache <- data.table(name = "qda", value1 = list(), value2 = list(), valid = FALSE)
+    population[[id]]$cache <- data.table(name = "qda", value = list(), valid = FALSE)
     
     bufferRowsCount <- maxMemorySize - nrow(population[[id]]$labels)
     # if an agent's memory is not yet as long as maxMemorySize allocate some more space by adding the
@@ -78,7 +96,7 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
       ))
       population[[id]]$features <- rbindlist(list(population[[id]]$features,
                                                   matrix(nrow = bufferRowsCount, ncol = length(Pcols)) %>% 
-                                                    data.table()))
+                                                    data.table()), use.names = FALSE)
     }
   }
   return(population)
@@ -102,7 +120,7 @@ create_interactions_log <- function(nrOfInteractions) {
 
   interactionsLog <- rbindlist(list(
     interactionsLog, data.table(matrix(nrow = nrOfInteractions, ncol = ncol(interactionsLog)))
-    )) %>% 
+    ), use.names = FALSE) %>% 
     .[, valid := FALSE] %>%
     .[]
 }
@@ -211,12 +229,18 @@ choose_word <- function(labels, method = "random_index") {
   #    - the chosen word label as a string
   #
   
-  if (nrow(labels) == 0) {
-    stop("choose_word: Empty labels table (empty agent memory")
+  if (!all(c("word", "valid") %in% names(labels))) {
+    stop("choose_word: labels data.table should have a 'word' and a 'valid' column")
+  }
+  
+  if (sum(labels$valid == TRUE) == 0) {
+    # stop("choose_word: Empty labels table (empty agent memory")
+    # print to LOG 
+    return (NULL)
   } 
   
   # currently, there is no other method than random_index;
-  # however, it is planned to implement lexical frequencies here.
+  # however, other methods may be implemented, e.g. lexical frequency-based.
   if (method == "random_index" | is.null(method)) {
     labels$word[sample(which(labels$valid == TRUE), 1)]
   } else {
@@ -242,11 +266,15 @@ produce_token <- function(agent, params) {
   
   # randomly sample a word
   producedWord <- choose_word(agent$labels)
-  producedLabel <- agent$labels$label[agent$labels$word == producedWord][1]
+  if (is.null(producedWord)) {
+    # print to LOG 
+    return (NULL)
+  }
+  producedLabel <- agent$labels$label[agent$labels$word == producedWord & agent$labels$valid == TRUE][1]
   producedInitial <- agent$initial$initial[agent$initial$word == producedWord]
-  nrOfTimesHeard <- agent$labels$nrOfTimesHeard[agent$labels$word == producedWord][1] 
+  nrOfTimesHeard <- agent$labels$nrOfTimesHeard[agent$labels$word == producedWord & agent$labels$valid == TRUE][1] 
   
-  nWordTokens <- sum(agent$labels$word == producedWord, na.rm = TRUE)
+  nWordTokens <- sum(agent$labels$word == producedWord & agent$labels$valid == TRUE)
   nExtraTokens <- 0
   
   # meanWords: get acoustic values for word tokens and an averaged value per word of the same phoneme category
@@ -255,8 +283,9 @@ produce_token <- function(agent, params) {
                                              agent$labels$valid == TRUE])
     nExtraTokens <- length(otherWords)
     if (nExtraTokens == 0) {
-      stop("The current speaker, ", agent$labels$speaker, " knows only one word, so that no further mean tokens can be used
-           with production strategy meanWords. Either exclude the speaker or change production strategy.")
+      # print to LOG 
+      # stop("The current speaker, ", agent$labels$speaker, " knows only one word, so that no further mean tokens can be used
+      #      with production strategy meanWords. Either exclude the speaker or change production strategy.")
     }
     # print(paste(agent$speaker, producedLabel, producedWord, "nExtraTokens", nExtraTokens))
     
@@ -264,10 +293,11 @@ produce_token <- function(agent, params) {
   } else if (params[['productionStrategy']] == "extraTokens") {
     nExtraTokens <- round(params[['productionExtraTokensRatio']] * nWordTokens)
     
-    # SMOTE: Synthetic Minority Over-sampling Technique
+    # SMOTE: Synthetic Minority Over-sampling TEchnique
   } else if (params[['productionStrategy']] == "SMOTE" & nWordTokens < params[['productionMinTokens']]) {
-    nExtraTokens <- ceiling((params[['productionMinTokens']] - nWordTokens) / max(nWordTokens, params[['productionSMOTENN']] + 1)) * 
-      max(nWordTokens, params[['productionSMOTENN']] + 1)
+    nExtraTokens <- params[['productionMinTokens']] - nWordTokens
+    # nExtraTokens <- ceiling((params[['productionMinTokens']] - nWordTokens) / max(nWordTokens, params[['productionSMOTENN']] + 1)) * 
+    #   max(nWordTokens, params[['productionSMOTENN']] + 1)
   }
   
   # allocate space for wordFeatures and fill with already available acoustic values
@@ -275,7 +305,7 @@ produce_token <- function(agent, params) {
   wordFeatures[1:nWordTokens, ] <- as.matrix(agent$features)[agent$labels$word == producedWord & agent$labels$valid == TRUE, , drop = FALSE]
   
   # complete wordFeatures depending on productionStrategy
-  if (params[['productionStrategy']] == "meanWords") {
+  if (params[['productionStrategy']] == "meanWords" & nExtraTokens > 0) {
     for (i in 1:nExtraTokens) {
       wordFeatures[nWordTokens + i, ] <- apply(as.matrix(agent$features)[agent$labels$word == otherWords[i] & 
                                                                            agent$labels$valid == TRUE, , drop = FALSE], 2, mean)
@@ -287,30 +317,19 @@ produce_token <- function(agent, params) {
                      agent$labels$valid == TRUE), nExtraTokens, replace = TRUE), , drop = FALSE]
   } else if (params[['productionStrategy']] == "SMOTE" & nExtraTokens > 0) {
     wordIndicesWithinLabel <- which(agent$labels$word[agent$labels$label == producedLabel & agent$labels$valid == TRUE] == producedWord)
-    # wordIndicesWithinLabel <- agent$labels[label == producedLabel,][word == producedWord, which = TRUE]
     fallbackIndices <- knearest_fallback(as.matrix(agent$features)[agent$labels$label == producedLabel & 
                                                                      agent$labels$valid == TRUE, , drop = FALSE],
                                          wordIndicesWithinLabel,
                                          params[['productionSMOTENN']])
-    wordFeatures[(nWordTokens + 1):(nWordTokens + nExtraTokens), ] <- SMOTE(agent$features[agent$labels$label == producedLabel & 
-                                                                                             agent$labels$valid == TRUE, ][fallbackIndices, ],
-                                                                            rep("a", length(fallbackIndices)),
-                                                                            params[['productionSMOTENN']],
-                                                                            nExtraTokens/length(fallbackIndices))$syn_data[,-(ncol(agent$features) + 1)] %>% 
-      as.matrix
+    
+    wordFeatures[(nWordTokens + 1):(nWordTokens + nExtraTokens), ] <- smote_one_class(agent$features[agent$labels$label == producedLabel & 
+                                                                                                       agent$labels$valid == TRUE, ][fallbackIndices, ],
+                                                                                      params[['productionSMOTENN']],
+                                                                                      nExtraTokens
+                                                                                      )
   }
   
-  # estimate Gaussian distributions from wordFeatures
-  tokenGauss <- list(
-    mean = apply(wordFeatures, 2, mean),
-    cov = cov(wordFeatures))
-  
-  # trick to ensure that covariance of tokenGauss is positive
-  epsilon_diag <- 1e-6
-  while (!is.positive.definite(tokenGauss$cov)) {
-    tokenGauss$cov <- tokenGauss$cov + epsilon_diag * diag(nrow(tokenGauss$cov))
-    epsilon_diag <- 2 * epsilon_diag
-  }
+  tokenGauss <- estimate_gaussian(wordFeatures)
   
   # generate producedToken as a list
   producedToken <- list(
@@ -323,6 +342,59 @@ produce_token <- function(agent, params) {
   )
   return(producedToken)
 }
+
+estimate_gaussian <- function(features, epsilon_diag = 1e-6) {
+  # estimate a Gaussian from data, ensure that it has positive covariance.
+  # features: a matrix, rows are data points, columns are dimensions
+  # epsilon_diag: starting value for 'water filling' of cov diagonal in case of non positive definiteness
+  # returns a list of mean and cov.
+  
+  tokenGauss <- list(
+    mean = apply(features, 2, mean),
+    cov = cov(features))
+  
+  epsilon_diag <- 1e-6
+  while (!is.positive.definite(tokenGauss$cov)) {
+    tokenGauss$cov <- tokenGauss$cov + epsilon_diag * diag(nrow(tokenGauss$cov))
+    epsilon_diag <- 2 * epsilon_diag
+  }
+  return(tokenGauss)
+}
+
+smote_one_class <- function(features, K, N) {
+  # A wrapper to smotefamily::SMOTE()
+  # All elements (rows) of 'features' belong to the same (minority) class "a".
+  # Produce N extra tokens using the SMOTE algorithm, using K nearest neighbors during sampling.
+  
+  if (K <= 0) {
+    stop(paste("smote_one_class: invalid nearest neighbour parameter K =", K))
+  }
+  if (N <= 0) {
+    stop(paste("smote_one_class: invalid number of samples requested N =", N))
+  }
+  
+  if (!is.data.frame(features)) {
+    features <- data.frame(features)
+  }
+  
+  # Fringe cases
+  if (nrow(features) == 0) {
+    # print to LOG 
+    return (NULL)
+  }
+  if (nrow(features) == 1) {
+    # print to LOG 
+    # return N copies of the only token
+    return(matrix(rep(as.numeric(features), N), ncol = ncol(features), byrow = TRUE))
+  }
+  K <- min(K, nrow(features) - 1)
+  
+  SMOTE(data.frame(features), rep("a", nrow(features)), K, ceiling(N/nrow(features))) %>%
+    .$syn_data %>%
+    .[sample(nrow(.), N), -(ncol(features) + 1)] %>% 
+    as.matrix
+}
+
 
 perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, params) {
   # This function tests whether the produced token is to be memorized by the listening agent.
@@ -339,6 +411,11 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
   #    - nothing. Overwrites one row in the main data.table.
   #
   
+  if (is.null(producedToken)) {
+    # print to LOG 
+    return()
+  }
+  
   # find out which phonological label the perceiver associates with the produced word
   perceiverLabel_ <- unique(perceiver$labels$label[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE])
   
@@ -351,13 +428,13 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
   if (recognized && any(c("maxPosteriorProb", "posteriorProbThr") %in% params[['memoryIntakeStrategy']])) { 
     # execute the QDA (Quadrativ Discriminant Analysis)
     if (!{cacheRow <- which(perceiver$cache$name == "qda"); perceiver$cache$valid[cacheRow]}) {
-      perceiver$cache[cacheRow,  `:=`(value1 = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, , drop = FALSE],
+      perceiver$cache[cacheRow,  `:=`(value = list(qda(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE, , drop = FALSE],
                              grouping = perceiver$labels$label[perceiver$labels$valid == TRUE])),
                              valid = TRUE)]
     } 
     
     # compute posterior probabilities
-    posteriorProbAll <- predict(perceiver$cache$value1[cacheRow][[1]], producedToken$features)$posterior
+    posteriorProbAll <- predict(perceiver$cache$value[cacheRow][[1]], producedToken$features)$posterior
     
     # decide if token is recognized
     # ... either based on maximum posterior probabilities
@@ -388,10 +465,16 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
     recognized <- TRUE
   }
   
+  # forget
+  if (runif(1) < params[['forgettingRate']]) {
+    set(perceiver$labels, sample(which(perceiver$labels$valid == TRUE), 1), "valid", FALSE)
+  }
+  
   # if the token is recognized, test for memory capacity
   if (recognized) {
     # if memory is full, delete one token
     if (all(perceiver$labels$valid)) {
+      print(paste('agent', perceiver$agentID, "full"))
       # ... either the oldest token
       if (params[['memoryRemovalStrategy']] == "timeDecay") {
         rowToWrite <- which(perceiver$labels$word == producedToken$labels$word)[

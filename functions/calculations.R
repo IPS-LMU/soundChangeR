@@ -46,9 +46,14 @@ convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
 }
 
 knearest_fallback <- function(cloud, targetIndices, K) {
-  # This function is used as an addition to SMOTE; i.e. if additional values 
-  # (nExtraTokens > 0; see produce_token()) should be used for SMOTE, they are 
-  # sampled in this function by using a K nearest neighbor approach.
+  # This is an auxiliary function mainly used by SMOTE.
+  # SMOTE needs to identify K nearest neighbours each time it produces an extra token. 
+  # That means it needs minimum K+1 tokens being available in total, i.e. one target + K neighbours.
+  # 'cloud' is a large set of tokens (rows), typically belonging to one phoneme,
+  # from which targetIndices identify the tokens that should be used by SMOTE, typically belonging to a word.
+  # If the number of targetIndices < K, additional fallback tokens (rows) are selected from 'cloud'.
+  # These additional tokens are chosen amongst the K + 1 nearest neighbours of cloud[targetIndices]. 
+  
   # Function call in interactions.R, produce_token().
   #
   # Args:
@@ -60,17 +65,23 @@ knearest_fallback <- function(cloud, targetIndices, K) {
   #    - list of targetIndices and fallback:
   #
   
-  # stop if there is an empty cloud of feature values, if the words from the
-  # targetIndices ar enot part of the cloud, if K <= 0, or if K + 1 is bigger
-  # than the number of data points in the cloud
   if (nrow(cloud) < 1) {
-    stop("knearest_fallback: Empty input cloud")
+    # print to LOG 
+    return (NULL)
   }
+  
+  # Stop if the words from the targetIndices are not part of the cloud
   if (!all(targetIndices %in% 1:nrow(cloud))) {
     stop("knearest_fallback: targetIndices out of bound")
   }
-  if (K <= 0 | K + 1 > nrow(cloud)) {
+  if (K <= 0) {
     stop(paste("knearest_fallback: invalid number of nearest neighbours requested: K =", K))
+  }
+ 
+  # Fringe case: return all the indices when not enough data to cover K+1
+  if (K + 1 > nrow(cloud)) {
+    # print to LOG
+    return(seq_len(nrow(cloud)))
   }
   
   # compute number of tokens to be sampled

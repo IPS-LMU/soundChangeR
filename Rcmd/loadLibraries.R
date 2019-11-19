@@ -33,6 +33,7 @@ source(file.path(ABMpath, "functions/interactions.R"))
 source(file.path(ABMpath, "functions/calculations.R"))
 source(file.path(ABMpath, "functions/simulations.R"))
 source(file.path(ABMpath, "functions/splitandmerge.R"))
+source(file.path(ABMpath, "functions/debugging.R"))
 
 coreABM <- function(logDir) {
   # This function runs the main ABM routine. Assumes that params and input.df have been loaded.
