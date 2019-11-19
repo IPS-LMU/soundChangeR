@@ -35,7 +35,7 @@ source(file.path(ABMpath, "functions/simulations.R"))
 source(file.path(ABMpath, "functions/splitandmerge.R"))
 source(file.path(ABMpath, "functions/debugging.R"))
 
-coreABM <- function(logDir) {
+coreABM <- function(input.df, params, logDir) {
   # This function runs the main ABM routine. Assumes that params and input.df have been loaded.
   # Function call in ABMmain.R.
   #
@@ -46,10 +46,7 @@ coreABM <- function(logDir) {
   #    - nothing.
   #
   
-  # backward compatibility
-  if (params[['memoryIntakeStrategy']] == "rel+abs") {
-    params[['memoryIntakeStrategy']] <- c("mahalanobisDistance", "maxPosteriorProb")
-  }
+  params <- check_params(params)
   
   pop <- create_population(input.df = input.df, params = params)
   

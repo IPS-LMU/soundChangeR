@@ -50,14 +50,14 @@ register_simulation(params)
 
 # run simulations
 if (params[['runMode']] == "single") {
-  coreABM(logDir)
+  coreABM(input.df, params, logDir)
 } else if (params[['runMode']] == "multiple") {
   require(parallel)
   numCores <- detectCores() - 1
   cl <- makeCluster(numCores, type = "FORK")
   clusterSetRNGStream(cl)
   parLapply(cl, seq_len(params[['multipleABMRuns']]), function(abmName) {
-    coreABM(file.path(logDir, abmName))
+    coreABM(input.df, params, file.path(logDir, abmName))
   })
   stopCluster(cl)
 }

@@ -52,9 +52,7 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   # maxMemorySize is approx = mean + 5 st. dev. of the expected number of received tokens during the simulation.
   # Num. received tokens is Bin(nrOfInteractions, 1/nrOfAgents) approx = Normal,
   # ignoring the (1-nrOfInteractions/nrOfAgents) factor in var and taking worst case of zero forgetting rate.
-  memoryBuffer <- ceiling(nrOfInteractions/nrOfAgents + 5 * sqrt(nrOfInteractions/nrOfAgents))
-  
-  # maxMemorySize <- round(params[['maxMemoryExpansion']] * input.df[, .N, by = speaker][, max(N)])
+  memoryBuffer <- ceiling(params[['nrOfInteractions']]/nrOfAgents + 5 * sqrt(params[['nrOfInteractions']]/nrOfAgents))
   
   # stub
   maxMemorySize <- initialMemorySize + memoryBuffer  
@@ -141,7 +139,7 @@ perform_interactions <- function(pop, logDir, params) {
   #
   
   # generate interaction log
-  interactionsLog <- create_interactions_log(params[['interactionsPerSnapshot']] * params[['nrOfSnapshots']])
+  interactionsLog <- create_interactions_log(params[['nrOfInteractions']])
   
   # agentIDs and matching groups, ordered by agentID
   groupsInfo <- rbindlist(lapply(pop, function(agent) {data.table(agentID = agent$agentID, group = agent$group)}))[order(agentID),]
@@ -426,22 +424,12 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
   
   recognized <- TRUE
   if (recognized && any(c("maxPosteriorProb", "posteriorProbThr") %in% params[['memoryIntakeStrategy']])) { 
-    # execute the QDA (Quadrativ Discriminant Analysis)
-    if (!is_cache_valid(perceiver, "qda")) {
-      update_cache(perceiver, "qda", compute_qda)
-      # cacheMissCounter <<- cacheMissCounter + 1
-    }
-    
-    # compute posterior probabilities
-    posteriorProbAll <- predict(get_cache_value(perceiver, "qda"), producedToken$features)$posterior
-    
+    posteriorProb <- compute_posterior_probabilities(perceiver, producedToken, params[['posteriorProbMethod']])
     # decide if token is recognized
-    # ... either based on maximum posterior probabilities
     if ("maxPosteriorProb" %in% params[['memoryIntakeStrategy']]) {
-      recognized %<>% `&`(colnames(posteriorProbAll)[which.max(posteriorProbAll)] == perceiverLabel_)
-      # ... or based on posterior probability threshold (parameter is missing from params.R!)
+      recognized %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "maxPosteriorProb"))
     } else if ("posteriorProbThr" %in% params[['memoryIntakeStrategy']]) {
-      recognized %<>% `&`(posteriorProbAll[, perceiverLabel_] >= params[['posteriorProbThr']])
+      recognized %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "posteriorProbThr", posteriorProbThr = params[['posteriorProbThr']]))
     }
   }
     

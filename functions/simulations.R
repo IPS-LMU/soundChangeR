@@ -259,3 +259,22 @@ get_params <- function(rootLogDir, simulationName) {
   list.load(file.path(rootLogDir, simulationName, PARAMS_FILENAME))
 }
 
+check_params <- function(params) {
+  # A place to carry out any checking and rearranging of the params list before simulation begins
+  
+  # backward compatibility
+  if (params[['memoryIntakeStrategy']] == "rel+abs") {
+    params[['memoryIntakeStrategy']] <- c("mahalanobisDistance", "maxPosteriorProb")
+  }
+  
+  # posterior prob
+  if (any(c("maxPosteriorProb", "posteriorProbThr") %in% params[['memoryIntakeStrategy']])) {
+    if (is.null(params[["posteriorProbMethod"]])) {
+      params[["posteriorProbMethod"]] <- "qda"
+    }
+  }
+  
+  params[['nrOfInteractions']] <- params[['nrOfSnapshots']] * params[['interactionsPerSnapshot']]
+  
+  return(params)
+}

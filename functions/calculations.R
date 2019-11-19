@@ -27,10 +27,33 @@ invalidate_cache <- function(agent, cacheName) {
 }
 
 compute_qda <- function(agent) {
+  # execute the QDA (Quadrativ Discriminant Analysis)
   # a wrapper for qda()
   qda(as.matrix(agent$features)[agent$labels$valid == TRUE, , drop = FALSE],
       grouping = agent$labels$label[agent$labels$valid == TRUE])
 }
+
+compute_posterior_probabilities <- function(agent, token, method) {
+  if (method == "qda") {
+    # no other option at the moment
+    if (!is_cache_valid(agent, "qda")) {
+      update_cache(agent, "qda", compute_qda)
+      # cacheMissCounter <<- cacheMissCounter + 1
+    }
+    predict(get_cache_value(agent, "qda"), token$features)$posterior
+  } else {
+    NULL
+  }
+}
+
+recognize_posterior_probabilities <- function(posteriorProb, label, method, ...) {
+  if (method == "maxPosteriorProb") {
+    colnames(posteriorProb)[which.max(posteriorProb)] == label
+  } else if (method == "posteriorProbThr") {
+    posteriorProb[, label] >= list(...)[["posteriorProbThr"]]
+  }
+}
+
 
 convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
   # This function converts the population list into a data.table.
