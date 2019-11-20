@@ -54,6 +54,19 @@ recognize_posterior_probabilities <- function(posteriorProb, label, method, ...)
   }
 }
 
+compute_mahal_distance <- function(agent, token, label, method = NULL) {
+  if (is.null(method)) {
+    # no other option at the moment
+    # a wrapper to mahalanobis()
+    mahalanobis(token$features,
+                apply(as.matrix(agent$features)[agent$labels$valid == TRUE & 
+                                                      agent$labels$label == label, , drop = FALSE], 2, mean),
+                cov(as.matrix(agent$features)[agent$labels$valid == TRUE & 
+                                                    agent$labels$label == label, , drop = FALSE]))
+    
+  }
+}
+
 
 convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
   # This function converts the population list into a data.table.

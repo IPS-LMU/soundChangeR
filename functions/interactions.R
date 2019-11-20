@@ -425,25 +425,19 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
   recognized <- TRUE
   if (recognized && any(c("maxPosteriorProb", "posteriorProbThr") %in% params[['memoryIntakeStrategy']])) { 
     posteriorProb <- compute_posterior_probabilities(perceiver, producedToken, params[['posteriorProbMethod']])
-    # decide if token is recognized
     if ("maxPosteriorProb" %in% params[['memoryIntakeStrategy']]) {
       recognized %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "maxPosteriorProb"))
-    } else if ("posteriorProbThr" %in% params[['memoryIntakeStrategy']]) {
+    }
+    if ("posteriorProbThr" %in% params[['memoryIntakeStrategy']]) {
       recognized %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "posteriorProbThr", posteriorProbThr = params[['posteriorProbThr']]))
     }
   }
-    
-  # ... or based on Mahalanobis distance
   if (recognized && any(c("mahalanobisDistance", "highestDensityRegion") %in% params[['memoryIntakeStrategy']])) {
-    mahalaDistanceLabel <- mahalanobis(producedToken$features,
-                                           apply(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & 
-                                                                                 perceiver$labels$label == perceiverLabel_, , drop = FALSE], 2, mean),
-                                           cov(as.matrix(perceiver$features)[perceiver$labels$valid == TRUE & 
-                                                                               perceiver$labels$label == perceiverLabel_, , drop = FALSE]))
+    mahalDist <- compute_mahal_distance(perceiver, producedToken, perceiverLabel_)
     if ("mahalanobisDistance" %in% params[['memoryIntakeStrategy']]) {
-      recognized %<>% `&`(mahalaDistanceLabel <= params[['mahalanobisThreshold']])
+      recognized %<>% `&`(mahalDist <= params[['mahalanobisThreshold']])
     } else if ("highestDensityRegion" %in% params[['memoryIntakeStrategy']]) {
-      recognized %<>% `&`(runif(1) < pchisq(q = mahalaDistanceLabel, df = ncol(perceiver$features), lower.tail = FALSE))
+      recognized %<>% `&`(runif(1) < pchisq(q = mahalDist, df = ncol(perceiver$features), lower.tail = FALSE))
     }
   }
   
