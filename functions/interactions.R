@@ -314,14 +314,14 @@ produce_token <- function(agent, params) {
                      agent$labels$label == producedLabel &
                      agent$labels$valid == TRUE), nExtraTokens, replace = TRUE), , drop = FALSE]
   } else if (params[['productionStrategy']] == "SMOTE" & nExtraTokens > 0) {
-    wordIndicesWithinLabel <- which(agent$labels$word[agent$labels$label == producedLabel & agent$labels$valid == TRUE] == producedWord)
-    fallbackIndices <- knearest_fallback(as.matrix(agent$features)[agent$labels$label == producedLabel & 
-                                                                     agent$labels$valid == TRUE, , drop = FALSE],
-                                         wordIndicesWithinLabel,
+    wordIndices <- which(agent$labels$word == producedWord & agent$labels$valid == TRUE)
+    labelIndices <- which(agent$labels$label == producedLabel & agent$labels$valid == TRUE)
+    fallbackIndices <- knearest_fallback(as.matrix(agent$features),
+                                         labelIndices,
+                                         wordIndices,
                                          params[['productionSMOTENN']])
     
-    wordFeatures[(nWordTokens + 1):(nWordTokens + nExtraTokens), ] <- smote_one_class(agent$features[agent$labels$label == producedLabel & 
-                                                                                                       agent$labels$valid == TRUE, ][fallbackIndices, ],
+    wordFeatures[(nWordTokens + 1):(nWordTokens + nExtraTokens), ] <- smote_one_class(agent$features[fallbackIndices, ],
                                                                                       params[['productionSMOTENN']],
                                                                                       nExtraTokens
                                                                                       )

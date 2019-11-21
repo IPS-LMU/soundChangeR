@@ -103,19 +103,19 @@ convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
   }
 }
 
-knearest_fallback <- function(cloud, targetIndices, K) {
+knearest_fallback <- function(points, extendedIndices, targetIndices, K) {
   # This is an auxiliary function mainly used by SMOTE.
   # SMOTE needs to identify K nearest neighbours each time it produces an extra token. 
   # That means it needs minimum K+1 tokens being available in total, i.e. one target + K neighbours.
-  # 'cloud' is a large set of tokens (rows), typically belonging to one phoneme,
+  # 'points' is a large set of tokens (rows), typically belonging to one phoneme,
   # from which targetIndices identify the tokens that should be used by SMOTE, typically belonging to a word.
-  # If the number of targetIndices < K, additional fallback tokens (rows) are selected from 'cloud'.
-  # These additional tokens are chosen amongst the K + 1 nearest neighbours of cloud[targetIndices]. 
+  # If the number of targetIndices < K, additional fallback tokens (rows) are selected from 'points'.
+  # These additional tokens are chosen amongst the K + 1 nearest neighbours of points[targetIndices]. 
   
   # Function call in interactions.R, produce_token().
   #
   # Args:
-  #    - cloud: matrix of feature values
+  #    - points: matrix of feature values
   #    - targetIndices: list of indices
   #    - K: number of nearest neighbors
   #
@@ -123,23 +123,40 @@ knearest_fallback <- function(cloud, targetIndices, K) {
   #    - list of targetIndices and fallback:
   #
   
-  if (nrow(cloud) < 1) {
+  if (nrow(points) < 1) {
     # print to LOG 
     return (NULL)
   }
   
-  # Stop if the words from the targetIndices are not part of the cloud
-  if (!all(targetIndices %in% 1:nrow(cloud))) {
+  if (any(c(targetIndices, extendedIndices) < 0)) {
+    stop("knearest_fallback: negative index notation not supported for targetIndices and extendedIndices")
+  }
+  
+  # Stop if targetIndices are not part of extendedIndices
+  if (!all(targetIndices %in% extendedIndices)) {
     stop("knearest_fallback: targetIndices out of bound")
   }
+  # Stop if extendedIndices are not in points rows indices
+  if (!all(extendedIndices %in% seq_len(nrow(points)))) {
+    stop("knearest_fallback: extendedIndices out of bound")
+  }
+  
+  if (length(targetIndices) <= 0) {
+    stop("knearest_fallback: empty targetIndices")
+  }
+  
+  if (length(extendedIndices) <= 0) {
+    stop("knearest_fallback: empty extendedIndices")
+  }
+  
   if (K <= 0) {
     stop(paste("knearest_fallback: invalid number of nearest neighbours requested: K =", K))
   }
  
-  # Fringe case: return all the indices when not enough data to cover K+1
-  if (K + 1 > nrow(cloud)) {
+  # Fringe case: return extendedIndices when K + 1 > length(extendedIndices)
+  if (K + 1 > length(extendedIndices)) {
     # print to LOG
-    return(seq_len(nrow(cloud)))
+    return(extendedIndices)
   }
   
   # compute number of tokens to be sampled
@@ -150,17 +167,16 @@ knearest_fallback <- function(cloud, targetIndices, K) {
     return(targetIndices)
   }
   
-  # apply a K nearest neighbor algorithm on the cloud,
+  # apply a K nearest neighbor algorithm on the points,
   # and sample as many as nFallback tokens from the unique neighbors 
   # that are not equal to the targetIndices
-  fallback <- knnx.index(cloud, cloud[targetIndices, , drop=FALSE], K + 1) %>%
+  fallbackIndices <- knnx.index(points[extendedIndices, , drop=FALSE], points[targetIndices, , drop=FALSE], K + 1) %>%
     as.vector %>%
-    .[!. %in% targetIndices] %>%
-    unique %>%
+    extendedIndices[.] %>%
+    setdiff(targetIndices) %>%
     sample(nFallback)
-  
-  # return a list of targetIndices and fallback
-  return(c(targetIndices, fallback))
+    
+  return(c(targetIndices, fallbackIndices))
 }
 
 equal_class <- function(orig, derived) {

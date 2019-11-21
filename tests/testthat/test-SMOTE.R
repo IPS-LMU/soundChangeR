@@ -25,50 +25,72 @@ cross_points <- rbind( c(-1, 0), c(0, 1), c(1, 0), c(0, -1))
 for (i in 1:3) {
   data_cross <- rbind(data_cross, i * cross_points)
 }
+N <- nrow(data_cross)
+cross_inner_idx <- 1:5
+cross_mid_idx <- 1:9
 
-test_that("knearest_fallback throws error for cloud that is not a table", {
-  expect_error(knearest_fallback(1, 1, 1))
+test_that("knearest_fallback throws error for cloud that is not a table/matrix", {
+  expect_error(knearest_fallback(1, 1, 1, 1))
 })
 
 test_that("knearest_fallback returns NULL when cloud is empty", {
-  expect_null(knearest_fallback(data_cross[FALSE,], 0, 0))
+  expect_null(knearest_fallback(data_cross[FALSE,], 0, 0, 0))
 })
 
+test_that("knearest_fallback throws error when targetIndices or extendedIndices are NULL, NA or length 0", {
+  expect_error(knearest_fallback(data_cross, NULL, 1, 1))
+  expect_error(knearest_fallback(data_cross, NA, 1, 1))
+  expect_error(knearest_fallback(data_cross, (1:5)[NULL], 1, 1))
+  expect_error(knearest_fallback(data_cross, cross_inner_idx, NULL, 1))
+  expect_error(knearest_fallback(data_cross, 1, NA, 1))
+  expect_error(knearest_fallback(data_cross, 1, (1:5)[NULL], 1))
+})
 
-test_that("knearest_fallback throws error for targetIndices out of bound", {
-  N <- nrow(data_cross)
-  expect_error(knearest_fallback(data_cross, c(1, 2, N + 1), 2), "targetIndices out of bound")
-  expect_error(knearest_fallback(data_cross, c(1, 2, N + 1), 3), "targetIndices out of bound")
-  expect_error(knearest_fallback(data_cross, c(1, 2, 0), 3), "targetIndices out of bound")
-  expect_error(knearest_fallback(data_cross, c(-1), 3), "targetIndices out of bound")
+test_that("knearest_fallback throws error for targetIndices out of bound with respect to extendedIndices", {
+  expect_error(knearest_fallback(data_cross, cross_inner_idx, cross_mid_idx, 2))
+  expect_error(knearest_fallback(data_cross, 1:N, c(cross_inner_idx, N + 1), 3))
+  expect_error(knearest_fallback(data_cross, 1:N, c(cross_inner_idx, 0), 3))
+  expect_error(knearest_fallback(data_cross, 1:N, c(cross_inner_idx, -1), 3))
+})
+
+test_that("knearest_fallback throws error for extendedIndices out of bound", {
+  expect_error(knearest_fallback(data_cross, cross_inner_idx, cross_mid_idx, 2))
+  expect_error(knearest_fallback(data_cross, c(cross_inner_idx, N + 1), cross_inner_idx, 3))
+  expect_error(knearest_fallback(data_cross, c(cross_inner_idx, 0), cross_inner_idx, 3))
+  expect_error(knearest_fallback(data_cross, c(cross_inner_idx, -1), cross_inner_idx, 3))
+})
+
+test_that("knearest_fallback throws error for targetIndices or extendedIndices using negative notation", {
+  expect_error(knearest_fallback(data_cross, -cross_inner_idx, -cross_mid_idx, 2))
+  expect_error(knearest_fallback(data_cross, c(-1, 2), 1, 2))
+  expect_error(knearest_fallback(data_cross, -N, cross_inner_idx, 2))
 })
 
 test_that("knearest_fallback throws error when K <= 0", {
-  expect_error(knearest_fallback(data_cross, 1:3, 0), "invalid number of nearest neighbours")
-  expect_error(knearest_fallback(data_cross, 1:3, -1), "invalid number of nearest neighbours")
+  expect_error(knearest_fallback(data_cross, cross_mid_idx, cross_inner_idx, 0), "invalid number of nearest neighbours")
+  expect_error(knearest_fallback(data_cross, cross_mid_idx, cross_inner_idx, -1), "invalid number of nearest neighbours")
 })
 
-test_that("knearest_fallback returns cloud when K > nrow(cloud)", {
-  N <- nrow(data_cross)
-  expect_equal(knearest_fallback(data_cross, 1:3, N + 1), 1:N)
+test_that("knearest_fallback returns extendedIndices when K + 1 > length(extendedIndices)", {
+  expect_equal(sort(knearest_fallback(data_cross, cross_mid_idx, cross_inner_idx, length(cross_mid_idx))),
+               sort(cross_mid_idx))
 })
 
 test_that("knearest_fallback returns targetIndices when length(targetIndices) >= K + 1", {
-  expect_equal(sort(knearest_fallback(data_cross, c(2, 4), 1)), c(2, 4))
-  expect_equal(sort(knearest_fallback(data_cross, 1:3, 2)), 1:3)
-  N <- nrow(data_cross)
-  expect_equal(sort(knearest_fallback(data_cross, 1:N, N-1)), 1:N)
+  expect_equal(sort(knearest_fallback(data_cross, cross_mid_idx, cross_inner_idx, length(cross_inner_idx) - 1)),
+               sort(cross_inner_idx))
+  expect_equal(sort(knearest_fallback(data_cross, 1:N, 1:N, N-1)), 1:N)
 })
 
 test_that("knearest_fallback returns correct NN", {
-  expect_length(knearest_fallback(data_cross, 1, 4), 5)
-  expect_equal(sort(knearest_fallback(data_cross, 1, 4)), 1:5)
-  expect_length(knearest_fallback(data_cross, 1, 2), 3)
-  expect_true(all(knearest_fallback(data_cross, 1, 2) %in% 1:5))
-  expect_length(knearest_fallback(data_cross, 13, 3), 4)
-  expect_equal(sort(knearest_fallback(data_cross, 13, 3)), c(1, 5, 9, 13))
-  expect_length(knearest_fallback(data_cross, c(3, 1), 2), 3)
-  expect_true(all(knearest_fallback(data_cross, c(3, 1), 2) %in% c(1:5, 7)))
+  expect_length(knearest_fallback(data_cross, sample(cross_inner_idx), 1, 4), 5)
+  expect_equal(sort(knearest_fallback(data_cross, sample(cross_inner_idx), 1, 4)), 1:5)
+  expect_length(knearest_fallback(data_cross, sample(cross_inner_idx), 1, 2), 3)
+  expect_true(all(knearest_fallback(data_cross, sample(cross_inner_idx), 1, 2) %in% cross_inner_idx))
+  expect_length(knearest_fallback(data_cross, sample(1:N), 13, 3), 4)
+  expect_equal(sort(knearest_fallback(data_cross, sample(1:N), 13, 3)), c(1, 5, 9, 13))
+  expect_length(knearest_fallback(data_cross, sample(cross_mid_idx), c(3, 1), 2), 3)
+  expect_true(all(knearest_fallback(data_cross, sample(cross_mid_idx), c(3, 1), 2) %in% c(1:5, 7)))
 })
 
 test_that("smote_one_class throws error when K <= 0", {
