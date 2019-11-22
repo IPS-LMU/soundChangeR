@@ -268,66 +268,32 @@ produce_token <- function(agent, params) {
     # print to LOG 
     return (NULL)
   }
+  
   producedLabel <- agent$labels$label[agent$labels$word == producedWord & agent$labels$valid == TRUE][1]
   producedInitial <- agent$initial$initial[agent$initial$word == producedWord]
-  nrOfTimesHeard <- agent$labels$nrOfTimesHeard[agent$labels$word == producedWord & agent$labels$valid == TRUE][1] 
+  nrOfTimesHeard <- agent$labels$nrOfTimesHeard[agent$labels$word == producedWord & agent$labels$valid == TRUE][1]
   
-  nWordTokens <- sum(agent$labels$word == producedWord & agent$labels$valid == TRUE)
-  nExtraTokens <- 0
-  
-  # meanWords: get acoustic values for word tokens and an averaged value per word of the same phoneme category
-  if (params[['productionStrategy']] == "meanWords") {
-    otherWords <- unique(agent$labels$word[agent$labels$label == producedLabel & agent$labels$word != producedWord & 
-                                             agent$labels$valid == TRUE])
-    nExtraTokens <- length(otherWords)
-    if (nExtraTokens == 0) {
-      # print to LOG 
-      # stop("The current speaker, ", agent$labels$speaker, " knows only one word, so that no further mean tokens can be used
-      #      with production strategy meanWords. Either exclude the speaker or change production strategy.")
-    }
-    # print(paste(agent$speaker, producedLabel, producedWord, "nExtraTokens", nExtraTokens))
-    
-    # extraTokens: CURRENTLY UNAVAILABLE as productionExtraTokensRatio is missing in params.R
-  } else if (params[['productionStrategy']] == "extraTokens") {
-    nExtraTokens <- round(params[['productionExtraTokensRatio']] * nWordTokens)
-    
-    # SMOTE: Synthetic Minority Over-sampling TEchnique
-  } else if (params[['productionStrategy']] == "SMOTE" & nWordTokens < params[['productionMinTokens']]) {
-    nExtraTokens <- params[['productionMinTokens']] - nWordTokens
-    # nExtraTokens <- ceiling((params[['productionMinTokens']] - nWordTokens) / max(nWordTokens, params[['productionSMOTENN']] + 1)) * 
-    #   max(nWordTokens, params[['productionSMOTENN']] + 1)
+  if (grepl("^(target)?[wW]ord$", params[['productionBasis']])) {
+    basisIdx <- which(agent$labels$word == producedWord & agent$labels$valid == TRUE)
+  } else if (grepl("^(target)?([lL]abel|[pP]honeme)$", params[['productionBasis']])) {
+    basisIdx <- which(agent$labels$label == producedLabel & agent$labels$valid == TRUE)
   }
+  basisTokens <- as.matrix(agent$features)[basisIdx, , drop = FALSE]
   
-  # allocate space for wordFeatures and fill with already available acoustic values
-  wordFeatures <- matrix(nrow = nWordTokens + nExtraTokens, ncol = ncol(as.matrix(agent$features)))
-  wordFeatures[1:nWordTokens, ] <- as.matrix(agent$features)[agent$labels$word == producedWord & agent$labels$valid == TRUE, , drop = FALSE]
-  
-  # complete wordFeatures depending on productionStrategy
-  if (params[['productionStrategy']] == "meanWords" & nExtraTokens > 0) {
-    for (i in 1:nExtraTokens) {
-      wordFeatures[nWordTokens + i, ] <- apply(as.matrix(agent$features)[agent$labels$word == otherWords[i] & 
-                                                                           agent$labels$valid == TRUE, , drop = FALSE], 2, mean)
+  if (!is.null(params[['productionResampling']])) {
+    if (grepl("SMOTE", params[['productionResampling']], ignore.case = TRUE)) {
+      nExtraTokens <- params[['productionMinTokens']] - length(basisIdx)
+      if (nExtraTokens > 0) {
+        extendedIdx <- NULL
+        if (grepl("label|phoneme", params[['productionResamplingFallback']], ignore.case = TRUE)) {
+          extendedIdx <- which(agent$labels$label == producedLabel & agent$labels$valid == TRUE)
+        }
+        extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[['productionSMOTENN']], nExtraTokens)
+        basisTokens <- rbind(basisTokens, extraTokens)
+      }
     }
-  } else if (params[['productionStrategy']] == "extraTokens" & nExtraTokens > 0) {
-    wordFeatures[(nWordTokens + 1):(nWordTokens + nExtraTokens), ] <-  as.matrix(agent$features)[
-      sample(which(agent$labels$word != producedWord &
-                     agent$labels$label == producedLabel &
-                     agent$labels$valid == TRUE), nExtraTokens, replace = TRUE), , drop = FALSE]
-  } else if (params[['productionStrategy']] == "SMOTE" & nExtraTokens > 0) {
-    wordIndices <- which(agent$labels$word == producedWord & agent$labels$valid == TRUE)
-    labelIndices <- which(agent$labels$label == producedLabel & agent$labels$valid == TRUE)
-    fallbackIndices <- knearest_fallback(as.matrix(agent$features),
-                                         labelIndices,
-                                         wordIndices,
-                                         params[['productionSMOTENN']])
-    
-    wordFeatures[(nWordTokens + 1):(nWordTokens + nExtraTokens), ] <- smote_one_class(agent$features[fallbackIndices, ],
-                                                                                      params[['productionSMOTENN']],
-                                                                                      nExtraTokens
-                                                                                      )
   }
-  
-  tokenGauss <- estimate_gaussian(wordFeatures)
+  tokenGauss <- estimate_gaussian(basisTokens)
   
   # generate producedToken as a list
   producedToken <- list(
@@ -391,6 +357,11 @@ smote_one_class <- function(features, K, N) {
     .$syn_data %>%
     .[sample(nrow(.), N), -(ncol(features) + 1)] %>% 
     as.matrix
+}
+
+smote_resampling <- function(points, extendedIndices = NULL, targetIndices, K, N) {
+  fallbackIndices <- knearest_fallback(points, extendedIndices, targetIndices, K)
+  smote_one_class(points[fallbackIndices, , drop = FALSE], K, N)
 }
 
 

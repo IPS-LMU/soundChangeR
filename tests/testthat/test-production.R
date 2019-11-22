@@ -1,11 +1,9 @@
-# testthat folder
+context("Production")
+
 ABMpath <- "/homes/m.gubian/ABM/ABM" # your ABM home dir here
 testDir <- file.path(ABMpath, "tests", "testthat")
 # load all the funcions and libraries (this may not be needed when the code becomes a package)
 source(file.path(ABMpath, "Rcmd", "loadLibraries.R"))
-
-
-context("Production")
 
 # example agent (from Antarctica)
 agent <- readRDS(file.path(testDir, "agent1.rds")) 

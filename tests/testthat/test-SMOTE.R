@@ -1,11 +1,10 @@
-# testthat folder
+context("SMOTE")
+
 ABMpath <- "/homes/m.gubian/ABM/ABM" # your ABM home dir here
 testDir <- file.path(ABMpath, "tests", "testthat")
 # load all the funcions and libraries (this may not be needed when the code becomes a package)
 source(file.path(ABMpath, "Rcmd", "loadLibraries.R"))
 
-
-context("SMOTE")
 
 # test data
 # a cross made of 13 points, centered in c(0,0), 4 arms made of 3 points each,
@@ -37,13 +36,19 @@ test_that("knearest_fallback returns NULL when cloud is empty", {
   expect_null(knearest_fallback(data_cross[FALSE,], 0, 0, 0))
 })
 
-test_that("knearest_fallback throws error when targetIndices or extendedIndices are NULL, NA or length 0", {
-  expect_error(knearest_fallback(data_cross, NULL, 1, 1))
-  expect_error(knearest_fallback(data_cross, NA, 1, 1))
-  expect_error(knearest_fallback(data_cross, (1:5)[NULL], 1, 1))
-  expect_error(knearest_fallback(data_cross, cross_inner_idx, NULL, 1))
-  expect_error(knearest_fallback(data_cross, 1, NA, 1))
-  expect_error(knearest_fallback(data_cross, 1, (1:5)[NULL], 1))
+test_that("knearest_fallback throws error when targetIndices are NULL, NA or length 0", {
+  expect_error(knearest_fallback(data_cross, cross_mid_idx, NULL, 1))
+  expect_error(knearest_fallback(data_cross, cross_mid_idx, NA, 1))
+  expect_error(knearest_fallback(data_cross, cross_mid_idx, (1:5)[NULL], 1))
+})
+
+test_that("knearest_fallback throws error when extendedIndices is NA", {
+  expect_error(knearest_fallback(data_cross, NA, cross_inner_idx, 2))
+})
+
+test_that("knearest_fallback returns targetIndices when extendedIndices is NULL or length 0", {
+  expect_equal(knearest_fallback(data_cross, NULL, cross_inner_idx, 2), cross_inner_idx)
+  expect_equal(knearest_fallback(data_cross, (1:5)[NULL], cross_inner_idx, 4), cross_inner_idx)
 })
 
 test_that("knearest_fallback throws error for targetIndices out of bound with respect to extendedIndices", {
@@ -91,6 +96,11 @@ test_that("knearest_fallback returns correct NN", {
   expect_equal(sort(knearest_fallback(data_cross, sample(1:N), 13, 3)), c(1, 5, 9, 13))
   expect_length(knearest_fallback(data_cross, sample(cross_mid_idx), c(3, 1), 2), 3)
   expect_true(all(knearest_fallback(data_cross, sample(cross_mid_idx), c(3, 1), 2) %in% c(1:5, 7)))
+})
+
+test_that("knearest_fallback works the same when points is a data.frame or data.table instead of a matrix", {
+  expect_true(all(knearest_fallback(data.frame(data_cross), sample(cross_mid_idx), c(3, 1), 2) %in% c(1:5, 7)))
+  expect_true(all(knearest_fallback(data.table(data_cross), sample(cross_mid_idx), c(3, 1), 2) %in% c(1:5, 7)))
 })
 
 test_that("smote_one_class throws error when K <= 0", {

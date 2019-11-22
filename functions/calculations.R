@@ -123,36 +123,34 @@ knearest_fallback <- function(points, extendedIndices, targetIndices, K) {
   #    - list of targetIndices and fallback:
   #
   
-  if (nrow(points) < 1) {
-    # print to LOG 
-    return (NULL)
-  }
+  
   
   if (any(c(targetIndices, extendedIndices) < 0)) {
     stop("knearest_fallback: negative index notation not supported for targetIndices and extendedIndices")
   }
-  
-  # Stop if targetIndices are not part of extendedIndices
-  if (!all(targetIndices %in% extendedIndices)) {
-    stop("knearest_fallback: targetIndices out of bound")
+  if (nrow(points) == 0) {
+    # print to LOG 
+    return (NULL)
   }
-  # Stop if extendedIndices are not in points rows indices
-  if (!all(extendedIndices %in% seq_len(nrow(points)))) {
-    stop("knearest_fallback: extendedIndices out of bound")
-  }
-  
-  if (length(targetIndices) <= 0) {
-    stop("knearest_fallback: empty targetIndices")
-  }
-  
-  if (length(extendedIndices) <= 0) {
-    stop("knearest_fallback: empty extendedIndices")
-  }
-  
   if (K <= 0) {
     stop(paste("knearest_fallback: invalid number of nearest neighbours requested: K =", K))
   }
- 
+  # Stop if extendedIndices are not in points rows indices
+  # note: all(NULL %in% something) == TRUE, hence does not stop when extendedIndices == NULL
+  if (!all(extendedIndices %in% seq_len(nrow(points)))) {
+    stop("knearest_fallback: extendedIndices out of bound")
+  }
+  if (length(targetIndices) <= 0) {
+    stop("knearest_fallback: empty targetIndices")
+  }
+  # when no extendedIndices provided, just return targetIndices
+  if (is.null(extendedIndices) | length(extendedIndices) == 0) {
+    return(targetIndices)
+  }
+  # Stop if targetIndices are not part of (non-empty) extendedIndices 
+  if (!all(targetIndices %in% extendedIndices)) {
+    stop("knearest_fallback: targetIndices out of bound")
+  }
   # Fringe case: return extendedIndices when K + 1 > length(extendedIndices)
   if (K + 1 > length(extendedIndices)) {
     # print to LOG
