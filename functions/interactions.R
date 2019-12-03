@@ -36,15 +36,15 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
     nrOfAgents <- length(sortedSpeakers)
   } else if (method == "bootstrap") {
     nrOfAgents <- params[['bootstrapPopulationSize']]
+  }else {
+    stop(paste("create_population: unrecognised createPopulationMethod:", method))
   }
   
-  nrOfInteractions <- params[['nrOfSnapshots']] * params[['interactionsPerSnapshot']]
-  
   # memory resampling will generate extra artificial tokens (exemplars).
-  # Each agent will grow its initial exemplars endowment by a factor of 'initialMemoryResanpling'
+  # Each agent will grow its initial exemplars endowment by a factor of 'initialMemoryResamplingFactor'
   # The max number of initial exemplars is taken to compute the final number of tokens, 
   # the same for each agent.
-  initialMemorySize <- ceiling(input.df[, .N, by = speaker][, max(N)] * params[['initialMemoryResanpling']])
+  initialMemorySize <- ceiling(input.df[, .N, by = speaker][, max(N)] * params[['initialMemoryResamplingFactor']])
   
   # memoryBuffer defines a buffer of empty memory space
   # so that it is unlikely that an agent will exceed its memory limit during the simulation.
@@ -116,7 +116,7 @@ create_interactions_log <- function(nrOfInteractions) {
                                 perceiverLabel = NA_character_, perceiverNrOfTimesHeard = NA_integer_,
                                 accepted = NA, simulationNr = NA_integer_, valid = NA)[0]
 
-  interactionsLog <- rbindlist(list(
+  rbindlist(list(
     interactionsLog, data.table(matrix(nrow = nrOfInteractions, ncol = ncol(interactionsLog)))
     ), use.names = FALSE) %>% 
     .[, valid := FALSE] %>%
@@ -173,7 +173,7 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo, 
   # producer and perceiver need to be different agents
   while (prodNr == percNr) {
     # choose interaction partners without taking their group into account
-    if (params[['interactionPartners']] == "random") {
+    if (is.null(params[['interactionPartners']]) || params[['interactionPartners']] == "random") {
       prodNr <- sample(groupsInfo$agentID, 1, prob = params[['speakerProb']])
       percNr <- sample(groupsInfo$agentID, 1, prob = params[['listenerProb']])
       
@@ -291,6 +291,8 @@ produce_token <- function(agent, params) {
         extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[['productionSMOTENN']], nExtraTokens)
         basisTokens <- rbind(basisTokens, extraTokens)
       }
+    } else {
+      stop(paste("produce_token: unrecognised productionResampling method:", params[['productionResampling']]))
     }
   }
   tokenGauss <- estimate_gaussian(basisTokens)
