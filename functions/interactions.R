@@ -72,6 +72,9 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
       selectedSpeaker <- sample(sortedSpeakers, 1)
     }
     population[[id]] <- create_agent(id, input.df, selectedSpeaker, maxMemorySize, Pcols)
+    if (params[['initialMemoryResampling']]) {
+      apply_resampling(population[[id]], initialMemorySize, params)
+    }
   }
   return(population)
 }
@@ -117,6 +120,18 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresC
       .[1:nInput, exemplars := input.df[speaker == selectedSpeaker, exemplarsCol]]
   }
   return(agent)
+}
+
+apply_resampling <- function(agent, finalN, params) {
+  initialN <- agent$labels[valid == TRUE, .N]
+  if (initialN >= finalN)
+    return()
+  extraN <- min(finalN, nrow(agent$labels)) - initialN
+  # a list of produced tokens, all based on the initial memory
+  tokens <- replicate(extraN, produce_token(agent, params), simplify = FALSE)
+  lapply(seq_along(tokens), function(i) {
+    # ... use auxiliary functions from perceive_token to write tokens[[i]] into the agent's memory
+  })
 }
 
 create_interactions_log <- function(nrOfInteractions) {
