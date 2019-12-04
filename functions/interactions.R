@@ -44,7 +44,10 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   # Each agent will grow its initial exemplars endowment by a factor of 'initialMemoryResamplingFactor'
   # The max number of initial exemplars is taken to compute the final number of tokens, 
   # the same for each agent.
-  initialMemorySize <- ceiling(input.df[, .N, by = speaker][, max(N)] * params[['initialMemoryResamplingFactor']])
+  initialMemorySize <- input.df[, .N, by = speaker][, max(N)]
+  if (params[['initialMemoryResampling']]) {
+    initialMemorySize <- initialMemorySize * params[['initialMemoryResamplingFactor']]
+  }
   
   # memoryBuffer defines a buffer of empty memory space
   # so that it is unlikely that an agent will exceed its memory limit during the simulation.
@@ -54,50 +57,66 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   # ignoring the (1-nrOfInteractions/nrOfAgents) factor in var and taking worst case of zero forgetting rate.
   memoryBuffer <- ceiling(params[['nrOfInteractions']]/nrOfAgents + 5 * sqrt(params[['nrOfInteractions']]/nrOfAgents))
   
-  # stub
   maxMemorySize <- initialMemorySize + memoryBuffer  
   
   # initiate a list called population and search for P-columns in input.df
   population <- list()
+  
   Pcols <- grep("^P[[:digit:]]+$", colnames(input.df), value = TRUE)
+  if (length(Pcols) == 0) Pcols <- NULL
   
-  
-  # for every agent in population, create a list and add information from input.df
   for (id in seq_len(nrOfAgents)) {
     if (method == "speaker_is_agent") {
       selectedSpeaker <- sortedSpeakers[id]
     } else if (method == "bootstrap") {
       selectedSpeaker <- sample(sortedSpeakers, 1)
     }
-    population[[id]] <- list()
-    population[[id]]$agentID <- id
-    population[[id]]$labels <- input.df[speaker == selectedSpeaker, .(word, label)] %>%
-      .[, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
-      .[, timeStamp := sample(.N), by = word] %>%
-      .[]
-    population[[id]]$group <-input.df[speaker == selectedSpeaker, group][1]
-    population[[id]]$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
-    population[[id]]$features <- input.df[speaker == selectedSpeaker, .SD, .SDcols = Pcols]
-    population[[id]]$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
-    population[[id]]$cache <- data.table(name = "qda", value = list(), valid = FALSE)
-    
-    bufferRowsCount <- maxMemorySize - nrow(population[[id]]$labels)
-    # if an agent's memory is not yet as long as maxMemorySize allocate some more space by adding the
-    # appropriate amount of empty rows to the data.table
-    if (bufferRowsCount > 0) {
-      population[[id]]$labels <- rbindlist(list(
-        population[[id]]$labels,
-        matrix(nrow = bufferRowsCount, ncol = ncol(population[[id]]$labels)) %>%
-          data.table() %>%
-          setnames(colnames(population[[id]]$labels)) %>%
-          .[, valid := FALSE]
-      ))
-      population[[id]]$features <- rbindlist(list(population[[id]]$features,
-                                                  matrix(nrow = bufferRowsCount, ncol = length(Pcols)) %>% 
-                                                    data.table()), use.names = FALSE)
-    }
+    population[[id]] <- create_agent(id, input.df, selectedSpeaker, maxMemorySize, Pcols)
   }
   return(population)
+}
+
+create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresCols = NULL, exemplarsCol = NULL) {
+  agent <- list()
+  # metadata
+  agent$agentID <- id
+  agent$group <-input.df[speaker == selectedSpeaker, group][1]
+  agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
+  agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
+  agent$cache <- data.table(name = "qda", value = list(), valid = FALSE)
+  # init empty memory of size maxMemorySize
+  agent$labels <- data.table(word = character(),
+                             label = character(),
+                             valid = logical(),
+                             nrOfTimesHeard = integer(),
+                             producerID = integer(),
+                             timeStamp = integer()) %>%
+    .[1:maxMemorySize] %>%
+    .[, valid := FALSE]
+  if (!is.null(featuresCols)) {
+    agent$features <- matrix(double(), nrow = maxMemorySize, ncol = length(featuresCols)) %>%
+      data.table %>%
+      setnames(featuresCols)
+  }
+  if (!is.null(exemplarsCol)) {
+    agent$exemplars <- data.table(exemplars = rep(list(list(FALSE)), maxMemorySize))
+  }
+  # fill memory with content from input.df
+  nInput <- input.df[speaker == selectedSpeaker, .N]
+  agent$labels %>% 
+    .[1:nInput, c("word", "label") := input.df[speaker == selectedSpeaker, .(word, label)]] %>%
+    .[1:nInput, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
+    .[1:nInput, timeStamp := sample(.N), by = word]
+  
+  if (!is.null(featuresCols)) {
+    agent$features %>%
+      .[1:nInput, (featuresCols) := input.df[speaker == selectedSpeaker, .SD, .SDcols = featuresCols]]
+  }
+  if (!is.null(exemplarsCol)) {
+    agent$exemplars %>%
+      .[1:nInput, exemplars := input.df[speaker == selectedSpeaker, exemplarsCol]]
+  }
+  return(agent)
 }
 
 create_interactions_log <- function(nrOfInteractions) {
