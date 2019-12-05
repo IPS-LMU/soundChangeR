@@ -27,6 +27,7 @@ params = list(
   
   createPopulationMethod = "speaker_is_agent",   # "speaker_is_agent" or "bootstrap"
   bootstrapPopulationSize = 50,                  # full positive number; only if createPopulationMethod == "bootstrap"
+  initialMemoryResampling = FALSE,
   initialMemoryResamplingFactor = 1.0,           #
   
   ##### Production

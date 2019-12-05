@@ -521,7 +521,7 @@ update_memory <- function(perceiver, producedToken, rowToWrite, perceiverLabel_)
   perceiver$labels[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE, 
                    nrOfTimesHeard := updatedNrOfTimesHeard]
   
-  return(perceiver)
+  # return(perceiver)
 }
 
 
@@ -586,7 +586,8 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
     rowToWrite <- row_to_write(perceiver, producedToken, params)
     
     # write in agent's memory
-    perceiver <- update_memory(perceiver, producedToken, rowToWrite, perceiverLabel_)
+    # perceiver <- 
+    update_memory(perceiver, producedToken, rowToWrite, perceiverLabel_)
     
     # empty cache
     if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr"))) {
