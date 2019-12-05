@@ -22,8 +22,7 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   #    - population: a list
   #
   
-  if (!("createPopulationMethod" %in% names(params)) ||
-      is.null(params[['createPopulationMethod']]) ) {
+  if (!("createPopulationMethod" %in% names(params)) || is.null(params[['createPopulationMethod']]) ) {
     method <- "speaker_is_agent"
   } else {
     method <- params[['createPopulationMethod']]
@@ -36,7 +35,7 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
     nrOfAgents <- length(sortedSpeakers)
   } else if (method == "bootstrap") {
     nrOfAgents <- params[['bootstrapPopulationSize']]
-  }else {
+  } else {
     stop(paste("create_population: unrecognised createPopulationMethod:", method))
   }
   
@@ -123,6 +122,43 @@ create_interactions_log <- function(nrOfInteractions) {
     .[]
 }
 
+write_to_log <- function(interactionsLog, producedToken, perceiver, perceiverLabel_, recognized, nrSim) {
+  # This function updates the interactionLog.
+  # Function call in interactions.R, perceive_token().
+  #
+  # Args:
+  #    - interactionsLog: a data.table that contains information on the interactions
+  #    - producedToken: list, result of produce_token()
+  #    - perceiver: list, an agent from the population 
+  #    - perceiverLabel_: string, label that the perceiver associates with producedToken
+  #    - recognized: boolean 
+  #    - nrSim: simulation number
+  #
+  # Returns:
+  #    - Nothing. Just updates the log.
+  #
+  
+  rowToWrite <- which(interactionsLog$valid == FALSE)[1]
+  interactionsLog[rowToWrite, `:=`(
+    word = producedToken$labels$word,
+    producerID = producedToken$labels$producerID,
+    producerLabel = producedToken$labels$label,
+    producerNrOfTimesHeard = producedToken$labels$nrOfTimesHeard,
+    perceiverID = perceiver$agentID,
+    perceiverLabel = perceiverLabel_,
+    perceiverNrOfTimesHeard = {
+      if (recognized) {
+        perceiver$labels$nrOfTimesHeard[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE][1]
+      } else {
+        as.integer(max(1, perceiver$labels$nrOfTimesHeard[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE][1]))
+      }
+    },
+    accepted = recognized,
+    simulationNr = nrSim,
+    valid = TRUE
+  )]
+}
+
 perform_interactions <- function(pop, logDir, params) {
   # This function repeats perform_single_interaction() (see below)
   # for as many as nrOfInteractions, generates the interaction log,
@@ -170,6 +206,7 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo, 
   
   prodNr <- 1
   percNr <- 1
+  
   # producer and perceiver need to be different agents
   while (prodNr == percNr) {
     # choose interaction partners without taking their group into account
@@ -366,6 +403,93 @@ smote_resampling <- function(points, extendedIndices = NULL, targetIndices, K, N
   smote_one_class(points[fallbackIndices, , drop = FALSE], K, N)
 }
 
+row_to_overwrite <- function(perceiver, producedToken, params) {
+  # This function is applied when the agent-listener's memory capacity is 
+  # full and an old token needs to be overwritten by a new one.
+  # Function call in interactions.R, row_to_write().
+  #
+  # Args:
+  #    - perceiver: an agent from the population
+  #    - producedToken: list, result of produce_token()
+  #    - params: list of params
+  #
+  # Returns:
+  #    - rowToOverwrite: index of row that is to be overwritten
+  #
+  
+  # remove either the oldest token
+  if (params[['memoryRemovalStrategy']] == "timeDecay") {
+    rowToOverwrite <- which(perceiver$labels$word == producedToken$labels$word)[
+      which.min(perceiver$labels$timeStamp[perceiver$labels$word == producedToken$labels$word])
+      ]
+    # ... or the farthest outlier of the token distribution
+  } else if (params[['memoryRemovalStrategy']] == "outlierRemoval") {
+    tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$labels$label == perceiverLabel_, , drop = FALSE])
+    rowToOverwrite <- which(perceiver$labels$word == producedToken$labels$word)[
+      which.max(distance(as.matrix(perceiver$features)[perceiver$labels$word == producedToken$labels$word, , drop = FALSE], tdat.mahal, metric = "mahal"))
+      ]
+    # ... or random token (recommended)
+  } else if (params[['memoryRemovalStrategy']] == "random") {
+    rowToOverwrite <- sample(which(perceiver$labels$word == producedToken$labels$word), 1)
+  }
+  return(rowToOverwrite)
+}
+
+
+row_to_write <- function(perceiver, producedToken, params) {
+  # This function finds the row that the newly produced token will be stored in.
+  # Function call in interactions.R, perceive_token().
+  #
+  # Args:
+  #    - perceiver: an agent from the population
+  #    - producedToken: list, result of produce_token()
+  #    - params: list of params
+  #
+  # Returns:
+  #    - rowToWrite: index of row that is to be used for the new token
+  #
+  
+  if (all(perceiver$labels$valid)) {
+    print(paste('agent', perceiver$agentID, "full"))
+    rowToWrite <- row_to_overwrite(perceiver, producedToken, params)
+  } else {
+    rowToWrite <- which(perceiver$labels$valid == FALSE)[1]
+  }
+  return(rowToWrite)
+}
+
+update_memory <- function(perceiver, producedToken, rowToWrite, perceiverLabel_) {
+  # This function updates the perceiver's memory with the recognized token.
+  # Function call in interactions.R, perceive_token().
+  #
+  # Args:
+  #    - perceiver: an agent from the population
+  #    - producedToken: list, result of produce_token()
+  #    - rowToWrite: result of row_to_write()
+  #    - perceiverLabel_: string, label that the perceiver associates with producedToken
+  #
+  # Returns:
+  #    - perceiver: an agent from the population with updated memory
+  #
+  
+  updatedNrOfTimesHeard <- 1 + max(0, perceiver$labels$nrOfTimesHeard[
+    perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE
+    ][1], na.rm = TRUE)
+  receivedTimeStamp <- 1 + max(0, perceiver$labels$timeStamp[perceiver$labels$word == producedToken$labels$word], na.rm = TRUE)
+  perceiver$features[rowToWrite, names(perceiver$features) := as.list(producedToken$features)]
+  perceiver$labels[rowToWrite, `:=`(
+    word = producedToken$labels$word,
+    label = perceiverLabel_,
+    valid = TRUE,
+    producerID = producedToken$labels$producerID,
+    timeStamp = receivedTimeStamp
+  )]
+  perceiver$labels[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE, 
+                   nrOfTimesHeard := updatedNrOfTimesHeard]
+  
+  return(perceiver)
+}
+
 
 perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, params) {
   # This function tests whether the produced token is to be memorized by the listening agent.
@@ -400,8 +524,7 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
     posteriorProb <- compute_posterior_probabilities(perceiver, producedToken, params[['posteriorProbMethod']])
     if ("maxPosteriorProb" %in% params[['memoryIntakeStrategy']]) {
       recognized %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "maxPosteriorProb"))
-    }
-    if ("posteriorProbThr" %in% params[['memoryIntakeStrategy']]) {
+    } else if ("posteriorProbThr" %in% params[['memoryIntakeStrategy']]) {
       recognized %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "posteriorProbThr", posteriorProbThr = params[['posteriorProbThr']]))
     }
   }
@@ -424,70 +547,21 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
     set(perceiver$labels, sample(which(perceiver$labels$valid == TRUE), 1), "valid", FALSE)
   }
   
-  # if the token is recognized, test for memory capacity
   if (recognized) {
-    # if memory is full, delete one token
-    if (all(perceiver$labels$valid)) {
-      print(paste('agent', perceiver$agentID, "full"))
-      # ... either the oldest token
-      if (params[['memoryRemovalStrategy']] == "timeDecay") {
-        rowToWrite <- which(perceiver$labels$word == producedToken$labels$word)[
-          which.min(perceiver$labels$timeStamp[perceiver$labels$word == producedToken$labels$word])
-          ]
-        # ... or the farthest outlier of the token distribution
-      } else if (params[['memoryRemovalStrategy']] == "outlierRemoval") {
-        tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$labels$label == perceiverLabel_, , drop = FALSE])
-        rowToWrite <- which(perceiver$labels$word == producedToken$labels$word)[
-          which.max(distance(as.matrix(perceiver$features)[perceiver$labels$word == producedToken$labels$word, , drop = FALSE], tdat.mahal, metric = "mahal"))
-          ]
-      } else if (params[['memoryRemovalStrategy']] == "random") {
-        rowToWrite <- sample(which(perceiver$labels$word == producedToken$labels$word), 1)
-      }
-      
-      # if there is still some capacity, use an empty row of the memory
-    } else {
-      rowToWrite <- which(perceiver$labels$valid == FALSE)[1]
-    }
+    # find next free row or row to be overwritten
+    rowToWrite <- row_to_write(perceiver, producedToken, params)
     
     # write in agent's memory
-    updatedNrOfTimesHeard <- 1 + max(0, perceiver$labels$nrOfTimesHeard[perceiver$labels$word == producedToken$labels$word & 
-                                                                          perceiver$labels$valid == TRUE][1], na.rm = TRUE)
-    receivedTimeStamp <- 1 + max(0, perceiver$labels$timeStamp[perceiver$labels$word == producedToken$labels$word], na.rm = TRUE)
-    perceiver$features[rowToWrite, names(perceiver$features) := as.list(producedToken$features)]
-    perceiver$labels[rowToWrite, `:=`(
-      word = producedToken$labels$word,
-      label = perceiverLabel_,
-      valid = TRUE,
-      producerID = producedToken$labels$producerID,
-      timeStamp = receivedTimeStamp
-    )]
-    perceiver$labels[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE, 
-                     nrOfTimesHeard := updatedNrOfTimesHeard]
+    perceiver <- update_memory(perceiver, producedToken, rowToWrite, perceiverLabel_)
+    
+    # empty cache
     if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr"))) {
       invalidate_cache(perceiver, "qda")
     }
   }
   
   # write on interactionsLog
-  rowToWrite <- which(interactionsLog$valid == FALSE)[1]
-  interactionsLog[rowToWrite, `:=`(
-    word = producedToken$labels$word,
-    producerID = producedToken$labels$producerID,
-    producerLabel = producedToken$labels$label,
-    producerNrOfTimesHeard = producedToken$labels$nrOfTimesHeard,
-    perceiverID = perceiver$agentID,
-    perceiverLabel = perceiverLabel_,
-    perceiverNrOfTimesHeard = {
-      if (recognized) {
-        updatedNrOfTimesHeard
-      } else {
-        as.integer(max(1, perceiver$labels$nrOfTimesHeard[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE][1]))
-      }
-    },
-    accepted = recognized,
-    simulationNr = nrSim,
-    valid = TRUE
-  )]
+  write_to_log(interactionsLog, producedToken, perceiver, perceiverLabel_, recognized, nrSim)
   
   # apply split&merge if needed
   numReceivedTokens <- sum(interactionsLog$valid[interactionsLog$perceiverID == perceiver$agentID], na.rm = TRUE)
