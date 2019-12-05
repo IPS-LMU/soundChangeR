@@ -260,20 +260,25 @@ get_params <- function(rootLogDir, simulationName) {
 }
 
 check_params <- function(params) {
-  # A place to carry out any checking and rearranging of the params list before simulation begins
+  # This function is needed to check and rearrange the params list
+  # before the simulation begins.
+  # Function call in loadLibraries.R, coreABM().
+  #
+  # Args:
+  #    - params: lsit of params
+  #
+  # Returns:
+  #    - params: list of params
+  #
   
-  # backward compatibility
-  if (params[['memoryIntakeStrategy']] == "rel+abs") {
-    params[['memoryIntakeStrategy']] <- c("mahalanobisDistance", "maxPosteriorProb")
-  }
-  
-  # posterior prob
+  # posterior probability
   if (any(c("maxPosteriorProb", "posteriorProbThr") %in% params[['memoryIntakeStrategy']])) {
     if (is.null(params[["posteriorProbMethod"]])) {
       params[["posteriorProbMethod"]] <- "qda"
     }
   }
   
+  # define number of interactions
   params[['nrOfInteractions']] <- params[['nrOfSnapshots']] * params[['interactionsPerSnapshot']]
   
   return(params)
