@@ -1,6 +1,6 @@
 ################################################################################
 #                                                                              #
-# Parameter settings. Further documentation in GIT REPO                        #
+# Parameter settings. Further documentation at https://github.com/IPS-LMU/ABM. #
 #                                                                              #
 # Developed by Florian Schiel and Jonathan Harrington                          #
 # Adapted by Johanna Cronenberg                                                #
@@ -13,13 +13,13 @@ params = list(
   
   ##### Input data
   
-  inputDataFile = "/vdata/Projects/ABM/data/u-fronting/u-fronting_NoLob_input_u.csv",    # absolute or relative path to input data
-  features = c("P1", "P2", "P3"),                # the column(s) in inputDataFile that is/are used as features
-  group = "group",                               # the column in inputDataFile that defines the agents' groups
-  label = "label",                               # the column in inputDataFile that stores the phonological labels (can be changed)
-  initial = "label",                             # the column in inputDataFile that stores the phonological labels (will not be changed)
+  inputDataFile = "./data/demo_single_phoneme.csv",    # absolute or relative path to input data
+  features = c("DCT0", "DCT1", "DCT2"),          # the column(s) in inputDataFile that is/are used as features
+  group = "age",                                 # the column in inputDataFile that defines the agents' groups
+  label = "phoneme",                             # the column in inputDataFile that stores the phonological labels (can be changed)
+  initial = "initial",                           # the column in inputDataFile that stores the phonological labels (will not be changed)
   word = "word",                                 # the column in inputDataFile that stores the word labels
-  speaker = "speaker",                           # the column in inputDataFile that stores the speakers' IDs or names
+  speaker = "spk",                               # the column in inputDataFile that stores the speakers' IDs or names
   subsetSpeakers = NULL,                         # NULL or a vector of strings, e.g. c("spk01", "spk02", "spk03")
   subsetLabels = NULL,                           # NULL or a vector of strings, e.g. c("a", "i", "u", "o")
   
@@ -27,16 +27,16 @@ params = list(
   
   createPopulationMethod = "speaker_is_agent",   # "speaker_is_agent" or "bootstrap"
   bootstrapPopulationSize = 50,                  # full positive number; only if createPopulationMethod == "bootstrap"
-  initialMemoryResampling = FALSE,
-  initialMemoryResamplingFactor = 1.0,           #
+  initialMemoryResampling = FALSE,               # enlarge the agents' memories before the interactions or not
+  initialMemoryResamplingFactor = 1.0,           # 1.0 or higher; only if initialMemoryResampling == TRUE
   
   ##### Production
   
-  productionBasis = "word",                      # "word" or "label"
-  productionResampling = "SMOTE",                # NULL or "SMOTE"
+  productionBasis = "word",                      # "word" or "label"; estimate Gaussian based on tokens associated with words or labels
+  productionResampling = "SMOTE",                # NULL or "SMOTE"; apply SMOTE to make Gaussian more stable or not
   productionResamplingFallback = "label",        # currently only "label"
-  productionMinTokens = 20,                      # used if productionResampling == "SMOTE"
-  productionSMOTENN = 5,                         # used if productionResampling == "SMOTE"
+  productionMinTokens = 20,                      # only if productionResampling == "SMOTE"; minimum number of tokens to be used in building Gaussian
+  productionSMOTENN = 5,                         # only if productionResampling == "SMOTE"; number of nearest neighbours used in SMOTE
   
   ##### Perception
   
@@ -44,19 +44,20 @@ params = list(
   memoryIntakeStrategy = "mahalanobisDistance",  # "maxPosteriorProb" and/or "mahalanobisDistance" and/or "posteriorProbThr"
   mahalanobisThreshold = qchisq(.99, df = 3) %>% round(2),   # threshold if memoryIntakeStrategy == "mahalanobisDistance"
   posteriorProbThr = 1/3,                        # only if memoryIntakeStrategy == "posteriorProbThr"
-  perceptionOOVNN = 5,                           # number of nearest neighbours used to attribute label in case of unknown word
   
   ##### Forgetting
+  
   forgettingRate = 0,                            # number between 0 and 1
   memoryRemovalStrategy = "random",              # "random" (recommended) or "outlierRemoval" or "timeDecay"
   
   ##### Interactions
   
-  interactionPartners = "betweenGroups",         # "random" or "betweenGroups" or "withinGroups"
+  interactionPartners = "betweenGroups",         # "random" or "betweenGroups" or "withinGroups"; from which groups the interacting agents must be
   speakerProb = NULL,                            # NULL or a vector of numerics; whether some agents should speak more often than others
   listenerProb = NULL,                           # NULL or a vector of numerics; whether some agents should listen more often than others
   
   ##### Split and merge
+  
   splitAndMerge = FALSE,                         # apply split & merge algorithm or not
   doSplitAndMergeBeforeABM = FALSE,              # apply split & merge before the first interaction or not
   splitAndMergeInterval = 100,                   # any full positive number; after how many interactions an agent applies split & merge
@@ -70,8 +71,8 @@ params = list(
 
   ##### Other options
   
-  rootLogDir = "../experiments/removalStrategy/u-fronting/logs",         #./logs      # absolute or relative path to logging directory
-  notes = "u-fronting test"                      # some further notes on the current simulation for better documentation
+  rootLogDir = "./logs",                         # absolute or relative path to logging directory
+  notes = "u-fronting, one phoneme"              # some further notes on the current simulation for better documentation
 
 )
 
