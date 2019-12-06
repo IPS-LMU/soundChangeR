@@ -129,7 +129,8 @@ apply_resampling <- function(agent, finalN, params) {
   # a list of produced tokens, all based on the initial memory
   tokens <- replicate(extraN, produce_token(agent, params), simplify = FALSE)
   lapply(seq_along(tokens), function(i) {
-    # ... use auxiliary functions from perceive_token to write tokens[[i]] into the agent's memory
+    rowToWrite <- row_to_write(agent, tokens[[i]], params)
+    update_memory(agent, tokens[[i]], rowToWrite, tokens[[i]]$labels$label) 
   })
 }
 
@@ -470,12 +471,12 @@ row_to_overwrite <- function(perceiver, producedToken, params) {
 }
 
 
-row_to_write <- function(perceiver, producedToken, params) {
+row_to_write <- function(agent, producedToken, params) {
   # This function finds the row that the newly produced token will be stored in.
   # Function call in interactions.R, perceive_token().
   #
   # Args:
-  #    - perceiver: an agent from the population
+  #    - agent: an agent from the population
   #    - producedToken: list, result of produce_token()
   #    - params: list of params
   #
@@ -483,45 +484,43 @@ row_to_write <- function(perceiver, producedToken, params) {
   #    - rowToWrite: index of row that is to be used for the new token
   #
   
-  if (all(perceiver$labels$valid)) {
-    print(paste('agent', perceiver$agentID, "full"))
-    rowToWrite <- row_to_overwrite(perceiver, producedToken, params)
+  if (all(agent$labels$valid)) {
+    print(paste('agent', agent$agentID, "full"))
+    rowToWrite <- row_to_overwrite(agent, producedToken, params)
   } else {
-    rowToWrite <- which(perceiver$labels$valid == FALSE)[1]
+    rowToWrite <- which(agent$labels$valid == FALSE)[1]
   }
   return(rowToWrite)
 }
 
-update_memory <- function(perceiver, producedToken, rowToWrite, perceiverLabel_) {
-  # This function updates the perceiver's memory with the recognized token.
+update_memory <- function(agent, producedToken, rowToWrite, label_) {
+  # This function updates an agent's memory with a new token.
   # Function call in interactions.R, perceive_token().
   #
   # Args:
-  #    - perceiver: an agent from the population
+  #    - agent: an agent from the population
   #    - producedToken: list, result of produce_token()
   #    - rowToWrite: result of row_to_write()
-  #    - perceiverLabel_: string, label that the perceiver associates with producedToken
+  #    - label_: string, label that the agent associates with producedToken
   #
   # Returns:
-  #    - perceiver: an agent from the population with updated memory
+  #    - agent: an agent from the population with updated memory
   #
   
-  updatedNrOfTimesHeard <- 1 + max(0, perceiver$labels$nrOfTimesHeard[
-    perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE
+  updatedNrOfTimesHeard <- 1 + max(0, agent$labels$nrOfTimesHeard[
+    agent$labels$word == producedToken$labels$word & agent$labels$valid == TRUE
     ][1], na.rm = TRUE)
-  receivedTimeStamp <- 1 + max(0, perceiver$labels$timeStamp[perceiver$labels$word == producedToken$labels$word], na.rm = TRUE)
-  perceiver$features[rowToWrite, names(perceiver$features) := as.list(producedToken$features)]
-  perceiver$labels[rowToWrite, `:=`(
+  receivedTimeStamp <- 1 + max(0, agent$labels$timeStamp[agent$labels$word == producedToken$labels$word], na.rm = TRUE)
+  agent$features[rowToWrite, names(agent$features) := as.list(producedToken$features)]
+  agent$labels[rowToWrite, `:=`(
     word = producedToken$labels$word,
-    label = perceiverLabel_,
+    label = label_,
     valid = TRUE,
     producerID = producedToken$labels$producerID,
     timeStamp = receivedTimeStamp
   )]
-  perceiver$labels[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE, 
+  agent$labels[agent$labels$word == producedToken$labels$word & agent$labels$valid == TRUE, 
                    nrOfTimesHeard := updatedNrOfTimesHeard]
-  
-  # return(perceiver)
 }
 
 
@@ -549,6 +548,8 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
   perceiverLabel_ <- unique(perceiver$labels$label[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE])
   
   # if word is unknown, abort communication
+  # here we will probably re-introduce perceptionOOVNN, i.e. if word is unknown,
+  # assign label based on majority vote among perceptionOOVNN nearest neighbours.
   if (length(perceiverLabel_) == 0) {
     return()
   }
