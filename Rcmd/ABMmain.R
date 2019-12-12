@@ -15,7 +15,7 @@ setwd(ABMpath)
 
 # load libraries and parameters
 source(file.path("Rcmd", "loadLibraries.R"))
-source(file.path("data", "u-fronting.params.R"))
+source(file.path("data", "params.R"))
 
 # create root logging directory and simulations register if they do not yet exist
 dir.create(params[["rootLogDir"]], showWarnings = FALSE, recursive = TRUE)
@@ -27,7 +27,7 @@ logDir <- file.path(params[["rootLogDir"]], params[['simulationName']])
 dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
 
 # load input data.table
-input.df <- fread(params[['inputDataFile']], stringsAsFactors = F)
+input.df <- suppressWarnings(fread(params[['inputDataFile']], stringsAsFactors = F))
 input.df %>% setnames(c(params[["word"]], params[["speaker"]], params[["group"]]), c("word", "speaker", "group"))
 input.df$initial <- input.df[, params[["initial"]], with = FALSE]
 input.df$label <- input.df[, params[["label"]], with = FALSE]
