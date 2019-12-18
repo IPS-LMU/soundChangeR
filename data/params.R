@@ -52,9 +52,10 @@ params = list(
   
   ##### Interactions
   
-  interactionPartners = "betweenGroups",         # "random" or "betweenGroups" or "withinGroups"; from which groups the interacting agents must be
+  interactionPartners = "betweenGroups",         # "random" or "betweenGroups" or "withinGroups" or "asymmetric"; from which groups the interacting agents must be
   speakerProb = NULL,                            # NULL or a vector of numerics; whether some agents should speak more often than others
   listenerProb = NULL,                           # NULL or a vector of numerics; whether some agents should listen more often than others
+  probTalkToOwnGroup = c(0.5, 0.9),              # one number between 0 and 1 per speaker group; probability of talking to agent from own group if interactionPartners == "asymmetric"
   
   ##### Split and merge
   
@@ -66,7 +67,7 @@ params = list(
   
   runMode = "single",                            # "single" or "multiple"
   multipleABMRuns = 2,                           # any full positive number; number of ABM runs if runMode == "multiple"
-  nrOfSnapshots = 2,                             # any full positive number; how often the population is archived during the simulation
+  nrOfSnapshots = 5,                             # any full positive number; how often the population is archived during the simulation
   interactionsPerSnapshot = 1000,                # any full positive number; how many interactions take place per snapshot
 
   ##### Other options
