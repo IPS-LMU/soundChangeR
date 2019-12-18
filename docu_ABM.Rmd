@@ -1,7 +1,7 @@
 ---
 title: "ABM User Manual"
-author: "Michele Gubian and Johanna Cronenberg"
-date: "December 11, 2019"
+author: "Johanna Cronenberg and Michele Gubian"
+date: "December 18, 2019"
 output: html_document
 ---
 
@@ -52,7 +52,7 @@ subsetLabels = NULL                     # NULL or a vector of strings, e.g. c("a
 
 The input data file can be `.txt` or `.csv` and needs to contain a table (it will be loaded as a `data.table`). You can name the columns any which way you like since you will have to indicate in `data/params.R` which columns store which information: features, group, label, initial, word, speaker (see comments in code snippet above). There can be more columns than needed (they will be ignored), but also more observations. You can subset the speakers and phonological labels to be used in the simulations by setting `subsetSpeakers` and `subsetLabels`.
 
-### Initiation procedure
+### Initialisation procedure
 
 ```{r eval=FALSE}
 createPopulationMethod = "speaker_is_agent"   # "speaker_is_agent" or "bootstrap"
@@ -93,20 +93,18 @@ It is assumed that word recognition always works, i.e. the agent-listener does *
 
 - `"maxPosteriorProb"`: Maximum posterior probability decision, i.e. the produced token is only memorised if its probability of belonging to the listener's corresponding phonological category is higher than that of belonging to any of the other categories.
 - `"mahalanobisDistance"`: The distance between the token and the corresponding distribution in the listener's memory has to be smaller than a given threshold in order to be incorporated. The threshold is specified by setting `"mahalanobisThreshold"` where the degrees of freedom needs to be `length(params$features)`. This approach does not take into account any of the other phonological categories, i.e. it might not be the appropriate strategy if two or more categories in your data overlap or are very close to each other.
-- `"posteriorProbThr"` (not recommended): The produced token is memorised if its posterior probability of belonging to the phonological category is higher than the threshold indicated by this option.
+- `"posteriorProbThr"`: The produced token is memorised if its posterior probability of belonging to the phonological category is higher than the threshold indicated by this option.
 
 ### Forgetting
 
-It is unlikely that speakers don't ever forget any of the episodic traces they have memorised. However, since we do not have any evidence on how this forgetting process works, we have to be agnostic about it. That is why we recommend "forgetting" a random token that has the same word label as the newly perceived token. It is planned, to decouple perception and forgetting completely.
-
 ```{r eval=FALSE}
-forgettingRate = 0                      # number between 0 and 1
 memoryRemovalStrategy = "random"        # "random" (recommended) or "outlierRemoval" or "timeDecay"
+forgettingRate = 0                      # number between 0 and 1
 ```
 
-For reasons of backward compatibility, `memoryRemovalStrategy` can also be used to delete either the oldest token (`timeDecay`) or the farthest outlier of the phoneme distribution (`outlierRemoval`). Be aware that these have unwanted side effects and produce artefacts.
+It is unlikely that speakers don't ever forget any of the episodic traces they have memorised. However, since we do not have any evidence on how this forgetting process works, we have to be agnostic about it. That is why we recommend "forgetting" a random token that has the same word label as the newly perceived token. For reasons of backward compatibility, `memoryRemovalStrategy` can also be used to delete either the oldest token (`timeDecay`) or the farthest outlier of the phoneme distribution (`outlierRemoval`). Be aware that these have unwanted side effects and produce artefacts.
 
-EXPLAIN FORGETTING RATE
+`forgettingRate` is also part of the perception process (even though it is planned to decouple perception and forgetting completely). This parameter takes any value between 0 and 1; if a randomly generated number is smaller than `forgettingRate` the agent-listener will remove a random token from its memory. This type of forgetting does not take into account to which word type or phoneme the removed token belongs.
 
 ### Interactions
 
