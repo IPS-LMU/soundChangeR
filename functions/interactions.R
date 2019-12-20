@@ -435,10 +435,22 @@ smote_one_class <- function(features, K, N) {
   }
   K <- min(K, nrow(features) - 1)
   
-  SMOTE(data.frame(features), rep("a", nrow(features)), K, ceiling(N/nrow(features))) %>%
+  df <- data.frame(features)
+  if (ncol(df) == 1) {
+    df$P2 <- rep(0, nrow(df)) # temp hack
+  }
+  
+  res <- SMOTE(df, rep("a", nrow(df)), K, ceiling(N/nrow(df))) %>%
     .$syn_data %>%
-    .[sample(nrow(.), N), -(ncol(features) + 1)] %>% 
+    .[sample(nrow(.), N), -(ncol(df) + 1)] %>% 
     as.matrix
+  
+  if (ncol(data.frame(features)) == 1) {
+    res <- as.matrix(res[,1]) # temp hack
+    rownames(res) <- c()
+  }
+  
+  return(res)
 }
 
 smote_resampling <- function(points, extendedIndices = NULL, targetIndices, K, N) {
