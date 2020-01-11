@@ -55,6 +55,9 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   # Num. received tokens is Bin(nrOfInteractions, 1/nrOfAgents) approx = Normal,
   # ignoring the (1-nrOfInteractions/nrOfAgents) factor in var and taking worst case of zero forgetting rate.
   memoryBuffer <- ceiling(params[['nrOfInteractions']]/nrOfAgents + 5 * sqrt(params[['nrOfInteractions']]/nrOfAgents))
+  if(params[['rememberOwnTokens']]) {
+    memoryBuffer <- memoryBuffer * 2
+  }
   
   maxMemorySize <- initialMemorySize + memoryBuffer  
   
@@ -284,7 +287,10 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo, 
   
   # let speaking agent produce a token and listening agent perceive it
   pt <- produce_token(producer, params)
-  perceive_token(perceiver, pt, interactionsLog, nrSim, params)
+  perceive_token(perceiver, pt, interactionsLog, nrSim, params, TRUE)
+  if(params[['rememberOwnTokens']]) {
+    perceive_token(producer, pt, interactionsLog, nrSim, params, FALSE)
+  }
 }
 
 choose_word <- function(labels, method = "random_index") {
@@ -524,16 +530,17 @@ update_memory <- function(agent, producedToken, rowToWrite, label_) {
 }
 
 
-perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, params) {
+perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params, invalidateCache) {
   # This function tests whether the produced token is to be memorized by the listening agent.
   # Function call in interactions.R, perform_single_interaction().
   #
   # Args:
-  #    - perceiver: an agent from the population
+  #    - agent: an agent from the population
   #    - producedToken: list, result of produce_token()
   #    - interactionsLog: data.table
   #    - nrSim: simulation number
   #    - params: list of params from params.R
+  #    - invalidateCache: boolean, whether or not to empty the cache
   #
   # Returns:
   #    - nothing. Overwrites one row in the main data.table.
@@ -544,8 +551,8 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
     return()
   }
   
-  # find out which phonological label the perceiver associates with the produced word
-  perceiverLabel_ <- unique(perceiver$labels$label[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE])
+  # find out which phonological label the agent associates with the produced word
+  perceiverLabel_ <- unique(agent$labels$label[agent$labels$word == producedToken$labels$word & agent$labels$valid == TRUE])
   
   # if word is unknown, abort communication
   # here we will probably re-introduce perceptionOOVNN, i.e. if word is unknown,
@@ -556,7 +563,7 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
   
   recognized <- TRUE
   if (recognized && any(c("maxPosteriorProb", "posteriorProbThr") %in% params[['memoryIntakeStrategy']])) { 
-    posteriorProb <- compute_posterior_probabilities(perceiver, producedToken, params[['posteriorProbMethod']])
+    posteriorProb <- compute_posterior_probabilities(agent, producedToken, params[['posteriorProbMethod']])
     if ("maxPosteriorProb" %in% params[['memoryIntakeStrategy']]) {
       recognized %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "maxPosteriorProb"))
     } else if ("posteriorProbThr" %in% params[['memoryIntakeStrategy']]) {
@@ -564,11 +571,11 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
     }
   }
   if (recognized && any(c("mahalanobisDistance", "highestDensityRegion") %in% params[['memoryIntakeStrategy']])) {
-    mahalDist <- compute_mahal_distance(perceiver, producedToken, perceiverLabel_)
+    mahalDist <- compute_mahal_distance(agent, producedToken, perceiverLabel_)
     if ("mahalanobisDistance" %in% params[['memoryIntakeStrategy']]) {
       recognized %<>% `&`(mahalDist <= params[['mahalanobisThreshold']])
     } else if ("highestDensityRegion" %in% params[['memoryIntakeStrategy']]) {
-      recognized %<>% `&`(runif(1) < pchisq(q = mahalDist, df = ncol(perceiver$features), lower.tail = FALSE))
+      recognized %<>% `&`(runif(1) < pchisq(q = mahalDist, df = ncol(agent$features), lower.tail = FALSE))
     }
   }
   
@@ -579,32 +586,31 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
   
   # forget
   if (runif(1) < params[['forgettingRate']]) {
-    set(perceiver$labels, sample(which(perceiver$labels$valid == TRUE), 1), "valid", FALSE)
+    set(agent$labels, sample(which(agent$labels$valid == TRUE), 1), "valid", FALSE)
   }
   
   if (recognized) {
     # find next free row or row to be overwritten
-    rowToWrite <- row_to_write(perceiver, producedToken, params)
+    rowToWrite <- row_to_write(agent, producedToken, params)
     
     # write in agent's memory
-    # perceiver <- 
-    update_memory(perceiver, producedToken, rowToWrite, perceiverLabel_)
+    update_memory(agent, producedToken, rowToWrite, perceiverLabel_)
     
     # empty cache
-    if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr"))) {
-      invalidate_cache(perceiver, "qda")
+    if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr")) && invalidateCache) {
+      invalidate_cache(agent, "qda")
     }
   }
   
   # write on interactionsLog
-  write_to_log(interactionsLog, producedToken, perceiver, perceiverLabel_, recognized, nrSim)
+  write_to_log(interactionsLog, producedToken, agent, perceiverLabel_, recognized, nrSim)
   
   # apply split&merge if needed
-  numReceivedTokens <- sum(interactionsLog$valid[interactionsLog$perceiverID == perceiver$agentID], na.rm = TRUE)
+  numReceivedTokens <- sum(interactionsLog$valid[interactionsLog$perceiverID == agent$agentID], na.rm = TRUE)
   if (params[['splitAndMerge']] == T & numReceivedTokens %% params[['splitAndMergeInterval']] == 0) {
-    splitandmerge(perceiver, params, full = FALSE)
-    if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr"))) {
-      invalidate_cache(perceiver, "qda")
+    splitandmerge(agent, params, full = FALSE)
+    if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr")) && invalidateCache) {
+      invalidate_cache(agent, "qda")
     }
   }
 }
