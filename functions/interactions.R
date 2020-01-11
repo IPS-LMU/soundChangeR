@@ -274,11 +274,11 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo, 
       
       # or introduce asymmetry for speaker groups, i.e. a group talks to x% to themselves and y% to the others
     } else if (params[['interactionPartners']] == "asymmetric") {
-      prodNr <- sample(groupsInfo$agentID, 1, prob = params[['speakerProb']])
-      prodGroup <- groupsInfo[groupsInfo$agentID == prodNr,]$group
-      prodGroupIdx <- which(sort(unique(groupsInfo$group)) %in% prodGroup)
-      probs <- ifelse(groupsInfo$group == prodGroup, params[['probTalkToOwnGroup']][prodGroupIdx], 1-params[['probTalkToOwnGroup']][prodGroupIdx])
-      percNr <- sample(groupsInfo$agentID, 1, prob = probs)
+      percNr <- sample(groupsInfo$agentID, 1, prob = params[['listenerProb']])
+      percGroup <- groupsInfo[groupsInfo$agentID == percNr,]$group
+      percGroupIdx <- which(sort(unique(groupsInfo$group)) %in% percGroup)
+      probs <- ifelse(groupsInfo$group == percGroup, params[['probHearOwnGroup']][percGroupIdx], 1-params[['probHearOwnGroup']][percGroupIdx])
+      prodNr <- sample(groupsInfo$agentID, 1, prob = probs)
     }
   }
   
