@@ -29,6 +29,7 @@ params = list(
   bootstrapPopulationSize = 50,                  # full positive number; only if createPopulationMethod == "bootstrap"
   initialMemoryResampling = FALSE,               # enlarge the agents' memories before the interactions or not
   initialMemoryResamplingFactor = 1.0,           # 1.0 or higher; only if initialMemoryResampling == TRUE
+  rememberOwnTokens = TRUE,                      # whether or not to perceive one's own tokens
   
   ##### Production
   
