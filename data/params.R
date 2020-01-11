@@ -55,7 +55,7 @@ params = list(
   interactionPartners = "betweenGroups",         # "random" or "betweenGroups" or "withinGroups" or "asymmetric"; from which groups the interacting agents must be
   speakerProb = NULL,                            # NULL or a vector of numerics; whether some agents should speak more often than others
   listenerProb = NULL,                           # NULL or a vector of numerics; whether some agents should listen more often than others
-  probTalkToOwnGroup = c(0.5, 0.9),              # one number between 0 and 1 per speaker group; probability of talking to agent from own group if interactionPartners == "asymmetric"
+  probHearOwnGroup = c(0.5, 0.9),                # one number between 0 and 1 per speaker group; probability of hearing from agent from own group if interactionPartners == "asymmetric"
   
   ##### Split and merge
   
