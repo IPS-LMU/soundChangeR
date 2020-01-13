@@ -28,6 +28,7 @@ library("Hmisc")
 library("magrittr")
 library("rlist")
 library("dtt")
+library("mclust")
 
 source(file.path(ABMpath, "functions/interactions.R"))
 source(file.path(ABMpath, "functions/calculations.R"))
