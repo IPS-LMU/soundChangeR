@@ -278,7 +278,7 @@ phonsplit <- function(agent) {
                                agent$labels$word[agent$labels$label == lab & agent$labels$valid],
                                lab)
      if (splitLab[1] != lab) {
-       agent$labels[label == lab, label := splitLab]
+       agent$labels[label == lab & valid == TRUE, label := splitLab]
        didSplit <- TRUE
      }
    }
