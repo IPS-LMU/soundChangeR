@@ -1,18 +1,17 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 
 <head>
 
 <meta charset="utf-8" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
 <meta name="author" content="Johanna Cronenberg and Michele Gubian" />
 
-<meta name="date" content="2019-12-18" />
+<meta name="date" content="2020-01-16" />
 
 <title>ABM User Manual</title>
 
@@ -492,6 +491,7 @@ summary {
   border: none;
   display: inline-block;
   border-radius: 4px;
+  background-color: transparent;
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li {
@@ -525,7 +525,7 @@ summary {
 
 <h1 class="title toc-ignore">ABM User Manual</h1>
 <h4 class="author">Johanna Cronenberg and Michele Gubian</h4>
-<h4 class="date">December 18, 2019</h4>
+<h4 class="date">January 16, 2020</h4>
 
 </div>
 
@@ -537,7 +537,7 @@ summary {
 <div id="setup" class="section level2">
 <h2>Setup</h2>
 <pre class="r"><code>R.version.string</code></pre>
-<pre><code>## [1] &quot;R version 3.6.1 (2019-07-05)&quot;</code></pre>
+<pre><code>## [1] &quot;R version 3.6.2 (2019-12-12)&quot;</code></pre>
 <pre class="r"><code># from Rcmd/ABMmain.R
 ABMpath &lt;- &quot;/homes/myName/path/to/ABMcode&quot;</code></pre>
 <ul>
@@ -573,8 +573,8 @@ subsetLabels = NULL                     # NULL or a vector of strings, e.g. c(&q
 bootstrapPopulationSize = 50                  # full positive number; only if createPopulationMethod == &quot;bootstrap&quot;
 initialMemoryResampling = FALSE               # enlarge the agents' memories before the interactions or not
 initialMemoryResamplingFactor = 1.0           # 1.0 or higher; only if initialMemoryResampling == TRUE</code></pre>
-<p>Usually, every human speaker is represented by one agent which is achieved by initiating the agent with the acoustic data of the speaker (<code>createPopulationMethod = &quot;speaker_is_agent&quot;</code>). However, there is the possibility to break this paradigm by applying <a href="https://en.wikipedia.org/wiki/Bootstrapping_(statistics)">bootstrapping</a>. If so, you will need to specify how many agents the new population should be comprised of (<code>bootstrapPopulationSize</code>). It is highly recommended to then do multiple ABM runs (<code>runMode = &quot;multiple&quot;</code>; see below).</p>
-<p>Since we often deal with sparse data in the phonetic sciences, it makes sense to augment the amount of data <em>before</em> the first interaction takes place (<code>initialMemoryResampling = TRUE</code>). If you want to do this (which is recommended to avoid artefacts during the simulations), you also need to specify the <code>initialMemoryResamplingFactor</code>.</p>
+<p>Usually, every human speaker is represented by one agent which is achieved by initialising the agent with the acoustic data of the speaker (<code>createPopulationMethod = &quot;speaker_is_agent&quot;</code>). However, there is the possibility to break this paradigm by applying <a href="https://en.wikipedia.org/wiki/Bootstrapping_(statistics)">bootstrapping</a>. If so, you will need to specify how many agents the new population should be comprised of (<code>bootstrapPopulationSize</code>). It is highly recommended to then do multiple ABM runs (<code>runMode = &quot;multiple&quot;</code>; see below).</p>
+<p>Since we often deal with sparse data in the phonetic sciences, it makes sense to augment the amount of data (i.e. tokens per word per speaker) <em>before</em> the first interaction takes place (<code>initialMemoryResampling = TRUE</code>). If you want to do this (which is recommended in order to avoid artefacts during the simulations), you also need to specify the <code>initialMemoryResamplingFactor</code>. The resampling uses the production technique indicated by the parameters in the next section.</p>
 </div>
 <div id="production" class="section level3">
 <h3>Production</h3>
@@ -584,7 +584,7 @@ productionResamplingFallback = &quot;label&quot;  # currently only &quot;label&q
 productionMinTokens = 20                # only if productionResampling == &quot;SMOTE&quot;; minimum number of tokens to be used in building Gaussian
 productionSMOTENN = 5                   # only if productionResampling == &quot;SMOTE&quot;; number of nearest neighbours used in SMOTE</code></pre>
 <p>Every interaction between an agent-speaker and an agent-listener starts with the production of a word. Then a Gaussian distribution is estimated based on all acoustic tokens that are associated either with the target word (<code>productionBasis = &quot;word&quot;</code>) or the phonological label (<code>productionBasis = &quot;label&quot;</code>) associated with that word.</p>
-<p>Since in some cases the number of available tokens for a given word or label is too small to estimate the parameters of a multi-dimensional Gaussian distribution, extra tokens can be generated using <a href="http://rikunert.com/SMOTE_explained">SMOTE</a> (<code>productionResampling = &quot;SMOTE&quot;</code>). You will have to specify the minimum number of tokens that should be used in order to build a Gaussian distribution (e.g. <code>productionMinTokens = 10</code>) as well as the number of nearest neighbours that will be considered when performing the random linear interpolation (e.g. <code>productionSMOTENN = 5</code>). Whenever the available number of tokens for a given word is less than one plus the number of nearest neighbours, the neighbourhood is completed by adding tokens from other words containing the same target phoneme (<code>productionResamplingFallback = &quot;label&quot;</code>).</p>
+<p>Since in some cases the number of available tokens for a given word or label is too small to estimate the parameters of a multi-dimensional Gaussian distribution, extra tokens can be generated using <a href="http://rikunert.com/SMOTE_explained">SMOTE</a> (<code>productionResampling = &quot;SMOTE&quot;</code>). You will have to specify the minimum number of tokens that should be used in order to build a Gaussian distribution (e.g. <code>productionMinTokens = 20</code>) as well as the number of nearest neighbours that will be considered when performing the random linear interpolation (e.g. <code>productionSMOTENN = 5</code>). Whenever the available number of tokens for a given word is less than one plus the number of nearest neighbours, the neighbourhood is completed by adding tokens from other words containing the same target phoneme (<code>productionResamplingFallback = &quot;label&quot;</code>).</p>
 <p>Once the Gaussian distribution is estimated, a new acoustic token is sampled from it. The agent-listener receives the acoustic features, the word label, and phonological label.</p>
 </div>
 <div id="perception" class="section level3">
@@ -592,7 +592,7 @@ productionSMOTENN = 5                   # only if productionResampling == &quot;
 <pre class="r"><code>memoryIntakeStrategy = &quot;mahalanobisDistance&quot;              # &quot;maxPosteriorProb&quot; and/or &quot;mahalanobisDistance&quot; and/or &quot;posteriorProbThr&quot;
 mahalanobisThreshold = qchisq(.99, df = 3) %&gt;% round(2)   # threshold if memoryIntakeStrategy == &quot;mahalanobisDistance&quot;
 posteriorProbThr = 1/3                                    # only if memoryIntakeStrategy == &quot;posteriorProbThr&quot;</code></pre>
-<p>It is assumed that word recognition always works, i.e. the agent-listener does <em>not</em> decide whether or not he understands the word. Instead, it is decided whether the target phoneme in the produced token is probabilistically close enough to the agent-listener’s distribution of that phoneme. If so, the new token is memorised, otherwise a new interaction begins. The parameter <code>memoryIntakeStrategy</code> indicates which kind of statistical decision is to be taken:</p>
+<p>It is assumed that word recognition always works, i.e. the agent-listener does <em>not</em> decide whether or not he understands the word. Instead, it is decided whether the target phoneme in the produced token is probabilistically close enough to the agent-listener’s distribution of that phoneme. If so, the new token is memorised, otherwise a new interaction begins. The parameter <code>memoryIntakeStrategy</code> indicates which kind of statistical decision is to be taken (combining strategies is also possible, e.g. <code>c(&quot;maxPosteriorProb&quot;, &quot;mahalanobisDistance&quot;)</code>):</p>
 <ul>
 <li><code>&quot;maxPosteriorProb&quot;</code>: Maximum posterior probability decision, i.e. the produced token is only memorised if its probability of belonging to the listener’s corresponding phonological category is higher than that of belonging to any of the other categories.</li>
 <li><code>&quot;mahalanobisDistance&quot;</code>: The distance between the token and the corresponding distribution in the listener’s memory has to be smaller than a given threshold in order to be incorporated. The threshold is specified by setting <code>&quot;mahalanobisThreshold&quot;</code> where the degrees of freedom needs to be <code>length(params$features)</code>. This approach does not take into account any of the other phonological categories, i.e. it might not be the appropriate strategy if two or more categories in your data overlap or are very close to each other.</li>
@@ -617,7 +617,7 @@ listenerProb = NULL                     # NULL or a vector of numerics; whether 
 <li><code>&quot;withinGroups&quot;</code>: Speaker and listener must come from the same group</li>
 <li><code>&quot;betweenGroups&quot;</code>: Speaker and listener must be members of different groups</li>
 </ul>
-<p>In certain cases, you may want to introduce an imbalance to the ABM concerning the frequency with which one or more agents are chosen to be speakers or listeners in an interaction. <code>speakerProb</code> and <code>listenerProb</code> allow you to assign a speaking or listening probability to each agent by specifying a vectors of numbers, which do not need to sum up to one, as they will be normalised internally. If left <code>NULL</code>, all agents will get equal chances to be selected as speakers or listeners in an interaction.</p>
+<p>In certain cases, you may want to introduce an imbalance to the ABM concerning the frequency with which one or more agents are chosen to be speakers or listeners in an interaction. <code>speakerProb</code> and <code>listenerProb</code> allow you to assign a speaking or listening probability to each agent by specifying a vector of numbers, which do not need to sum up to one, as they will be normalised internally. If left <code>NULL</code>, all agents will get equal chances to be selected as speakers or listeners in an interaction.</p>
 </div>
 <div id="split-and-merge" class="section level3">
 <h3>Split and merge</h3>

@@ -1,7 +1,7 @@
 ---
 title: "ABM User Manual"
 author: "Johanna Cronenberg and Michele Gubian"
-date: "December 18, 2019"
+date: "January 16, 2020"
 output: html_document
 ---
 
@@ -61,9 +61,9 @@ initialMemoryResampling = FALSE               # enlarge the agents' memories bef
 initialMemoryResamplingFactor = 1.0           # 1.0 or higher; only if initialMemoryResampling == TRUE
 ```
 
-Usually, every human speaker is represented by one agent which is achieved by initiating the agent with the acoustic data of the speaker (`createPopulationMethod = "speaker_is_agent"`). However, there is the possibility to break this paradigm by applying [bootstrapping](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)). If so, you will need to specify how many agents the new population should be comprised of (`bootstrapPopulationSize`). It is highly recommended to then do multiple ABM runs (`runMode = "multiple"`; see below).
+Usually, every human speaker is represented by one agent which is achieved by initialising the agent with the acoustic data of the speaker (`createPopulationMethod = "speaker_is_agent"`). However, there is the possibility to break this paradigm by applying [bootstrapping](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)). If so, you will need to specify how many agents the new population should be comprised of (`bootstrapPopulationSize`). It is highly recommended to then do multiple ABM runs (`runMode = "multiple"`; see below).
 
-Since we often deal with sparse data in the phonetic sciences, it makes sense to augment the amount of data *before* the first interaction takes place (`initialMemoryResampling = TRUE`). If you want to do this (which is recommended to avoid artefacts during the simulations), you also need to specify the `initialMemoryResamplingFactor`.
+Since we often deal with sparse data in the phonetic sciences, it makes sense to augment the amount of data (i.e. tokens per word per speaker) *before* the first interaction takes place (`initialMemoryResampling = TRUE`). If you want to do this (which is recommended in order to avoid artefacts during the simulations), you also need to specify the `initialMemoryResamplingFactor`. The resampling uses the production technique indicated by the parameters in the next section.
 
 ### Production
 
@@ -77,7 +77,7 @@ productionSMOTENN = 5                   # only if productionResampling == "SMOTE
 
 Every interaction between an agent-speaker and an agent-listener starts with the production of a word. Then a Gaussian distribution is estimated based on all acoustic tokens that are associated either with the target word (`productionBasis = "word"`) or the phonological label (`productionBasis = "label"`) associated with that word.
 
-Since in some cases the number of available tokens for a given word or label is too small to estimate the parameters of a multi-dimensional Gaussian distribution, extra tokens can be generated using [SMOTE](http://rikunert.com/SMOTE_explained) (`productionResampling = "SMOTE"`). You will have to specify the minimum number of tokens that should be used in order to build a Gaussian distribution (e.g. `productionMinTokens = 10`) as well as the number of nearest neighbours that will be considered when performing the random linear interpolation (e.g. `productionSMOTENN = 5`). Whenever the available number of tokens for a given word is less than one plus the number of nearest neighbours, the neighbourhood is completed by adding tokens from other words containing the same target phoneme (`productionResamplingFallback = "label"`).
+Since in some cases the number of available tokens for a given word or label is too small to estimate the parameters of a multi-dimensional Gaussian distribution, extra tokens can be generated using [SMOTE](http://rikunert.com/SMOTE_explained) (`productionResampling = "SMOTE"`). You will have to specify the minimum number of tokens that should be used in order to build a Gaussian distribution (e.g. `productionMinTokens = 20`) as well as the number of nearest neighbours that will be considered when performing the random linear interpolation (e.g. `productionSMOTENN = 5`). Whenever the available number of tokens for a given word is less than one plus the number of nearest neighbours, the neighbourhood is completed by adding tokens from other words containing the same target phoneme (`productionResamplingFallback = "label"`).
 
 Once the Gaussian distribution is estimated, a new acoustic token is sampled from it. The agent-listener receives the acoustic features, the word label, and phonological label.
 
@@ -89,7 +89,7 @@ mahalanobisThreshold = qchisq(.99, df = 3) %>% round(2)   # threshold if memoryI
 posteriorProbThr = 1/3                                    # only if memoryIntakeStrategy == "posteriorProbThr"
 ```
 
-It is assumed that word recognition always works, i.e. the agent-listener does *not* decide whether or not he understands the word. Instead, it is decided whether the target phoneme in the produced token is probabilistically close enough to the agent-listener's distribution of that phoneme. If so, the new token is memorised, otherwise a new interaction begins. The parameter `memoryIntakeStrategy` indicates which kind of statistical decision is to be taken:
+It is assumed that word recognition always works, i.e. the agent-listener does *not* decide whether or not he understands the word. Instead, it is decided whether the target phoneme in the produced token is probabilistically close enough to the agent-listener's distribution of that phoneme. If so, the new token is memorised, otherwise a new interaction begins. The parameter `memoryIntakeStrategy` indicates which kind of statistical decision is to be taken (combining strategies is also possible, e.g. `c("maxPosteriorProb", "mahalanobisDistance")`):
 
 - `"maxPosteriorProb"`: Maximum posterior probability decision, i.e. the produced token is only memorised if its probability of belonging to the listener's corresponding phonological category is higher than that of belonging to any of the other categories.
 - `"mahalanobisDistance"`: The distance between the token and the corresponding distribution in the listener's memory has to be smaller than a given threshold in order to be incorporated. The threshold is specified by setting `"mahalanobisThreshold"` where the degrees of freedom needs to be `length(params$features)`. This approach does not take into account any of the other phonological categories, i.e. it might not be the appropriate strategy if two or more categories in your data overlap or are very close to each other.
@@ -120,7 +120,7 @@ The parameter `interactionPartners` lets you choose from which groups the two in
 - `"withinGroups"`: Speaker and listener must come from the same group
 - `"betweenGroups"`: Speaker and listener must be members of different groups
 
-In certain cases, you may want to introduce an imbalance to the ABM concerning the frequency with which one or more agents are chosen to be speakers or listeners in an interaction. `speakerProb` and `listenerProb` allow you to assign a speaking or listening probability to each agent by specifying a vectors of numbers, which do not need to sum up to one, as they will be normalised internally. If left `NULL`, all agents will get equal chances to be selected as speakers or listeners in an interaction.
+In certain cases, you may want to introduce an imbalance to the ABM concerning the frequency with which one or more agents are chosen to be speakers or listeners in an interaction. `speakerProb` and `listenerProb` allow you to assign a speaking or listening probability to each agent by specifying a vector of numbers, which do not need to sum up to one, as they will be normalised internally. If left `NULL`, all agents will get equal chances to be selected as speakers or listeners in an interaction.
 
 ### Split and merge
 
