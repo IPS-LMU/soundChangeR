@@ -27,6 +27,7 @@ params = list(
   
   createPopulationMethod = "speaker_is_agent",   # "speaker_is_agent" or "bootstrap"
   bootstrapPopulationSize = 50,                  # full positive number; only if createPopulationMethod == "bootstrap"
+  proportionGroupTokens = 0.0,                   # between 0.0 and 1.0; proportion of tokens from own speaker group that an agent is initialised with
   initialMemoryResampling = FALSE,               # enlarge the agents' memories before the interactions or not
   initialMemoryResamplingFactor = 1.0,           # 1.0 or higher; only if initialMemoryResampling == TRUE
   rememberOwnTokens = TRUE,                      # whether or not to perceive one's own tokens
