@@ -73,7 +73,7 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
     } else if (method == "bootstrap") {
       selectedSpeaker <- sample(sortedSpeakers, 1)
     }
-    population[[id]] <- create_agent(id, input.df, selectedSpeaker, maxMemorySize, Pcols)
+    population[[id]] <- create_agent(id, input.df, selectedSpeaker, maxMemorySize, Pcols, exemplarsCol = NULL, params)
     if (params[['initialMemoryResampling']]) {
       apply_resampling(population[[id]], initialMemorySize, params)
     }
@@ -81,11 +81,11 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   return(population)
 }
 
-create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresCols = NULL, exemplarsCol = NULL) {
+create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresCols = NULL, exemplarsCol = NULL, params) {
   agent <- list()
   # metadata
   agent$agentID <- id
-  agent$group <-input.df[speaker == selectedSpeaker, group][1]
+  agent$group <- input.df[speaker == selectedSpeaker, group][1]
   agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
   agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
   agent$cache <- data.table(name = "qda", value = list(), valid = FALSE)
@@ -106,21 +106,45 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresC
   if (!is.null(exemplarsCol)) {
     agent$exemplars <- data.table(exemplars = rep(list(list(FALSE)), maxMemorySize))
   }
+  
   # fill memory with content from input.df
   nInput <- input.df[speaker == selectedSpeaker, .N]
+  nInputFromGroup <- ceiling(nInput * params[['proportionGroupTokens']])
+  nInputFromOwn <- nInput - nInputFromGroup
+  
+  groupData <- input.df[group == agent$group & speaker != selectedSpeaker,]
+  ownData <- input.df[speaker == selectedSpeaker,]
+  samples <- rbind(groupData[sample(nrow(groupData), nInputFromGroup),], ownData[sample(nrow(ownData), nInputFromOwn),]) %>% setDT()
+  
   agent$labels %>% 
-    .[1:nInput, c("word", "label") := input.df[speaker == selectedSpeaker, .(word, label)]] %>%
+    .[1:nInput, c("word", "label") := samples[, .(word, label)]] %>%
     .[1:nInput, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
     .[1:nInput, timeStamp := sample(.N), by = word]
   
   if (!is.null(featuresCols)) {
     agent$features %>%
-      .[1:nInput, (featuresCols) := input.df[speaker == selectedSpeaker, .SD, .SDcols = featuresCols]]
+      .[1:nInput, (featuresCols) := samples[, .SD, .SDcols = featuresCols]]
   }
   if (!is.null(exemplarsCol)) {
     agent$exemplars %>%
-      .[1:nInput, exemplars := input.df[speaker == selectedSpeaker, exemplarsCol]]
+      .[1:nInput, exemplars := samples[, exemplarsCol]]
   }
+  
+  # nInput <- input.df[speaker == selectedSpeaker, .N]
+  # agent$labels %>% 
+  #   .[1:nInput, c("word", "label") := input.df[speaker == selectedSpeaker, .(word, label)]] %>%
+  #   .[1:nInput, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
+  #   .[1:nInput, timeStamp := sample(.N), by = word]
+  # 
+  # if (!is.null(featuresCols)) {
+  #   agent$features %>%
+  #     .[1:nInput, (featuresCols) := input.df[speaker == selectedSpeaker, .SD, .SDcols = featuresCols]]
+  # }
+  # if (!is.null(exemplarsCol)) {
+  #   agent$exemplars %>%
+  #     .[1:nInput, exemplars := input.df[speaker == selectedSpeaker, exemplarsCol]]
+  # }
+  
   return(agent)
 }
 
