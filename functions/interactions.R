@@ -130,21 +130,6 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresC
       .[1:nInput, exemplars := samples[, exemplarsCol]]
   }
   
-  # nInput <- input.df[speaker == selectedSpeaker, .N]
-  # agent$labels %>% 
-  #   .[1:nInput, c("word", "label") := input.df[speaker == selectedSpeaker, .(word, label)]] %>%
-  #   .[1:nInput, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
-  #   .[1:nInput, timeStamp := sample(.N), by = word]
-  # 
-  # if (!is.null(featuresCols)) {
-  #   agent$features %>%
-  #     .[1:nInput, (featuresCols) := input.df[speaker == selectedSpeaker, .SD, .SDcols = featuresCols]]
-  # }
-  # if (!is.null(exemplarsCol)) {
-  #   agent$exemplars %>%
-  #     .[1:nInput, exemplars := input.df[speaker == selectedSpeaker, exemplarsCol]]
-  # }
-  
   return(agent)
 }
 
@@ -311,9 +296,9 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo, 
   
   # let speaking agent produce a token and listening agent perceive it
   pt <- produce_token(producer, params)
-  perceive_token(perceiver, pt, interactionsLog, nrSim, params, TRUE)
+  perceive_token(perceiver, pt, interactionsLog, nrSim, params, isNotOwnToken = TRUE)
   if(params[['rememberOwnTokens']]) {
-    perceive_token(producer, pt, interactionsLog, nrSim, params, FALSE)
+    perceive_token(producer, pt, interactionsLog, nrSim, params, isNotOwnToken = FALSE)
   }
 }
 
@@ -554,7 +539,7 @@ update_memory <- function(agent, producedToken, rowToWrite, label_) {
 }
 
 
-perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params, invalidateCache) {
+perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params, isNotOwnToken) {
   # This function tests whether the produced token is to be memorized by the listening agent.
   # Function call in interactions.R, perform_single_interaction().
   #
@@ -564,7 +549,8 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   #    - interactionsLog: data.table
   #    - nrSim: simulation number
   #    - params: list of params from params.R
-  #    - invalidateCache: boolean, whether or not to empty the cache
+  #    - isNotOwnToken: boolean, whether or not the token to be perceived is 
+  #      the listener's own token
   #
   # Returns:
   #    - nothing. Overwrites one row in the main data.table.
@@ -621,19 +607,21 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     update_memory(agent, producedToken, rowToWrite, perceiverLabel_)
     
     # empty cache
-    if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr")) && invalidateCache) {
+    if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
       invalidate_cache(agent, "qda")
     }
   }
   
   # write on interactionsLog
-  write_to_log(interactionsLog, producedToken, agent, perceiverLabel_, recognized, nrSim)
+  if(isNotOwnToken) {
+    write_to_log(interactionsLog, producedToken, agent, perceiverLabel_, recognized, nrSim)
+  }
   
   # apply split&merge if needed
   numReceivedTokens <- sum(interactionsLog$valid[interactionsLog$perceiverID == agent$agentID], na.rm = TRUE)
   if (params[['splitAndMerge']] == T & numReceivedTokens %% params[['splitAndMergeInterval']] == 0) {
     splitandmerge(agent, params, full = FALSE)
-    if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr")) && invalidateCache) {
+    if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
       invalidate_cache(agent, "qda")
     }
   }
