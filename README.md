@@ -7,7 +7,8 @@ It was initially developed  by Florian Schiel and Jonathan Harrington, and furth
 
 The software is entirely written in R.
 There is a number of R libraries you need, see at the top of `Rcmd/loadLibraries.R`.
-The top module is `Rcmd/ABMmain.R`, where you have some comments. Please consult `MANUAL.html` for detailed instructions.
+The top module is `Rcmd/ABMmain.R`, where you have some comments.
+Demo and documentation are in `docu_ABM.html`.
 
 
 
