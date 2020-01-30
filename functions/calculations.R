@@ -6,7 +6,7 @@
 # ABM developed by Florian Schiel and Jonathan Harrington                      #
 # Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
-# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2020, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
 
@@ -67,7 +67,6 @@ compute_mahal_distance <- function(agent, token, label, method = NULL) {
   }
 }
 
-
 convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
   # This function converts the population list into a data.table.
   # Function call in simulations.R, save_population().
@@ -122,8 +121,6 @@ knearest_fallback <- function(points, extendedIndices, targetIndices, K) {
   # Returns:
   #    - list of targetIndices and fallback:
   #
-  
-  
   
   if (any(c(targetIndices, extendedIndices) < 0)) {
     stop("knearest_fallback: negative index notation not supported for targetIndices and extendedIndices")
