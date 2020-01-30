@@ -4,7 +4,7 @@
 #                                                                              #
 # Developers: Jonathan Harrington, Michele Gubian, Johanna Cronenberg          #
 #                                                                              #
-# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2020, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
 
@@ -66,7 +66,7 @@ while(dir.exists(ABMpath) == F) {
 setwd(ABMpath)
 
 # load libraries
-cat("Thanks! Now we will run Rcmd/loadLibraries.R which loads all necessary packages... ")
+cat("Thanks! Now we will run Rcmd/loadLibraries.R which loads all necessary packages... \n")
 source(file.path("Rcmd", "loadLibraries.R"))
 cat("Done.\n")
 
@@ -116,7 +116,11 @@ source(paramsFile)
 
 cat("Done.\nLet's run the simulation!\nIn progress... ")
 
-source_part(file.path("Rcmd", "ABMmain.R"), 21, 65)
+con <- file(file.path("Rcmd", "ABMmain.R"), "r")
+lines <- readLines(con)
+startIdx <- grep('# create root logging directory', lines)
+close(con)
+source_part(file.path("Rcmd", "ABMmain.R"), startIdx, length(lines))
 
 cat("Done.\nThe results are in ", params$rootLogDir, ".\n", sep = "")
 
