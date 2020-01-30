@@ -1,7 +1,7 @@
 ---
 title: "ABM User Manual"
 author: "Johanna Cronenberg and Michele Gubian"
-date: "December 18, 2019"
+date: "January 30, 2020"
 output: html_document
 ---
 
@@ -55,15 +55,19 @@ The input data file can be `.txt` or `.csv` and needs to contain a table (it wil
 ### Initialisation procedure
 
 ```{r eval=FALSE}
-createPopulationMethod = "speaker_is_agent"   # "speaker_is_agent" or "bootstrap"
-bootstrapPopulationSize = 50                  # full positive number; only if createPopulationMethod == "bootstrap"
-initialMemoryResampling = FALSE               # enlarge the agents' memories before the interactions or not
-initialMemoryResamplingFactor = 1.0           # 1.0 or higher; only if initialMemoryResampling == TRUE
+createPopulationMethod = "speaker_is_agent"  # "speaker_is_agent" or "bootstrap"
+bootstrapPopulationSize = 50            # full positive number; only if createPopulationMethod == "bootstrap"
+initialMemoryResampling = FALSE         # enlarge the agents' memories before the interactions or not
+initialMemoryResamplingFactor = 1.0     # 1.0 or higher; only if initialMemoryResampling == TRUE
+proportionGroupTokens = 0.0             # between 0.0 and 1.0; proportion of tokens from own speaker group that an agent is initialised with
+rememberOwnTokens = TRUE                # whether or not to perceive one's own tokens
 ```
 
 Usually, every human speaker is represented by one agent which is achieved by initiating the agent with the acoustic data of the speaker (`createPopulationMethod = "speaker_is_agent"`). However, there is the possibility to break this paradigm by applying [bootstrapping](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)). If so, you will need to specify how many agents the new population should be comprised of (`bootstrapPopulationSize`). It is highly recommended to then do multiple ABM runs (`runMode = "multiple"`; see below).
 
 Since we often deal with sparse data in the phonetic sciences, it makes sense to augment the amount of data *before* the first interaction takes place (`initialMemoryResampling = TRUE`). If you want to do this (which is recommended to avoid artefacts during the simulations), you also need to specify the `initialMemoryResamplingFactor`.
+
+`proportionGroupTokens` can be used to initialise agents with a proportion of tokens from their own speech community. So if an agent would usually receive 20 tokens from a real speaker and `proportionGroupTokens = 0.25`, the agent will instead be initialised with 15 tokens from the real speaker (i.e. 75%) and 5 random tokens from speakers of the agent's speaker group. Over the course of the interactions, it is often the case that all agents start to become less individual in their phonetic representations, i.e. all agents' categories collapse into one point. This result can be avoided by setting `rememberOwnTokens = TRUE`. It is then highly recommended to have a `proportionGroupTokens > 0`.
 
 ### Production
 
@@ -87,6 +91,7 @@ Once the Gaussian distribution is estimated, a new acoustic token is sampled fro
 memoryIntakeStrategy = "mahalanobisDistance"              # "maxPosteriorProb" and/or "mahalanobisDistance" and/or "posteriorProbThr"
 mahalanobisThreshold = qchisq(.99, df = 3) %>% round(2)   # threshold if memoryIntakeStrategy == "mahalanobisDistance"
 posteriorProbThr = 1/3                                    # only if memoryIntakeStrategy == "posteriorProbThr"
+perceptionNN = 5      # uneven full number; assign label to unknown word based on majority vote among perceptionNN nearest neighbours
 ```
 
 It is assumed that word recognition always works, i.e. the agent-listener does *not* decide whether or not he understands the word. Instead, it is decided whether the target phoneme in the produced token is probabilistically close enough to the agent-listener's distribution of that phoneme. If so, the new token is memorised, otherwise a new interaction begins. The parameter `memoryIntakeStrategy` indicates which kind of statistical decision is to be taken:
@@ -94,6 +99,8 @@ It is assumed that word recognition always works, i.e. the agent-listener does *
 - `"maxPosteriorProb"`: Maximum posterior probability decision, i.e. the produced token is only memorised if its probability of belonging to the listener's corresponding phonological category is higher than that of belonging to any of the other categories.
 - `"mahalanobisDistance"`: The distance between the token and the corresponding distribution in the listener's memory has to be smaller than a given threshold in order to be incorporated. The threshold is specified by setting `"mahalanobisThreshold"` where the degrees of freedom needs to be `length(params$features)`. This approach does not take into account any of the other phonological categories, i.e. it might not be the appropriate strategy if two or more categories in your data overlap or are very close to each other.
 - `"posteriorProbThr"`: The produced token is memorised if its posterior probability of belonging to the phonological category is higher than the threshold indicated by this option.
+
+If a new token is associated with a word that is unknown to an agent-listener, a word label will be assigned to the token based on a majority vote among `perceptionNN` nearest neighbours.
 
 ### Forgetting
 
