@@ -54,7 +54,16 @@ if (params[['runMode']] == "single") {
 } else if (params[['runMode']] == "multiple") {
   require(parallel)
   numCores <- detectCores() - 1
-  cl <- makeCluster(numCores, type = "FORK")
+  if (Sys.info()[['sysname']] == "Windows") {
+    cl <- makeCluster(numCores, type = "PSOCK")
+    clusterExport(cl, c("input.df", "params", "ABMpath", "logDir"))
+    clusterEvalQ(cl, {
+      setwd(ABMpath)
+      source(file.path("Rcmd", "loadLibraries.R"))
+    })
+  } else {
+    cl <- makeCluster(numCores, type = "FORK")
+  }
   clusterSetRNGStream(cl)
   parLapply(cl, seq_len(params[['multipleABMRuns']]), function(abmName) {
     coreABM(input.df, params, file.path(logDir, abmName))
