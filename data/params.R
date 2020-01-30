@@ -3,9 +3,9 @@
 # Parameter settings. Further documentation at https://github.com/IPS-LMU/ABM. #
 #                                                                              #
 # Developed by Florian Schiel and Jonathan Harrington                          #
-# Adapted by Johanna Cronenberg                                                #
+# Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
-# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2020, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
 
@@ -27,9 +27,9 @@ params = list(
   
   createPopulationMethod = "speaker_is_agent",   # "speaker_is_agent" or "bootstrap"
   bootstrapPopulationSize = 50,                  # full positive number; only if createPopulationMethod == "bootstrap"
-  proportionGroupTokens = 0.0,                   # between 0.0 and 1.0; proportion of tokens from own speaker group that an agent is initialised with
   initialMemoryResampling = FALSE,               # enlarge the agents' memories before the interactions or not
   initialMemoryResamplingFactor = 1.0,           # 1.0 or higher; only if initialMemoryResampling == TRUE
+  proportionGroupTokens = 0.0,                   # between 0.0 and 1.0; proportion of tokens from own speaker group that an agent is initialised with
   rememberOwnTokens = TRUE,                      # whether or not to perceive one's own tokens
   
   ##### Production
@@ -46,6 +46,7 @@ params = list(
   memoryIntakeStrategy = "mahalanobisDistance",  # "maxPosteriorProb" and/or "mahalanobisDistance" and/or "posteriorProbThr"
   mahalanobisThreshold = qchisq(.99, df = 3) %>% round(2),   # threshold if memoryIntakeStrategy == "mahalanobisDistance"
   posteriorProbThr = 1/3,                        # only if memoryIntakeStrategy == "posteriorProbThr"
+  perceptionNN = 5,                              # uneven full number; assign label to unknown word based on majority vote among perceptionNN nearest neighbours
   
   ##### Forgetting
   
