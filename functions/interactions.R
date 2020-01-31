@@ -5,7 +5,7 @@
 # ABM developed by Florian Schiel and Jonathan Harrington                      #
 # Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
-# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2020, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
 
@@ -22,10 +22,10 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   #    - population: a list
   #
   
-  if (!("createPopulationMethod" %in% names(params)) || is.null(params[['createPopulationMethod']]) ) {
+  if (!("createPopulationMethod" %in% names(params)) || is.null(params[["createPopulationMethod"]]) ) {
     method <- "speaker_is_agent"
   } else {
-    method <- params[['createPopulationMethod']]
+    method <- params[["createPopulationMethod"]]
   }
   
   setDT(input.df)
@@ -34,18 +34,18 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   if (method == "speaker_is_agent") {
     nrOfAgents <- length(sortedSpeakers)
   } else if (method == "bootstrap") {
-    nrOfAgents <- params[['bootstrapPopulationSize']]
+    nrOfAgents <- params[["bootstrapPopulationSize"]]
   } else {
     stop(paste("create_population: unrecognised createPopulationMethod:", method))
   }
   
   # memory resampling will generate extra artificial tokens (exemplars).
-  # Each agent will grow its initial exemplars endowment by a factor of 'initialMemoryResamplingFactor'
+  # Each agent will grow its initial exemplars endowment by a factor of "initialMemoryResamplingFactor"
   # The max number of initial exemplars is taken to compute the final number of tokens, 
   # the same for each agent.
   initialMemorySize <- input.df[, .N, by = speaker][, max(N)]
-  if (params[['initialMemoryResampling']]) {
-    initialMemorySize <- initialMemorySize * params[['initialMemoryResamplingFactor']]
+  if (params[["initialMemoryResampling"]]) {
+    initialMemorySize <- initialMemorySize * params[["initialMemoryResamplingFactor"]]
   }
   
   # memoryBuffer defines a buffer of empty memory space
@@ -54,7 +54,10 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   # maxMemorySize is approx = mean + 5 st. dev. of the expected number of received tokens during the simulation.
   # Num. received tokens is Bin(nrOfInteractions, 1/nrOfAgents) approx = Normal,
   # ignoring the (1-nrOfInteractions/nrOfAgents) factor in var and taking worst case of zero forgetting rate.
-  memoryBuffer <- ceiling(params[['nrOfInteractions']]/nrOfAgents + 5 * sqrt(params[['nrOfInteractions']]/nrOfAgents))
+  memoryBuffer <- ceiling(params[["nrOfInteractions"]]/nrOfAgents + 5 * sqrt(params[["nrOfInteractions"]]/nrOfAgents))
+  if(params[["rememberOwnTokens"]]) {
+    memoryBuffer <- memoryBuffer * 2
+  }
   
   maxMemorySize <- initialMemorySize + memoryBuffer  
   
@@ -70,19 +73,19 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
     } else if (method == "bootstrap") {
       selectedSpeaker <- sample(sortedSpeakers, 1)
     }
-    population[[id]] <- create_agent(id, input.df, selectedSpeaker, maxMemorySize, Pcols)
-    if (params[['initialMemoryResampling']]) {
+    population[[id]] <- create_agent(id, input.df, selectedSpeaker, maxMemorySize, Pcols, exemplarsCol = NULL, params)
+    if (params[["initialMemoryResampling"]]) {
       apply_resampling(population[[id]], initialMemorySize, params)
     }
   }
   return(population)
 }
 
-create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresCols = NULL, exemplarsCol = NULL) {
+create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresCols = NULL, exemplarsCol = NULL, params) {
   agent <- list()
   # metadata
   agent$agentID <- id
-  agent$group <-input.df[speaker == selectedSpeaker, group][1]
+  agent$group <- input.df[speaker == selectedSpeaker, group][1]
   agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
   agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
   agent$cache <- data.table(name = "qda", value = list(), valid = FALSE)
@@ -103,21 +106,30 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresC
   if (!is.null(exemplarsCol)) {
     agent$exemplars <- data.table(exemplars = rep(list(list(FALSE)), maxMemorySize))
   }
+  
   # fill memory with content from input.df
   nInput <- input.df[speaker == selectedSpeaker, .N]
+  nInputFromGroup <- ceiling(nInput * params[["proportionGroupTokens"]])
+  nInputFromOwn <- nInput - nInputFromGroup
+  
+  groupData <- input.df[group == agent$group & speaker != selectedSpeaker,]
+  ownData <- input.df[speaker == selectedSpeaker,]
+  samples <- rbind(groupData[sample(nrow(groupData), nInputFromGroup),], ownData[sample(nrow(ownData), nInputFromOwn),]) %>% setDT()
+  
   agent$labels %>% 
-    .[1:nInput, c("word", "label") := input.df[speaker == selectedSpeaker, .(word, label)]] %>%
+    .[1:nInput, c("word", "label") := samples[, .(word, label)]] %>%
     .[1:nInput, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
     .[1:nInput, timeStamp := sample(.N), by = word]
   
   if (!is.null(featuresCols)) {
     agent$features %>%
-      .[1:nInput, (featuresCols) := input.df[speaker == selectedSpeaker, .SD, .SDcols = featuresCols]]
+      .[1:nInput, (featuresCols) := samples[, .SD, .SDcols = featuresCols]]
   }
   if (!is.null(exemplarsCol)) {
     agent$exemplars %>%
-      .[1:nInput, exemplars := input.df[speaker == selectedSpeaker, exemplarsCol]]
+      .[1:nInput, exemplars := samples[, exemplarsCol]]
   }
+  
   return(agent)
 }
 
@@ -157,7 +169,7 @@ create_interactions_log <- function(nrOfInteractions) {
     .[]
 }
 
-write_to_log <- function(interactionsLog, producedToken, perceiver, perceiverLabel_, recognized, nrSim) {
+write_to_log <- function(interactionsLog, producedToken, perceiver, perceiverLabel_, memorise, nrSim) {
   # This function updates the interactionLog.
   # Function call in interactions.R, perceive_token().
   #
@@ -166,7 +178,7 @@ write_to_log <- function(interactionsLog, producedToken, perceiver, perceiverLab
   #    - producedToken: list, result of produce_token()
   #    - perceiver: list, an agent from the population 
   #    - perceiverLabel_: string, label that the perceiver associates with producedToken
-  #    - recognized: boolean 
+  #    - memorise: boolean 
   #    - nrSim: simulation number
   #
   # Returns:
@@ -182,13 +194,13 @@ write_to_log <- function(interactionsLog, producedToken, perceiver, perceiverLab
     perceiverID = perceiver$agentID,
     perceiverLabel = perceiverLabel_,
     perceiverNrOfTimesHeard = {
-      if (recognized) {
+      if (memorise) {
         perceiver$labels$nrOfTimesHeard[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE][1]
       } else {
         as.integer(max(1, perceiver$labels$nrOfTimesHeard[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE][1]))
       }
     },
-    accepted = recognized,
+    accepted = memorise,
     simulationNr = nrSim,
     valid = TRUE
   )]
@@ -210,14 +222,14 @@ perform_interactions <- function(pop, logDir, params) {
   #
   
   # generate interaction log
-  interactionsLog <- create_interactions_log(params[['nrOfInteractions']])
+  interactionsLog <- create_interactions_log(params[["nrOfInteractions"]])
   
   # agentIDs and matching groups, ordered by agentID
   groupsInfo <- rbindlist(lapply(pop, function(agent) {data.table(agentID = agent$agentID, group = agent$group)}))[order(agentID),]
   
   # perform the interactions
-  for (nrSim in 1:params[['nrOfSnapshots']]) {
-    for (i in 1:params[['interactionsPerSnapshot']]) {
+  for (nrSim in 1:params[["nrOfSnapshots"]]) {
+    for (i in 1:params[["interactionsPerSnapshot"]]) {
       perform_single_interaction(pop, interactionsLog, nrSim, groupsInfo, params)
     }
     save_population(pop, extraCols = list(condition = nrSim), logDir = logDir)
@@ -245,36 +257,36 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo, 
   # producer and perceiver need to be different agents
   while (prodNr == percNr) {
     # choose interaction partners without taking their group into account
-    if (is.null(params[['interactionPartners']]) || params[['interactionPartners']] == "random") {
-      prodNr <- sample(groupsInfo$agentID, 1, prob = params[['speakerProb']])
-      percNr <- sample(groupsInfo$agentID, 1, prob = params[['listenerProb']])
+    if (is.null(params[["interactionPartners"]]) || params[["interactionPartners"]] == "random") {
+      prodNr <- sample(groupsInfo$agentID, 1, prob = params[["speakerProb"]])
+      percNr <- sample(groupsInfo$agentID, 1, prob = params[["listenerProb"]])
       
       # or choose interaction partners from the same group
-    } else if (params[['interactionPartners']] == "withinGroups") {
+    } else if (params[["interactionPartners"]] == "withinGroups") {
       randomGroup <- sample(unique(groupsInfo$group), 1)
       prodNr <- sample(groupsInfo$agentID[groupsInfo$group == randomGroup], 1, 
-                       prob = params[['speakerProb']][groupsInfo$group == randomGroup])
+                       prob = params[["speakerProb"]][groupsInfo$group == randomGroup])
       percNr <- sample(groupsInfo$agentID[groupsInfo$group == randomGroup], 1, 
-                       prob = params[['listenerProb']][groupsInfo$group == randomGroup])
+                       prob = params[["listenerProb"]][groupsInfo$group == randomGroup])
       
       # or choose interaction partners from different groups
-    } else if (params[['interactionPartners']] == "betweenGroups") {
+    } else if (params[["interactionPartners"]] == "betweenGroups") {
       randomGroups <- sample(unique(groupsInfo$group), 2)
       randomPercGroup <- randomGroups[1]
       randomProdGroup <- randomGroups[2]
       prodNr <- sample(groupsInfo$agentID[groupsInfo$group == randomPercGroup], 1, 
-                       prob = params[['speakerProb']][groupsInfo$group == randomPercGroup])
+                       prob = params[["speakerProb"]][groupsInfo$group == randomPercGroup])
       percNr <- sample(groupsInfo$agentID[groupsInfo$group == randomProdGroup], 1, 
-                       prob = params[['listenerProb']][groupsInfo$group == randomProdGroup])
+                       prob = params[["listenerProb"]][groupsInfo$group == randomProdGroup])
       
       # or let agents talk to themselves (developer option)
-    } else if (params[['interactionPartners']] == "selfTalk") {
-      prodNr <- sample(groupsInfo$agentID, 1, prob = params[['speakerProb']])
+    } else if (params[["interactionPartners"]] == "selfTalk") {
+      prodNr <- sample(groupsInfo$agentID, 1, prob = params[["speakerProb"]])
       percNr <- 0 # temp hack
     }
   }
   
-  if (params[['interactionPartners']] == "selfTalk") { 
+  if (params[["interactionPartners"]] == "selfTalk") { 
     percNr <- prodNr # temp hack
   }
   
@@ -284,7 +296,11 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo, 
   
   # let speaking agent produce a token and listening agent perceive it
   pt <- produce_token(producer, params)
-  perceive_token(perceiver, pt, interactionsLog, nrSim, params)
+  
+  perceive_token(perceiver, pt, interactionsLog, nrSim, params, isNotOwnToken = TRUE)
+  if(params[["rememberOwnTokens"]]) {
+    perceive_token(producer, pt, interactionsLog, nrSim, params, isNotOwnToken = FALSE)
+  }
 }
 
 choose_word <- function(labels, method = "random_index") {
@@ -345,26 +361,26 @@ produce_token <- function(agent, params) {
   producedInitial <- agent$initial$initial[agent$initial$word == producedWord]
   nrOfTimesHeard <- agent$labels$nrOfTimesHeard[agent$labels$word == producedWord & agent$labels$valid == TRUE][1]
   
-  if (grepl("^(target)?[wW]ord$", params[['productionBasis']])) {
+  if (grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
     basisIdx <- which(agent$labels$word == producedWord & agent$labels$valid == TRUE)
-  } else if (grepl("^(target)?([lL]abel|[pP]honeme)$", params[['productionBasis']])) {
+  } else if (grepl("^(target)?([lL]abel|[pP]honeme)$", params[["productionBasis"]])) {
     basisIdx <- which(agent$labels$label == producedLabel & agent$labels$valid == TRUE)
   }
   basisTokens <- as.matrix(agent$features)[basisIdx, , drop = FALSE]
   
-  if (!is.null(params[['productionResampling']])) {
-    if (grepl("SMOTE", params[['productionResampling']], ignore.case = TRUE)) {
-      nExtraTokens <- params[['productionMinTokens']] - length(basisIdx)
+  if (!is.null(params[["productionResampling"]])) {
+    if (grepl("SMOTE", params[["productionResampling"]], ignore.case = TRUE)) {
+      nExtraTokens <- params[["productionMinTokens"]] - length(basisIdx)
       if (nExtraTokens > 0) {
         extendedIdx <- NULL
-        if (grepl("label|phoneme", params[['productionResamplingFallback']], ignore.case = TRUE)) {
+        if (grepl("label|phoneme", params[["productionResamplingFallback"]], ignore.case = TRUE)) {
           extendedIdx <- which(agent$labels$label == producedLabel & agent$labels$valid == TRUE)
         }
-        extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[['productionSMOTENN']], nExtraTokens)
+        extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["productionSMOTENN"]], nExtraTokens)
         basisTokens <- rbind(basisTokens, extraTokens)
       }
     } else {
-      stop(paste("produce_token: unrecognised productionResampling method:", params[['productionResampling']]))
+      stop(paste("produce_token: unrecognised productionResampling method:", params[["productionResampling"]]))
     }
   }
   tokenGauss <- estimate_gaussian(basisTokens)
@@ -453,18 +469,18 @@ row_to_overwrite <- function(perceiver, producedToken, params) {
   #
   
   # remove either the oldest token
-  if (params[['memoryRemovalStrategy']] == "timeDecay") {
+  if (params[["memoryRemovalStrategy"]] == "timeDecay") {
     rowToOverwrite <- which(perceiver$labels$word == producedToken$labels$word)[
       which.min(perceiver$labels$timeStamp[perceiver$labels$word == producedToken$labels$word])
       ]
     # ... or the farthest outlier of the token distribution
-  } else if (params[['memoryRemovalStrategy']] == "outlierRemoval") {
+  } else if (params[["memoryRemovalStrategy"]] == "outlierRemoval") {
     tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$labels$label == perceiverLabel_, , drop = FALSE])
     rowToOverwrite <- which(perceiver$labels$word == producedToken$labels$word)[
       which.max(distance(as.matrix(perceiver$features)[perceiver$labels$word == producedToken$labels$word, , drop = FALSE], tdat.mahal, metric = "mahal"))
       ]
     # ... or random token (recommended)
-  } else if (params[['memoryRemovalStrategy']] == "random") {
+  } else if (params[["memoryRemovalStrategy"]] == "random") {
     rowToOverwrite <- sample(which(perceiver$labels$word == producedToken$labels$word), 1)
   }
   return(rowToOverwrite)
@@ -485,7 +501,7 @@ row_to_write <- function(agent, producedToken, params) {
   #
   
   if (all(agent$labels$valid)) {
-    print(paste('agent', agent$agentID, "full"))
+    print(paste("agent", agent$agentID, "full"))
     rowToWrite <- row_to_overwrite(agent, producedToken, params)
   } else {
     rowToWrite <- which(agent$labels$valid == FALSE)[1]
@@ -524,16 +540,18 @@ update_memory <- function(agent, producedToken, rowToWrite, label_) {
 }
 
 
-perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, params) {
+perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params, isNotOwnToken) {
   # This function tests whether the produced token is to be memorized by the listening agent.
   # Function call in interactions.R, perform_single_interaction().
   #
   # Args:
-  #    - perceiver: an agent from the population
+  #    - agent: an agent from the population
   #    - producedToken: list, result of produce_token()
   #    - interactionsLog: data.table
   #    - nrSim: simulation number
   #    - params: list of params from params.R
+  #    - isNotOwnToken: boolean, whether or not the token to be perceived is 
+  #      the listener's own token
   #
   # Returns:
   #    - nothing. Overwrites one row in the main data.table.
@@ -544,67 +562,70 @@ perceive_token <- function(perceiver, producedToken, interactionsLog, nrSim, par
     return()
   }
   
-  # find out which phonological label the perceiver associates with the produced word
-  perceiverLabel_ <- unique(perceiver$labels$label[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE])
+  # find out which phonological label the agent associates with the produced word
+  perceiverLabel_ <- unique(agent$labels$label[agent$labels$word == producedToken$labels$word & agent$labels$valid == TRUE])
   
-  # if word is unknown, abort communication
-  # here we will probably re-introduce perceptionOOVNN, i.e. if word is unknown,
-  # assign label based on majority vote among perceptionOOVNN nearest neighbours.
+  # if word is unknown, assign label based on majority vote among perceptionNN nearest neighbours
   if (length(perceiverLabel_) == 0) {
-    return()
+    perceiverLabel_ <- names(which.max(table(agent$labels$label[agent$labels$valid == TRUE][
+      knnx.index(agent$features[agent$labels$valid == TRUE,], producedToken$features, params[["perceptionNN"]])
+      ])))
   }
   
-  recognized <- TRUE
-  if (recognized && any(c("maxPosteriorProb", "posteriorProbThr") %in% params[['memoryIntakeStrategy']])) { 
-    posteriorProb <- compute_posterior_probabilities(perceiver, producedToken, params[['posteriorProbMethod']])
-    if ("maxPosteriorProb" %in% params[['memoryIntakeStrategy']]) {
-      recognized %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "maxPosteriorProb"))
-    } else if ("posteriorProbThr" %in% params[['memoryIntakeStrategy']]) {
-      recognized %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "posteriorProbThr", posteriorProbThr = params[['posteriorProbThr']]))
+  memorise <- TRUE
+  # relative acceptance criterion
+  if (memorise && any(c("maxPosteriorProb", "posteriorProbThr") %in% params[["memoryIntakeStrategy"]])) { 
+    posteriorProb <- compute_posterior_probabilities(agent, producedToken, params[["posteriorProbMethod"]])
+    if ("maxPosteriorProb" %in% params[["memoryIntakeStrategy"]]) {
+      memorise %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "maxPosteriorProb"))
+    } else if ("posteriorProbThr" %in% params[["memoryIntakeStrategy"]]) {
+      memorise %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "posteriorProbThr", posteriorProbThr = params[["posteriorProbThr"]]))
     }
   }
-  if (recognized && any(c("mahalanobisDistance", "highestDensityRegion") %in% params[['memoryIntakeStrategy']])) {
-    mahalDist <- compute_mahal_distance(perceiver, producedToken, perceiverLabel_)
-    if ("mahalanobisDistance" %in% params[['memoryIntakeStrategy']]) {
-      recognized %<>% `&`(mahalDist <= params[['mahalanobisThreshold']])
-    } else if ("highestDensityRegion" %in% params[['memoryIntakeStrategy']]) {
-      recognized %<>% `&`(runif(1) < pchisq(q = mahalDist, df = ncol(perceiver$features), lower.tail = FALSE))
+  # absolute acceptance criterion
+  if (memorise && any(c("mahalanobisDistance", "highestDensityRegion") %in% params[["memoryIntakeStrategy"]])) {
+    mahalDist <- compute_mahal_distance(agent, producedToken, perceiverLabel_)
+    if ("mahalanobisDistance" %in% params[["memoryIntakeStrategy"]]) {
+      memorise %<>% `&`(mahalDist <= params[["mahalanobisThreshold"]])
+    } else if ("highestDensityRegion" %in% params[["memoryIntakeStrategy"]]) {
+      memorise %<>% `&`(runif(1) < pchisq(q = mahalDist, df = ncol(agent$features), lower.tail = FALSE))
     }
   }
   
   # ... or just accept everything
-  if ("acceptAll" %in% params[['memoryIntakeStrategy']]) {
-    recognized <- TRUE
+  if ("acceptAll" %in% params[["memoryIntakeStrategy"]]) {
+    memorise <- TRUE
   }
   
   # forget
-  if (runif(1) < params[['forgettingRate']]) {
-    set(perceiver$labels, sample(which(perceiver$labels$valid == TRUE), 1), "valid", FALSE)
+  if (runif(1) < params[["forgettingRate"]]) {
+    set(agent$labels, sample(which(agent$labels$valid == TRUE), 1), "valid", FALSE)
   }
   
-  if (recognized) {
+  if (memorise) {
     # find next free row or row to be overwritten
-    rowToWrite <- row_to_write(perceiver, producedToken, params)
+    rowToWrite <- row_to_write(agent, producedToken, params)
     
     # write in agent's memory
-    # perceiver <- 
-    update_memory(perceiver, producedToken, rowToWrite, perceiverLabel_)
+    update_memory(agent, producedToken, rowToWrite, perceiverLabel_)
     
     # empty cache
-    if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr"))) {
-      invalidate_cache(perceiver, "qda")
+    if (any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
+      invalidate_cache(agent, "qda")
     }
   }
   
   # write on interactionsLog
-  write_to_log(interactionsLog, producedToken, perceiver, perceiverLabel_, recognized, nrSim)
+  if (isNotOwnToken) {
+    write_to_log(interactionsLog, producedToken, agent, perceiverLabel_, memorise, nrSim)
+  }
   
   # apply split&merge if needed
-  numReceivedTokens <- sum(interactionsLog$valid[interactionsLog$perceiverID == perceiver$agentID], na.rm = TRUE)
-  if (params[['splitAndMerge']] == T & numReceivedTokens %% params[['splitAndMergeInterval']] == 0) {
-    splitandmerge(perceiver, params, full = FALSE)
-    if (any(params[['memoryIntakeStrategy']] %in% c("maxPosteriorProb", "posteriorProbThr"))) {
-      invalidate_cache(perceiver, "qda")
+  numReceivedTokens <- sum(interactionsLog$valid[interactionsLog$perceiverID == agent$agentID], na.rm = TRUE)
+  if (params[["splitAndMerge"]] == T & numReceivedTokens %% params[["splitAndMergeInterval"]] == 0) {
+    splitandmerge(agent, params, full = FALSE)
+    if (any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
+      invalidate_cache(agent, "qda")
     }
   }
 }

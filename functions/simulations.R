@@ -5,7 +5,7 @@
 # ABM developed by Florian Schiel and Jonathan Harrington                      #
 # Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
-# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2020, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
 
@@ -118,8 +118,8 @@ register_simulation <- function(params) {
   
   params[["initial"]] <- as.character(params[["initial"]])
   params[["label"]] <- as.character(params[["label"]])
-  list.save(params, file.path(params[["rootLogDir"]], params[['simulationName']], PARAMS_FILENAME))
-  params[['completed']] <- FALSE
+  list.save(params, file.path(params[["rootLogDir"]], params[["simulationName"]], PARAMS_FILENAME))
+  params[["completed"]] <- FALSE
   regFile <- file.path(params[["rootLogDir"]], SIM_REG_FILENAME)
   list.load(regFile) %>%
     list.append(params) %>%
@@ -141,7 +141,7 @@ set_completed <- function(simulationName_, rootLogDir) {
   regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
   reg <- list.load(regFile)
   i <- reg %>% list.findi(simulationName == simulationName_)
-  reg[[i]]['completed'] <- TRUE
+  reg[[i]]["completed"] <- TRUE
   list.save(reg, regFile)
 }
 
@@ -265,21 +265,28 @@ check_params <- function(params) {
   # Function call in loadLibraries.R, coreABM().
   #
   # Args:
-  #    - params: lsit of params
+  #    - params: list of params
   #
   # Returns:
   #    - params: list of params
   #
   
   # posterior probability
-  if (any(c("maxPosteriorProb", "posteriorProbThr") %in% params[['memoryIntakeStrategy']])) {
+  if (any(c("maxPosteriorProb", "posteriorProbThr") %in% params[["memoryIntakeStrategy"]])) {
     if (is.null(params[["posteriorProbMethod"]])) {
       params[["posteriorProbMethod"]] <- "qda"
     }
   }
   
   # define number of interactions
-  params[['nrOfInteractions']] <- params[['nrOfSnapshots']] * params[['interactionsPerSnapshot']]
+  params[["nrOfInteractions"]] <- params[["nrOfSnapshots"]] * params[["interactionsPerSnapshot"]]
+  
+  if (is.null(params[["perceptionNN"]])) {
+    params[["perceptionNN"]] <- 5
+  }
+  if (params[["perceptionNN"]] %% 2 == 1) {
+    params[["perceptionNN"]] <- params[["perceptionNN"]] + 1
+  }
   
   return(params)
 }

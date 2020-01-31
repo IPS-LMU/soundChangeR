@@ -5,7 +5,7 @@
 # ABM developed by Florian Schiel and Jonathan Harrington                      #
 # Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
-# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2020, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
 

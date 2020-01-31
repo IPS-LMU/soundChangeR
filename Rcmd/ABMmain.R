@@ -5,12 +5,12 @@
 # ABM developed by Florian Schiel and Jonathan Harrington                      #
 # Adapted by Johanna Cronenberg and Michele Gubian                             #
 #                                                                              #
-# Copyright 2019, Institute of Phonetics and Speech Processing, LMU Munich.    #
+# Copyright 2020, Institute of Phonetics and Speech Processing, LMU Munich.    #
 #                                                                              #
 ################################################################################
 
 # set path
-ABMpath <- "/homes/m.gubian/ABM/ABM" # "/homes/johanna.cronenberg/ABM/localRepo"
+ABMpath <- "/homes/m.gubian/ABM/ABM"
 setwd(ABMpath)
 
 # load libraries and parameters
