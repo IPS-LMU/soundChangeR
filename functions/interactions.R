@@ -287,7 +287,7 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo, 
   perceive_token(perceiver, pt, interactionsLog, nrSim, params)
 }
 
-choose_word <- function(labels, method = "random_index") {
+choose_word <- function(labels, method = "random_word") {
   # This function samples a word label from the available labels.
   # Function call in interactions.R, produce_token().
   #
@@ -309,10 +309,11 @@ choose_word <- function(labels, method = "random_index") {
     return (NULL)
   } 
   
-  # currently, there is no other method than random_index;
+  # currently, there is no other method than random_word;
   # however, other methods may be implemented, e.g. lexical frequency-based.
-  if (method == "random_index" | is.null(method)) {
-    labels$word[sample(which(labels$valid == TRUE), 1)]
+  if (method == "random_word" | is.null(method)) {
+    # labels$word[sample(which(labels$valid == TRUE), 1)]
+    labels$word[labels$valid == TRUE] %>% unique %>% sample(1)
   } else {
     stop(paste("choose_word: Unknown method", method))
   }
