@@ -13,7 +13,7 @@ params = list(
   
   ##### Input data
   
-  inputDataFile = "./data/demo_single_phoneme.csv",    # absolute or relative path to input data
+  inputDataFile = "./data/demo_multiple_phoneme.csv",    # absolute or relative path to input data
   features = c("DCT0", "DCT1", "DCT2"),          # the column(s) in inputDataFile that is/are used as features
   group = "age",                                 # the column in inputDataFile that defines the agents' groups
   label = "phoneme",                             # the column in inputDataFile that stores the phonological labels (can be changed)
@@ -27,10 +27,10 @@ params = list(
   
   createPopulationMethod = "speaker_is_agent",   # "speaker_is_agent" or "bootstrap"
   bootstrapPopulationSize = 50,                  # full positive number; only if createPopulationMethod == "bootstrap"
-  initialMemoryResampling = FALSE,               # enlarge the agents' memories before the interactions or not
+  initialMemoryResampling = F,               # enlarge the agents' memories before the interactions or not
   initialMemoryResamplingFactor = 1.0,           # 1.0 or higher; only if initialMemoryResampling == TRUE
   proportionGroupTokens = 0.0,                   # between 0.0 and 1.0; proportion of tokens from own speaker group that an agent is initialised with
-  rememberOwnTokens = TRUE,                      # whether or not to perceive one's own tokens
+  rememberOwnTokens = F,                      # whether or not to perceive one's own tokens
   
   ##### Production
   
@@ -50,7 +50,7 @@ params = list(
   
   ##### Forgetting
   
-  forgettingRate = 0,                            # number between 0 and 1
+  forgettingRate = 0.5,                            # number between 0 and 1
   memoryRemovalStrategy = "random",              # "random" (recommended) or "outlierRemoval" or "timeDecay"
   
   ##### Interactions
@@ -67,7 +67,7 @@ params = list(
   
   ##### Runs
   
-  runMode = "single",                            # "single" or "multiple"
+  runMode = "multiple",                            # "single" or "multiple"
   multipleABMRuns = 2,                           # any full positive number; number of ABM runs if runMode == "multiple"
   nrOfSnapshots = 2,                             # any full positive number; how often the population is archived during the simulation
   interactionsPerSnapshot = 1000,                # any full positive number; how many interactions take place per snapshot

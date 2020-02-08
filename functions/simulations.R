@@ -281,6 +281,7 @@ check_params <- function(params) {
   # define number of interactions
   params[["nrOfInteractions"]] <- params[["nrOfSnapshots"]] * params[["interactionsPerSnapshot"]]
   
+  # define and check number of nearest neighbours used in perception if word is unknown
   if (is.null(params[["perceptionNN"]])) {
     params[["perceptionNN"]] <- 5
   }

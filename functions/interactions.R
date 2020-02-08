@@ -486,7 +486,6 @@ row_to_overwrite <- function(perceiver, producedToken, params) {
   return(rowToOverwrite)
 }
 
-
 row_to_write <- function(agent, producedToken, params) {
   # This function finds the row that the newly produced token will be stored in.
   # Function call in interactions.R, perceive_token().
@@ -539,6 +538,39 @@ update_memory <- function(agent, producedToken, rowToWrite, label_) {
                    nrOfTimesHeard := updatedNrOfTimesHeard]
 }
 
+forget_token <- function(agent, params) {
+  # This function invalidates one token in the agent's memory, but only 
+  # if the number of tokens for a word is not lower than at the beginning.
+  # Function call in interactions.R, perceive_token().
+  #
+  # Args:
+  #    - agent: an agent from the population
+  #    - params: list of params from params.R
+  #
+  # Returns:
+  #    - nothing.
+  #
+  
+  originalNrTokens <- params[["originalNrTokens"]][[agent$agentID]]
+  currentNrTokens <- agent$labels %>% filter(valid == TRUE) %>% group_by(word) %>% dplyr::count()
+  if (nrow(originalNrTokens) > nrow(currentNrTokens)) {
+    for (w in unique(originalNrTokens$word)) {
+      if (! w %in% currentNrTokens$word) {
+        currentNrTokens[nrow(currentNrTokens)+1,] <- list(w, 0)
+      }
+    }
+  }
+  currentNrTokens <- currentNrTokens %>% arrange(word)
+  possibleWords <- currentNrTokens[as.numeric(currentNrTokens$n) > as.numeric(originalNrTokens$n),]$word
+  tokenIndices <- which(agent$labels$word %in% possibleWords & agent$labels$valid == TRUE)
+  if (length(tokenIndices) == 1) {
+    tokenToForget <- tokenIndices
+    set(agent$labels, tokenToForget, "valid", FALSE)
+  } else if (length(tokenIndices) > 1) {
+    tokenToForget <- sample(tokenIndices, 1)
+    set(agent$labels, tokenToForget, "valid", FALSE)
+  }
+}
 
 perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params, isNotOwnToken) {
   # This function tests whether the produced token is to be memorized by the listening agent.
@@ -599,7 +631,8 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   
   # forget
   if (runif(1) < params[["forgettingRate"]]) {
-    set(agent$labels, sample(which(agent$labels$valid == TRUE), 1), "valid", FALSE)
+    forget_token(agent, params)
+    # set(agent$labels, sample(which(agent$labels$valid == TRUE), 1), "valid", FALSE)
   }
   
   if (memorise) {

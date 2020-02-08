@@ -51,6 +51,19 @@ coreABM <- function(input.df, params, logDir) {
   
   pop <- create_population(input.df = input.df, params = params)
   
+  # define original number of tokens per word per speaker
+  params[["originalNrTokens"]] <- list()
+  wordLabels <- unique(input.df$word)
+  for (i in seq_along(pop)) {
+    params[["originalNrTokens"]][[i]] <- pop[[i]]$labels %>% filter(valid == TRUE) %>% group_by(word) %>% dplyr::count()
+    for (w in wordLabels) {
+      if (! w %in% params[["originalNrTokens"]][[i]]$word) {
+        params[["originalNrTokens"]][[i]][nrow(params[["originalNrTokens"]][[i]])+1,] <- list(w, 0)
+      }
+    }
+    params[["originalNrTokens"]][[i]] <- params[["originalNrTokens"]][[i]] %>% arrange(word)
+  }
+  
   if (params[['splitAndMerge']] == TRUE & params[['doSplitAndMergeBeforeABM']] == TRUE) {
     for (j in seq_along(pop)) {
       splitandmerge(pop[[j]], params, full = TRUE)
