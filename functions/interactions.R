@@ -64,16 +64,13 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   # initiate a list called population and search for P-columns in input.df
   population <- list()
   
-  Pcols <- grep("^P[[:digit:]]+$", colnames(input.df), value = TRUE)
-  if (length(Pcols) == 0) Pcols <- NULL
-  
   for (id in seq_len(nrOfAgents)) {
     if (method == "speaker_is_agent") {
       selectedSpeaker <- sortedSpeakers[id]
     } else if (method == "bootstrap") {
       selectedSpeaker <- sample(sortedSpeakers, 1)
     }
-    population[[id]] <- create_agent(id, input.df, selectedSpeaker, maxMemorySize, Pcols, exemplarsCol = NULL, params)
+    population[[id]] <- create_agent(id, input.df, selectedSpeaker, maxMemorySize, params)
     if (params[["initialMemoryResampling"]]) {
       apply_resampling(population[[id]], initialMemorySize, params)
     }
@@ -81,7 +78,7 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   return(population)
 }
 
-create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresCols = NULL, exemplarsCol = NULL, params) {
+create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent <- list()
   # metadata
   agent$agentID <- id
@@ -90,22 +87,16 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresC
   agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
   agent$cache <- data.table(name = "qda", value = list(), valid = FALSE)
   # init empty memory of size maxMemorySize
-  agent$labels <- data.table(word = character(),
+  agent$memory <- data.table(word = character(),
                              label = character(),
                              valid = logical(),
                              nrOfTimesHeard = integer(),
                              producerID = integer(),
-                             timeStamp = integer()) %>%
+                             timeStamp = integer()
+                             ) %>%
     .[1:maxMemorySize] %>%
-    .[, valid := FALSE]
-  if (!is.null(featuresCols)) {
-    agent$features <- matrix(double(), nrow = maxMemorySize, ncol = length(featuresCols)) %>%
-      data.table %>%
-      setnames(featuresCols)
-  }
-  if (!is.null(exemplarsCol)) {
-    agent$exemplars <- data.table(exemplars = rep(list(list(FALSE)), maxMemorySize))
-  }
+    .[, valid := FALSE] %>%
+    .[, exemplar := list(list(FALSE))]
   
   # fill memory with content from input.df
   nInput <- input.df[speaker == selectedSpeaker, .N]
@@ -114,35 +105,32 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresC
   
   groupData <- input.df[group == agent$group & speaker != selectedSpeaker,]
   ownData <- input.df[speaker == selectedSpeaker,]
-  samples <- rbind(groupData[sample(nrow(groupData), nInputFromGroup),], ownData[sample(nrow(ownData), nInputFromOwn),]) %>% setDT()
+  samples <- rbindlist(list(
+    groupData[sample(.N, nInputFromGroup),],
+    ownData[sample(.N, nInputFromOwn),]
+    ))
   
-  agent$labels %>% 
-    .[1:nInput, c("word", "label") := samples[, .(word, label)]] %>%
+  agent$memory %>% 
+    .[1:nInput, c("word", "label", "exemplar") := samples[, .(word, label, exemplar)]] %>%
     .[1:nInput, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
     .[1:nInput, timeStamp := sample(.N), by = word]
   
-  if (!is.null(featuresCols)) {
-    agent$features %>%
-      .[1:nInput, (featuresCols) := samples[, .SD, .SDcols = featuresCols]]
-  }
-  if (!is.null(exemplarsCol)) {
-    agent$exemplars %>%
-      .[1:nInput, exemplars := samples[, exemplarsCol]]
-  }
+  agent$features <- data.table(P1 = double()) %>% .[1:maxMemorySize]
+  update_features(agent, compute_features(agent, params))
   
   return(agent)
 }
 
 apply_resampling <- function(agent, finalN, params) {
-  initialN <- agent$labels[valid == TRUE, .N]
+  initialN <- agent$memory[valid == TRUE, .N]
   if (initialN >= finalN)
     return()
-  extraN <- min(finalN, nrow(agent$labels)) - initialN
+  extraN <- min(finalN, nrow(agent$memory)) - initialN
   # a list of produced tokens, all based on the initial memory
   tokens <- replicate(extraN, produce_token(agent, params), simplify = FALSE)
   lapply(seq_along(tokens), function(i) {
     rowToWrite <- row_to_write(agent, tokens[[i]], params)
-    update_memory(agent, tokens[[i]], rowToWrite, tokens[[i]]$labels$label) 
+    write_memory(agent, tokens[[i]], rowToWrite, tokens[[i]]$memory$label) 
   })
 }
 
@@ -187,17 +175,17 @@ write_to_log <- function(interactionsLog, producedToken, perceiver, perceiverLab
   
   rowToWrite <- which(interactionsLog$valid == FALSE)[1]
   interactionsLog[rowToWrite, `:=`(
-    word = producedToken$labels$word,
-    producerID = producedToken$labels$producerID,
-    producerLabel = producedToken$labels$label,
-    producerNrOfTimesHeard = producedToken$labels$nrOfTimesHeard,
+    word = producedToken$word,
+    producerID = producedToken$producerID,
+    producerLabel = producedToken$label,
+    producerNrOfTimesHeard = producedToken$nrOfTimesHeard,
     perceiverID = perceiver$agentID,
     perceiverLabel = perceiverLabel_,
     perceiverNrOfTimesHeard = {
       if (memorise) {
-        perceiver$labels$nrOfTimesHeard[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE][1]
+        perceiver$memory$nrOfTimesHeard[perceiver$memory$word == producedToken$word & perceiver$memory$valid == TRUE][1]
       } else {
-        as.integer(max(1, perceiver$labels$nrOfTimesHeard[perceiver$labels$word == producedToken$labels$word & perceiver$labels$valid == TRUE][1]))
+        as.integer(max(1, perceiver$memory$nrOfTimesHeard[perceiver$memory$word == producedToken$word & perceiver$memory$valid == TRUE][1]))
       }
     },
     accepted = memorise,
@@ -352,20 +340,20 @@ produce_token <- function(agent, params) {
   #
   
   # randomly sample a word
-  producedWord <- choose_word(agent$labels)
+  producedWord <- choose_word(agent$memory)
   if (is.null(producedWord)) {
     # print to LOG 
     return (NULL)
   }
   
-  producedLabel <- agent$labels$label[agent$labels$word == producedWord & agent$labels$valid == TRUE][1]
+  producedLabel <- agent$memory$label[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
   producedInitial <- agent$initial$initial[agent$initial$word == producedWord]
-  nrOfTimesHeard <- agent$labels$nrOfTimesHeard[agent$labels$word == producedWord & agent$labels$valid == TRUE][1]
+  nrOfTimesHeard <- agent$memory$nrOfTimesHeard[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
   
   if (grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
-    basisIdx <- which(agent$labels$word == producedWord & agent$labels$valid == TRUE)
+    basisIdx <- which(agent$memory$word == producedWord & agent$memory$valid == TRUE)
   } else if (grepl("^(target)?([lL]abel|[pP]honeme)$", params[["productionBasis"]])) {
-    basisIdx <- which(agent$labels$label == producedLabel & agent$labels$valid == TRUE)
+    basisIdx <- which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
   }
   basisTokens <- as.matrix(agent$features)[basisIdx, , drop = FALSE]
   
@@ -375,7 +363,7 @@ produce_token <- function(agent, params) {
       if (nExtraTokens > 0) {
         extendedIdx <- NULL
         if (grepl("label|phoneme", params[["productionResamplingFallback"]], ignore.case = TRUE)) {
-          extendedIdx <- which(agent$labels$label == producedLabel & agent$labels$valid == TRUE)
+          extendedIdx <- which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
         }
         extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["productionSMOTENN"]], nExtraTokens)
         basisTokens <- rbind(basisTokens, extraTokens)
@@ -387,14 +375,14 @@ produce_token <- function(agent, params) {
   tokenGauss <- estimate_gaussian(basisTokens)
   
   # generate producedToken as a list
-  producedToken <- list(
-    features = rmvnorm(1, tokenGauss$mean, tokenGauss$cov),
-    labels = data.table(word = producedWord,
-                        label = producedLabel,
-                        initial = producedInitial,
-                        nrOfTimesHeard = nrOfTimesHeard,
-                        producerID = agent$agentID)
-  )
+  features <- rmvnorm(1, tokenGauss$mean, tokenGauss$cov)
+  producedToken <- data.table(word = producedWord,
+                              label = producedLabel,
+                              initial = producedInitial,
+                              exemplar = features2exemplar(features, agent, params),
+                              nrOfTimesHeard = nrOfTimesHeard,
+                              producerID = agent$agentID
+                              )
   return(producedToken)
 }
 
@@ -471,18 +459,18 @@ row_to_overwrite <- function(perceiver, producedToken, params) {
   
   # remove either the oldest token
   if (params[["memoryRemovalStrategy"]] == "timeDecay") {
-    rowToOverwrite <- which(perceiver$labels$word == producedToken$labels$word)[
-      which.min(perceiver$labels$timeStamp[perceiver$labels$word == producedToken$labels$word])
+    rowToOverwrite <- which(perceiver$memory$word == producedToken$word)[
+      which.min(perceiver$memory$timeStamp[perceiver$memory$word == producedToken$word])
       ]
     # ... or the farthest outlier of the token distribution
   } else if (params[["memoryRemovalStrategy"]] == "outlierRemoval") {
-    tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$labels$label == perceiverLabel_, , drop = FALSE])
-    rowToOverwrite <- which(perceiver$labels$word == producedToken$labels$word)[
-      which.max(distance(as.matrix(perceiver$features)[perceiver$labels$word == producedToken$labels$word, , drop = FALSE], tdat.mahal, metric = "mahal"))
+    tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$memory$label == perceiverLabel_, , drop = FALSE])
+    rowToOverwrite <- which(perceiver$memory$word == producedToken$word)[
+      which.max(distance(as.matrix(perceiver$features)[perceiver$memory$word == producedToken$word, , drop = FALSE], tdat.mahal, metric = "mahal"))
       ]
     # ... or random token (recommended)
   } else if (params[["memoryRemovalStrategy"]] == "random") {
-    rowToOverwrite <- sample(which(perceiver$labels$word == producedToken$labels$word), 1)
+    rowToOverwrite <- sample(which(perceiver$memory$word == producedToken$word), 1)
   }
   return(rowToOverwrite)
 }
@@ -501,16 +489,16 @@ row_to_write <- function(agent, producedToken, params) {
   #    - rowToWrite: index of row that is to be used for the new token
   #
   
-  if (all(agent$labels$valid)) {
+  if (all(agent$memory$valid)) {
     print(paste("agent", agent$agentID, "full"))
     rowToWrite <- row_to_overwrite(agent, producedToken, params)
   } else {
-    rowToWrite <- which(agent$labels$valid == FALSE)[1]
+    rowToWrite <- which(agent$memory$valid == FALSE)[1]
   }
   return(rowToWrite)
 }
 
-update_memory <- function(agent, producedToken, rowToWrite, label_) {
+write_memory <- function(agent, producedToken, rowToWrite, label_) {
   # This function updates an agent's memory with a new token.
   # Function call in interactions.R, perceive_token().
   #
@@ -524,20 +512,40 @@ update_memory <- function(agent, producedToken, rowToWrite, label_) {
   #    - agent: an agent from the population with updated memory
   #
   
-  updatedNrOfTimesHeard <- 1 + max(0, agent$labels$nrOfTimesHeard[
-    agent$labels$word == producedToken$labels$word & agent$labels$valid == TRUE
+  updatedNrOfTimesHeard <- 1 + max(0, agent$memory$nrOfTimesHeard[
+    agent$memory$word == producedToken$word & agent$memory$valid == TRUE
     ][1], na.rm = TRUE)
-  receivedTimeStamp <- 1 + max(0, agent$labels$timeStamp[agent$labels$word == producedToken$labels$word], na.rm = TRUE)
-  agent$features[rowToWrite, names(agent$features) := as.list(producedToken$features)]
-  agent$labels[rowToWrite, `:=`(
-    word = producedToken$labels$word,
+  receivedTimeStamp <- 1 + max(0, agent$memory$timeStamp[agent$memory$word == producedToken$word], na.rm = TRUE)
+  agent$memory[rowToWrite, `:=`(
+    word = producedToken$word,
+    exemplar = producedToken$exemplar,
     label = label_,
     valid = TRUE,
-    producerID = producedToken$labels$producerID,
+    producerID = producedToken$producerID,
     timeStamp = receivedTimeStamp
   )]
-  agent$labels[agent$labels$word == producedToken$labels$word & agent$labels$valid == TRUE, 
+  agent$memory[agent$memory$word == producedToken$word & agent$memory$valid == TRUE, 
                    nrOfTimesHeard := updatedNrOfTimesHeard]
+  
+  # agent$features[rowToWrite, 1:ncol(agent$features) := producedToken$features]
+}
+
+write_features <- function(agent, features, rowToWrite) {
+  agent$features[rowToWrite, 1:ncol(agent$features) := features]
+}
+
+update_features <- function(agent, features) {
+  if (nrow(features) != agent$memory[valid == TRUE, .N]) {
+    stop(paste("update_features: mismatching number of rows in given features and memory:",
+               nrow(features),
+               agent$memory[valid == TRUE, .N]))
+  }
+  nPold <- ncol(agent$features)
+  nPnew <- ncol(features)
+  if (nPold > nPnew) {
+    agent$features[, (nPnew+1):nPold := NULL]
+  }
+  agent$features[agent$memory$valid, paste0("P", 1:nPnew) := features %>% as.data.frame]
 }
 
 
@@ -564,19 +572,22 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   }
   
   # find out which phonological label the agent associates with the produced word
-  perceiverLabel_ <- unique(agent$labels$label[agent$labels$word == producedToken$labels$word & agent$labels$valid == TRUE])
+  perceiverLabel_ <- unique(agent$memory$label[agent$memory$word == producedToken$word & agent$memory$valid == TRUE])
+  
+  # compute features on incoming token
+  features <- exemplar2features(producedToken$exemplar, agent, params)
   
   # if word is unknown, assign label based on majority vote among perceptionNN nearest neighbours
   if (length(perceiverLabel_) == 0) {
-    perceiverLabel_ <- names(which.max(table(agent$labels$label[agent$labels$valid == TRUE][
-      knnx.index(agent$features[agent$labels$valid == TRUE,], producedToken$features, params[["perceptionNN"]])
+    perceiverLabel_ <- names(which.max(table(agent$memory$label[agent$memory$valid == TRUE][
+      knnx.index(agent$features[agent$memory$valid == TRUE,], features, params[["perceptionNN"]])
       ])))
   }
   
   memorise <- TRUE
   # relative acceptance criterion
   if (memorise && any(c("maxPosteriorProb", "posteriorProbThr") %in% params[["memoryIntakeStrategy"]])) { 
-    posteriorProb <- compute_posterior_probabilities(agent, producedToken, params[["posteriorProbMethod"]])
+    posteriorProb <- compute_posterior_probabilities(agent, features, params[["posteriorProbMethod"]])
     if ("maxPosteriorProb" %in% params[["memoryIntakeStrategy"]]) {
       memorise %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "maxPosteriorProb"))
     } else if ("posteriorProbThr" %in% params[["memoryIntakeStrategy"]]) {
@@ -585,7 +596,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   }
   # absolute acceptance criterion
   if (memorise && any(c("mahalanobisDistance", "highestDensityRegion") %in% params[["memoryIntakeStrategy"]])) {
-    mahalDist <- compute_mahal_distance(agent, producedToken, perceiverLabel_)
+    mahalDist <- compute_mahal_distance(agent, features, perceiverLabel_)
     if ("mahalanobisDistance" %in% params[["memoryIntakeStrategy"]]) {
       memorise %<>% `&`(mahalDist <= params[["mahalanobisThreshold"]])
     } else if ("highestDensityRegion" %in% params[["memoryIntakeStrategy"]]) {
@@ -600,7 +611,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   
   # forget
   if (runif(1) < params[["forgettingRate"]]) {
-    set(agent$labels, sample(which(agent$labels$valid == TRUE), 1), "valid", FALSE)
+    set(agent$memory, sample(which(agent$memory$valid == TRUE), 1), "valid", FALSE)
   }
   
   if (memorise) {
@@ -608,7 +619,8 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     rowToWrite <- row_to_write(agent, producedToken, params)
     
     # write in agent's memory
-    update_memory(agent, producedToken, rowToWrite, perceiverLabel_)
+    write_memory(agent, producedToken, rowToWrite, perceiverLabel_)
+    write_features(agent, features, rowToWrite)
     
     # empty cache
     if (any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
@@ -631,4 +643,30 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   }
 }
 
+getPcols <- function(memory) {
+  grep("^P[0-9]+$", colnames(memory), value = TRUE)
+}
+
+getNPcols <-  function(memory) {
+  # temporary checks, should be moved to a test
+  Pcols <- getPcols(memory)
+  len <- length(Pcols)
+  if (len == 0) return(0)
+  if(!all.equal(Pcols, paste0("P", 1:len))) {
+    stop(paste("Not contiguous sequence of feature column names:", Pcols))
+  }
+  return(len)
+}
+
+compute_features <- function(agent, params) {
+  funReg[params[["featureExtractionMethod"]], compute_features][[1]](agent$memory[valid == TRUE, exemplar], agent, params)
+}
+
+exemplar2features <- function(exemplar, agent, params) {
+  funReg[params[["featureExtractionMethod"]], exemplar2features][[1]](exemplar, agent, params)
+}
+
+features2exemplar  <- function(features, agent, params) {
+  funReg[params[["featureExtractionMethod"]], features2exemplar][[1]](features, agent, params)
+}
   

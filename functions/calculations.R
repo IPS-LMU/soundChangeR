@@ -29,18 +29,18 @@ invalidate_cache <- function(agent, cacheName) {
 compute_qda <- function(agent) {
   # execute the QDA (Quadrativ Discriminant Analysis)
   # a wrapper for qda()
-  qda(as.matrix(agent$features)[agent$labels$valid == TRUE, , drop = FALSE],
-      grouping = agent$labels$label[agent$labels$valid == TRUE])
+  qda(as.matrix(agent$features)[agent$memory$valid == TRUE, , drop = FALSE],
+      grouping = agent$memory$label[agent$memory$valid == TRUE])
 }
 
-compute_posterior_probabilities <- function(agent, token, method) {
+compute_posterior_probabilities <- function(agent, features, method) {
   if (method == "qda") {
     # no other option at the moment
     if (!is_cache_valid(agent, "qda")) {
       update_cache(agent, "qda", compute_qda)
       # cacheMissCounter <<- cacheMissCounter + 1
     }
-    predict(get_cache_value(agent, "qda"), token$features)$posterior
+    predict(get_cache_value(agent, "qda"), features)$posterior
   } else {
     NULL
   }
@@ -54,15 +54,15 @@ recognize_posterior_probabilities <- function(posteriorProb, label, method, ...)
   }
 }
 
-compute_mahal_distance <- function(agent, token, label, method = NULL) {
+compute_mahal_distance <- function(agent, features, label, method = NULL) {
   if (is.null(method)) {
     # no other option at the moment
     # a wrapper to mahalanobis()
-    mahalanobis(token$features,
-                apply(as.matrix(agent$features)[agent$labels$valid == TRUE & 
-                                                      agent$labels$label == label, , drop = FALSE], 2, mean),
-                cov(as.matrix(agent$features)[agent$labels$valid == TRUE & 
-                                                    agent$labels$label == label, , drop = FALSE]))
+    mahalanobis(features,
+                apply(as.matrix(agent$features)[agent$memory$valid == TRUE & 
+                                                      agent$memory$label == label, , drop = FALSE], 2, mean),
+                cov(as.matrix(agent$features)[agent$memory$valid == TRUE & 
+                                                    agent$memory$label == label, , drop = FALSE]))
     
   }
 }
@@ -82,9 +82,9 @@ convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
   
   # loop over the lists in pop
   rbindlist(lapply(seq_along(pop), function (i) {
-    # the next four lines join the 'feature' columns, the 'labels' columns, 
+    # the next four lines join the 'feature' columns, the 'memory' columns, 
     # and the 'initial' columns, for the current agent (pop[[i]])
-    cbind(pop[[i]]$features, pop[[i]]$labels) %>%
+    cbind(pop[[i]]$features, pop[[i]]$memory) %>%
       .[valid == TRUE] %>%
       inner_join(pop[[i]]$initial, by = 'word') %>%
       setDT %>%
@@ -181,7 +181,7 @@ equal_class <- function(orig, derived) {
   #
   # Args:
   #    - orig: a vector of characters from pop[[i]]$initial$initial
-  #    - derived: a vector of characters from pop[[i]]$labels$label
+  #    - derived: a vector of characters from pop[[i]]$memory$label
   #
   # Returns:
   #    - derived: the equivalence label
@@ -203,3 +203,14 @@ equal_class <- function(orig, derived) {
   return(derived)
 }
 
+unpack_vector <- function(exemplars, ...) {
+  do.call(rbind, exemplars) 
+}
+
+pack_vector <- function(features, ...) {
+  list(as.numeric(features))
+}
+
+pack_matrix <- function(mat) {
+  apply(mat, 1, pack_vector) %>% unlist(recursive = FALSE) 
+}

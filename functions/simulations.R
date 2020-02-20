@@ -288,5 +288,12 @@ check_params <- function(params) {
     params[["perceptionNN"]] <- params[["perceptionNN"]] + 1
   }
   
+  # check featureExtractionMethod
+  if (!"featureExtractionMethod" %in% names(params)) {
+    params[["featureExtractionMethod"]] <- "identity"
+  }
+  if (!params[["featureExtractionMethod"]] %in% funReg$method) {
+    stop(paste("Unknown featureExtractionMethod:", params[["featureExtractionMethod"]]))
+  }
   return(params)
 }

@@ -36,6 +36,14 @@ source(file.path(ABMpath, "functions/simulations.R"))
 source(file.path(ABMpath, "functions/splitandmerge.R"))
 source(file.path(ABMpath, "functions/debugging.R"))
 
+funReg <- data.table(
+  method = c("identity"),
+  compute_features = c(unpack_vector),
+  exemplar2features = c(unpack_vector),
+  features2exemplar = c(pack_vector)
+) %>% setkey(method)
+
+
 coreABM <- function(input.df, params, logDir) {
   # This function runs the main ABM routine. Assumes that params and input.df have been loaded.
   # Function call in ABMmain.R.
