@@ -526,12 +526,12 @@ write_memory <- function(agent, producedToken, rowToWrite, label_) {
   )]
   agent$memory[agent$memory$word == producedToken$word & agent$memory$valid == TRUE, 
                    nrOfTimesHeard := updatedNrOfTimesHeard]
-  
-  # agent$features[rowToWrite, 1:ncol(agent$features) := producedToken$features]
 }
 
 write_features <- function(agent, features, rowToWrite) {
-  agent$features[rowToWrite, 1:ncol(agent$features) := features]
+  for (colIdx in 1:ncol(agent$features)) {
+    set(agent$features, as.integer(rowToWrite), colIdx, features[1, colIdx])
+  }
 }
 
 update_features <- function(agent, features) {
