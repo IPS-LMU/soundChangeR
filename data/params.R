@@ -13,7 +13,7 @@ params = list(
   
   ##### Input data
   
-  inputDataFile = "./data/demo_single_phoneme.csv",    # absolute or relative path to input data
+  inputDataFile = "./data/u-fronting.csv",    # absolute or relative path to input data
   features = c("DCT0", "DCT1", "DCT2"),          # the column(s) in inputDataFile that is/are used as features
   group = "age",                                 # the column in inputDataFile that defines the agents' groups
   label = "phoneme",                             # the column in inputDataFile that stores the phonological labels (can be changed)
@@ -28,9 +28,9 @@ params = list(
   createPopulationMethod = "speaker_is_agent",   # "speaker_is_agent" or "bootstrap"
   bootstrapPopulationSize = 50,                  # full positive number; only if createPopulationMethod == "bootstrap"
   initialMemoryResampling = FALSE,               # enlarge the agents' memories before the interactions or not
-  initialMemoryResamplingFactor = 1.0,           # 1.0 or higher; only if initialMemoryResampling == TRUE
+  initialMemoryResamplingFactor = 2.0,           # 1.0 or higher; only if initialMemoryResampling == TRUE
   proportionGroupTokens = 0.0,                   # between 0.0 and 1.0; proportion of tokens from own speaker group that an agent is initialised with
-  rememberOwnTokens = TRUE,                      # whether or not to perceive one's own tokens
+  rememberOwnTokens = FALSE,                     # whether or not to perceive one's own tokens
   
   ##### Production
   
@@ -44,7 +44,7 @@ params = list(
   
   # perceptionModels = "singleGaussian",
   memoryIntakeStrategy = "mahalanobisDistance",  # "maxPosteriorProb" and/or "mahalanobisDistance" and/or "posteriorProbThr"
-  mahalanobisThreshold = qchisq(.99, df = 3) %>% round(2),   # threshold if memoryIntakeStrategy == "mahalanobisDistance"
+  mahalanobisThreshold = qchisq(.95, df = 3) %>% round(2),   # threshold if memoryIntakeStrategy == "mahalanobisDistance"
   posteriorProbThr = 1/3,                        # only if memoryIntakeStrategy == "posteriorProbThr"
   perceptionNN = 5,                              # uneven full number; assign label to unknown word based on majority vote among perceptionNN nearest neighbours
   
@@ -68,14 +68,14 @@ params = list(
   ##### Runs
   
   runMode = "single",                            # "single" or "multiple"
-  multipleABMRuns = 2,                           # any full positive number; number of ABM runs if runMode == "multiple"
-  nrOfSnapshots = 2,                             # any full positive number; how often the population is archived during the simulation
+  multipleABMRuns = 4,                           # any full positive number; number of ABM runs if runMode == "multiple"
+  nrOfSnapshots = 20,                            # any full positive number; how often the population is archived during the simulation
   interactionsPerSnapshot = 1000,                # any full positive number; how many interactions take place per snapshot
 
   ##### Other options
   
   rootLogDir = "./logs",                         # absolute or relative path to logging directory
-  notes = "u-fronting, one phoneme"              # some further notes on the current simulation for better documentation
+  notes = "u-fronting, three phonemes"           # some further notes on the current simulation for better documentation
 
 )
 

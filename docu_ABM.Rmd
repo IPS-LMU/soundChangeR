@@ -1,7 +1,7 @@
 ---
 title: "ABM User Manual"
 author: "Johanna Cronenberg and Michele Gubian"
-date: "January 30, 2020"
+date: "February 12, 2020"
 output: html_document
 ---
 
@@ -16,15 +16,12 @@ R.version.string
 ```
 
 ```{r eval=FALSE}
-# from Rcmd/ABMmain.R
-ABMpath <- "/homes/myName/path/to/ABMcode"
+setwd("/homes/myName/path/to/ABM")
 ```
 
 - Clone the [github repo](https://github.com/IPS-LMU/ABM) or download the code from there.
-- Make sure you have the R version indicated above (or newer).
-- Go to the directory where you stored the ABM code (i.e. `ABMpath`) and open the script `Rcmd/ABMmain.R` in RStudio.
-- In the first line of code (l. 13), adapt the variable `ABMpath`.
-- `ABMpath` will also be the reference point for all relative paths used in this manual.
+- Open RStudio and use `setwd()` as shown above to navigate to the folder of the ABM code (if necessary). This path will the the reference point for all relative paths used in this manual and in the simulations.
+- Make sure you have the R version indicated above (or newer) as well as the latest version of all packages (Tools > Check for Package Updates).
 - Adapt the ABM settings in `data/params.R`. Explanations of all parameters are provided below.
 - Run the ABM using the following command:
 
@@ -65,7 +62,7 @@ rememberOwnTokens = TRUE                # whether or not to perceive one's own t
 
 Usually, every human speaker is represented by one agent which is achieved by initialising the agent with the acoustic data of the speaker (`createPopulationMethod = "speaker_is_agent"`). However, there is the possibility to break this paradigm by applying [bootstrapping](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)). If so, you will need to specify how many agents the new population should be comprised of (`bootstrapPopulationSize`). It is highly recommended to then do multiple ABM runs (`runMode = "multiple"`; see below).
 
-Since we often deal with sparse data in the phonetic sciences, it makes sense to augment the amount of data (i.e. tokens per word per speaker) *before* the first interaction takes place (`initialMemoryResampling = TRUE`). If you want to do this (which is recommended in order to avoid artefacts during the simulations), you also need to specify the `initialMemoryResamplingFactor`. The resampling uses the production technique indicated by the parameters in the next section.
+Since we often deal with sparse data in the phonetic sciences, it makes sense to augment the amount of data (i.e. tokens per word per speaker) *before* the first interaction takes place (`initialMemoryResampling = TRUE`). If you want to do this (which is recommended in order to avoid artefacts during the simulations), you also need to specify the `initialMemoryResamplingFactor`. The resampling uses the production technique indicated by the parameters in the next section. Be aware that a large resampling factor, e.g. 10, will slow any change down, so many more interactions are needed (`nrOfSnapshots` and `interactionsPerSnapshot`, see below).
 
 `proportionGroupTokens` can be used to initialise agents with a proportion of tokens from their own speech community. So if an agent would usually receive 20 tokens from a real speaker and `proportionGroupTokens = 0.25`, the agent will instead be initialised with 15 tokens from the real speaker (i.e. 75%) and 5 random tokens from speakers of the agent's speaker group. Over the course of the interactions, it is often the case that all agents start to become less individual in their phonetic representations, i.e. all agents' categories collapse into one point. This result can be avoided by setting `rememberOwnTokens = TRUE`. It is then highly recommended to have a `proportionGroupTokens > 0`.
 
@@ -158,7 +155,7 @@ A simulation is a sequence of `nrOfSnapshots * interactionsPerSnapshot` interact
 rootLogDir = "./logs"                   # absolute or relative path to logging directory
 ```
 
-The results of your simulations will be saved in `rootLogDir` in distinct folders called `ABM<date><time>`, e.g. `ABM20191017115249`. `rootLogDir` will be created if it does not exist yet. If you ran multiple ABMs (`runMode = "multiple"`), there will be a folder for each separate simulation in `rootLogDir/ABM<date><time>/`, called `1/`, `2/`, and so on. Every simulation folder, e.g. `ABM20191017115249` or `ABM20191017115249/1`, will contain the following objects:
+The results of your simulations will be saved in `rootLogDir` in distinct folders called `ABM<date><time>`, e.g. `ABM20191017115249`. `rootLogDir` will be created if it does not exist yet. There will be a folder for each separate simulation in `rootLogDir/ABM<date><time>/`, called `1/`, `2/`, and so on (or only `1/` for a single simulation). Every simulation folder, e.g. `ABM20191017115249/1`, will contain the following objects:
 
 - `input.rds`: the input data frame without any changes to your original data frame.
 - `pop.0.rds`: the input data frame with adapted column names (`P1`, `P2`, etc., `group`, `label`, `initial`, `word`, `speaker`) and comprising only of those speakers and labels that you subsetted there to be (`subsetSpeakers` and `subsetLabels` in `data/params.R`). However there are some further columns:
@@ -188,10 +185,14 @@ The `.rds` format is a kind of archive which can be read using the following com
 
 ```{r eval=FALSE}
 # example of how to read RDS files
-intLog <- readRDS(file.path(ABMpath, rootLogDir, 'ABM20191017115249/intLog.rds'))
+intLog <- readRDS(file.path(rootLogDir, 'ABM20191017115249/intLog.rds'))
 ```
 
 Besides the simulation results, `rootLogDir` also contains `simulations_register.rds`. This is a list of all the simulations that are stored in `rootLogDir`, more precisely of all `params.yaml` files that stored in `rootLogDir`'s subdirectories. You can use the functions in `functions/simulations.R` to e.g. find certain simulations by their parameters, delete unfinished ABM runs from both the `rootLogDir` and the simulation register, etc. Only use the functions provided, do not alter the `simulations_register.rds` directly.
+
+## Analysis of Results
+
+When your simulations are finished, you can use `analysis.R` if you need help with loading, analysing or plotting the results.
 
 ## Demo
 

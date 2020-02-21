@@ -30,11 +30,11 @@ library("rlist")
 library("dtt")
 library("mclust")
 
-source(file.path(ABMpath, "functions/interactions.R"))
-source(file.path(ABMpath, "functions/calculations.R"))
-source(file.path(ABMpath, "functions/simulations.R"))
-source(file.path(ABMpath, "functions/splitandmerge.R"))
-source(file.path(ABMpath, "functions/debugging.R"))
+source("functions/interactions.R")
+source("functions/calculations.R")
+source("functions/simulations.R")
+source("functions/splitandmerge.R")
+source("functions/debugging.R")
 
 coreABM <- function(input.df, params, logDir) {
   # This function runs the main ABM routine. Assumes that params and input.df have been loaded.
