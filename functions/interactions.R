@@ -51,10 +51,10 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   # memoryBuffer defines a buffer of empty memory space
   # so that it is unlikely that an agent will exceed its memory limit during the simulation.
   # This is to decouple the forgetting rate from the memory capacity.
-  # maxMemorySize is approx = mean + 5 st. dev. of the expected number of received tokens during the simulation.
+  # maxMemorySize is approx = mean + 10 st. dev. of the expected number of received tokens during the simulation.
   # Num. received tokens is Bin(nrOfInteractions, 1/nrOfAgents) approx = Normal,
-  # ignoring the (1-nrOfInteractions/nrOfAgents) factor in var and taking worst case of zero forgetting rate.
-  memoryBuffer <- ceiling(params[["nrOfInteractions"]]/nrOfAgents + 5 * sqrt(params[["nrOfInteractions"]]/nrOfAgents))
+  # ignoring the (1-1/nrOfAgents) factor in var and taking worst case of zero forgetting rate.
+  memoryBuffer <- ceiling(params[["nrOfInteractions"]]/nrOfAgents + 10 * sqrt(params[["nrOfInteractions"]]/nrOfAgents))
   if(params[["rememberOwnTokens"]]) {
     memoryBuffer <- memoryBuffer * 2
   }
