@@ -85,7 +85,8 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$group <- input.df[speaker == selectedSpeaker, group][1]
   agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
   agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
-  agent$cache <- data.table(name = "qda", value = list(), valid = FALSE)
+  cacheNames <- c("qda", methodReg[params[["featureExtractionMethod"]], cacheEntries] %>% .[!is.na(.)])
+  agent$cache <- data.table(name = cacheNames, value = list(), valid = FALSE)
   # init empty memory of size maxMemorySize
   agent$memory <- data.table(word = character(),
                              label = character(),
@@ -659,14 +660,14 @@ getNPcols <-  function(memory) {
 }
 
 compute_features <- function(agent, params) {
-  funReg[params[["featureExtractionMethod"]], compute_features][[1]](agent$memory[valid == TRUE, exemplar], agent, params)
+  methodReg[params[["featureExtractionMethod"]], compute_features][[1]](agent$memory[valid == TRUE, exemplar], agent, params)
 }
 
 exemplar2features <- function(exemplar, agent, params) {
-  funReg[params[["featureExtractionMethod"]], exemplar2features][[1]](exemplar, agent, params)
+  methodReg[params[["featureExtractionMethod"]], exemplar2features][[1]](exemplar, agent, params)
 }
 
 features2exemplar  <- function(features, agent, params) {
-  funReg[params[["featureExtractionMethod"]], features2exemplar][[1]](features, agent, params)
+  methodReg[params[["featureExtractionMethod"]], features2exemplar][[1]](features, agent, params)
 }
   

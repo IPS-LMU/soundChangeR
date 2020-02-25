@@ -292,7 +292,7 @@ check_params <- function(params) {
   if (!"featureExtractionMethod" %in% names(params)) {
     params[["featureExtractionMethod"]] <- "identity"
   }
-  if (!params[["featureExtractionMethod"]] %in% funReg$method) {
+  if (!params[["featureExtractionMethod"]] %in% methodReg$method) {
     stop(paste("Unknown featureExtractionMethod:", params[["featureExtractionMethod"]]))
   }
   return(params)

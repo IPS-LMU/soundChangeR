@@ -36,11 +36,12 @@ source(file.path(ABMpath, "functions/simulations.R"))
 source(file.path(ABMpath, "functions/splitandmerge.R"))
 source(file.path(ABMpath, "functions/debugging.R"))
 
-funReg <- data.table(
+methodReg <- data.table(
   method = c("identity"),
   compute_features = c(unpack_vector),
   exemplar2features = c(unpack_vector),
-  features2exemplar = c(pack_vector)
+  features2exemplar = c(pack_vector),
+  cacheEntries = NA_character_
 ) %>% setkey(method)
 
 
