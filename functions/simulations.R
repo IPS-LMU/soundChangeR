@@ -281,11 +281,17 @@ check_params <- function(params) {
   # define number of interactions
   params[["nrOfInteractions"]] <- params[["nrOfSnapshots"]] * params[["interactionsPerSnapshot"]]
   
+  # define perceptionNN
   if (is.null(params[["perceptionNN"]])) {
     params[["perceptionNN"]] <- 5
   }
   if (params[["perceptionNN"]] %% 2 == 1) {
     params[["perceptionNN"]] <- params[["perceptionNN"]] + 1
+  }
+  
+  # check splitMergeMethod
+  if (!any(c("t.test", "bic") %in% params[["splitMergeMethod"]])) {
+    params[["splitMergeMethod"]] <- "bic"
   }
   
   return(params)

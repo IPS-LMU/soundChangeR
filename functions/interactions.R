@@ -114,6 +114,9 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, featuresC
   
   groupData <- input.df[group == agent$group & speaker != selectedSpeaker,]
   ownData <- input.df[speaker == selectedSpeaker,]
+  if (nrow(groupData) < nInputFromGroup) {
+    stop("Cannot sample ", nInputFromGroup, " tokens from ", nrow(groupData), " tokens of group ", agent$group, ".\n Please decrease proportionGroupTokens in params.R.")
+  }
   samples <- rbind(groupData[sample(nrow(groupData), nInputFromGroup),], ownData[sample(nrow(ownData), nInputFromOwn),]) %>% setDT()
   
   agent$labels %>% 

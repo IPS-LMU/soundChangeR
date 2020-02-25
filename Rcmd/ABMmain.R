@@ -48,7 +48,6 @@ register_simulation(params)
 if (params[["runMode"]] == "single") {
   coreABM(input.df, params, file.path(logDir, "1"))
 } else if (params[["runMode"]] == "multiple") {
-  require(parallel)
   numCores <- detectCores() - 1
   if (Sys.info()[["sysname"]] == "Windows") {
     cl <- makeCluster(numCores, type = "PSOCK")
