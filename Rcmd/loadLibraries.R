@@ -48,8 +48,6 @@ coreABM <- function(input.df, params, logDir) {
   #    - nothing.
   #
   
-  params <- check_params(params)
-  
   pop <- create_population(input.df = input.df, params = params)
   
   if (params[['splitAndMerge']] == TRUE & params[['doSplitAndMergeBeforeABM']] == TRUE) {
