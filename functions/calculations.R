@@ -203,14 +203,53 @@ equal_class <- function(orig, derived) {
   return(derived)
 }
 
-unpack_vector <- function(exemplars, ...) {
+one_obj2exemplar <- function(obj) {
+  list(obj)
+}
+
+one_exemplar2obj <- function(exemplar) {
+  exemplar[[1]]
+}
+
+
+exemplar2vector <- function(exemplars, ...) {
   do.call(rbind, exemplars) 
 }
 
-pack_vector <- function(features, ...) {
+vector2exemplar <- function(features, ...) {
   list(as.numeric(features))
 }
 
-pack_matrix <- function(mat) {
-  apply(mat, 1, pack_vector) %>% unlist(recursive = FALSE) 
+matrix2exemplar <- function(mat) {
+  apply(mat, 1, vector2exemplar) %>% unlist(recursive = FALSE) 
 }
+
+# FPCA
+all_fd2exemplar <- function(fdObj) {
+  # Do not use to convert the fd of one curve, use one_fd2exemplar instead
+  # convert an fd object into a list
+  # used to build input.df exemlar column:
+  # input.df[, exemplar := fd2exemplar(my_fd)]
+  nItems <- fdObj$coefs %>% dim %>% .[2]
+  sapply(seq_len(nItems), function(i) {fdObj[i]}, simplify = FALSE)
+}
+
+one_fd2exemplar <- one_obj2exemplar
+
+all_exemplar2fd <- function(exemplars) {
+  # Do not use to convert one single exemplar to fd, use one_exemplar2fd instead
+  dim2 <- exemplars[[1]][["coefs"]] %>% dim %>% .[2]
+  if (dim2 == 1) {
+    coefs <- abind(lapply(exemplars, `[[`, "coefs"), along = 2)
+    fdnames <- c("coefs", "curves")
+    # coefs <- sapply(exemplars, `[[`, "coefs", simplify = TRUE)
+  } else {
+    coefs <- abind(lapply(exemplars, `[[`, "coefs"), along = 3) %>% aperm(c(1,3,2)) 
+    fdnames <- c("coefs", "curves", "dimensions")
+  }
+  fd(coef = coefs, basisobj = exemplars[[1]][["basis"]], fdnames = fdnames)
+}
+
+one_exemplar2fd <- one_exemplar2obj
+
+

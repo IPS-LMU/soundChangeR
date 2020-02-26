@@ -29,6 +29,8 @@ library("magrittr")
 library("rlist")
 library("dtt")
 library("mclust")
+library("abind")
+library("fda")
 
 source(file.path(ABMpath, "functions/interactions.R"))
 source(file.path(ABMpath, "functions/calculations.R"))
@@ -38,9 +40,9 @@ source(file.path(ABMpath, "functions/debugging.R"))
 
 methodReg <- data.table(
   method = c("identity"),
-  compute_features = c(unpack_vector),
-  exemplar2features = c(unpack_vector),
-  features2exemplar = c(pack_vector),
+  compute_features = c(exemplar2vector),
+  exemplar2features = c(exemplar2vector),
+  features2exemplar = c(vector2exemplar),
   cacheEntries = NA_character_
 ) %>% setkey(method)
 
