@@ -44,26 +44,30 @@ params[["commitHash"]] <- system("git log -n1 --format=format:\"%H\"", intern = 
 # log simulation in register and save params
 register_simulation(params)
 
-# run simulations
-if (params[["runMode"]] == "single") {
-  coreABM(input.df, params, file.path(logDir, "1"))
-} else if (params[["runMode"]] == "multiple") {
-  require(parallel)
-  numCores <- detectCores() - 1
-  if (Sys.info()[["sysname"]] == "Windows") {
-    cl <- makeCluster(numCores, type = "PSOCK")
-    clusterExport(cl, c("input.df", "params", "logDir"))
-    clusterEvalQ(cl, {
-      source(file.path("Rcmd", "loadLibraries.R"))
+check <- check_params(params, input.df)
+params <- check[[1]]
+
+if (check[[2]]) {
+  # run simulations
+  if (params[["runMode"]] == "single") {
+    coreABM(input.df, params, file.path(logDir, "1"))
+  } else if (params[["runMode"]] == "multiple") {
+    numCores <- detectCores() - 1
+    if (Sys.info()[["sysname"]] == "Windows") {
+      cl <- makeCluster(numCores, type = "PSOCK")
+      clusterExport(cl, c("input.df", "params", "logDir"))
+      clusterEvalQ(cl, {
+        source(file.path("Rcmd", "loadLibraries.R"))
+      })
+    } else {
+      cl <- makeCluster(numCores, type = "FORK")
+    }
+    clusterSetRNGStream(cl)
+    parLapply(cl, seq_len(params[["multipleABMRuns"]]), function(abmName) {
+      coreABM(input.df, params, file.path(logDir, abmName))
     })
-  } else {
-    cl <- makeCluster(numCores, type = "FORK")
+    stopCluster(cl)
   }
-  clusterSetRNGStream(cl)
-  parLapply(cl, seq_len(params[["multipleABMRuns"]]), function(abmName) {
-    coreABM(input.df, params, file.path(logDir, abmName))
-  })
-  stopCluster(cl)
+  set_completed(params[["simulationName"]], params[["rootLogDir"]])
 }
-set_completed(params[["simulationName"]], params[["rootLogDir"]])
 

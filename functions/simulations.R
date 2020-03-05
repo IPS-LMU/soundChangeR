@@ -259,17 +259,21 @@ get_params <- function(rootLogDir, simulationName) {
   list.load(file.path(rootLogDir, simulationName, PARAMS_FILENAME))
 }
 
-check_params <- function(params) {
+check_params <- function(params, input.df) {
   # This function is needed to check and rearrange the params list
   # before the simulation begins.
   # Function call in loadLibraries.R, coreABM().
   #
   # Args:
   #    - params: list of params
+  #    - input.df: input data file
   #
   # Returns:
   #    - params: list of params
+  #    - runSimulation: boolean
   #
+  
+  runSimulation <- TRUE
   
   # posterior probability
   if (any(c("maxPosteriorProb", "posteriorProbThr") %in% params[["memoryIntakeStrategy"]])) {
@@ -281,6 +285,7 @@ check_params <- function(params) {
   # define number of interactions
   params[["nrOfInteractions"]] <- params[["nrOfSnapshots"]] * params[["interactionsPerSnapshot"]]
   
+  # define perceptionNN
   if (is.null(params[["perceptionNN"]])) {
     params[["perceptionNN"]] <- 5
   }
@@ -288,5 +293,21 @@ check_params <- function(params) {
     params[["perceptionNN"]] <- params[["perceptionNN"]] + 1
   }
   
-  return(params)
+  # check splitMergeMethod
+  if (!any(c("t.test", "bic") %in% params[["splitMergeMethod"]])) {
+    params[["splitMergeMethod"]] <- "bic"
+  }
+  
+  # check proportionGroupTokens
+  if(params[["proportionGroupTokens"]] != 0) {
+    groupData <- input.df %>% group_by(group) %>% dplyr::summarise(nInputGroupAvailable = dplyr::n())
+    df <- input.df %>% group_by(speaker, group) %>% dplyr::summarise(nInput = dplyr::n()) %>% 
+      mutate(nInputGroupNeeded = ceiling(nInput * params[["proportionGroupTokens"]])) %>%
+      dplyr::left_join(groupData, by = "group") %>% mutate(nInputGroupAvailable = nInputGroupAvailable - nInput)
+    if (any(df$nInputGroupNeeded > df$nInputGroupAvailable)) {
+      runSimulation <- FALSE
+    }
+  }
+  
+  return(list(params, runSimulation))
 }
