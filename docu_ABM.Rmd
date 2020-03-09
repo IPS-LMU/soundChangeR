@@ -1,7 +1,7 @@
 ---
 title: "ABM User Manual"
 author: "Johanna Cronenberg and Michele Gubian"
-date: "February 12, 2020"
+date: "March 9, 2020"
 output: html_document
 ---
 
@@ -20,7 +20,7 @@ setwd("/homes/myName/path/to/ABM")
 ```
 
 - Clone the [github repo](https://github.com/IPS-LMU/ABM) or download the code from there.
-- Open RStudio and use `setwd()` as shown above to navigate to the folder of the ABM code (if necessary). This path will the the reference point for all relative paths used in this manual and in the simulations.
+- Open RStudio and use `setwd()` as shown above to navigate to the folder of the ABM code (if necessary). This path will be the reference point for all relative paths used in this manual and in the simulations.
 - Make sure you have the R version indicated above (or newer) as well as the latest version of all packages (Tools > Check for Package Updates).
 - Adapt the ABM settings in `data/params.R`. Explanations of all parameters are provided below.
 - Run the ABM using the following command:
@@ -36,7 +36,7 @@ The file `data/params.R` stores the list `params`, which specifies the simulatio
 ### Input data
 
 ```{r eval=FALSE}
-inputDataFile = "./data/demo_single_phoneme.csv"    # absolute or relative path to input data
+inputDataFile = "./data/u-fronting.csv" # absolute or relative path to input data
 features = c("DCT0", "DCT1", "DCT2")    # the column(s) in inputDataFile that is/are used as features
 group = "age"                           # the column in inputDataFile that defines the agents' groups
 label = "phoneme"                       # the column in inputDataFile that stores the phonological labels (can be changed)
@@ -64,7 +64,7 @@ Usually, every human speaker is represented by one agent which is achieved by in
 
 Since we often deal with sparse data in the phonetic sciences, it makes sense to augment the amount of data (i.e. tokens per word per speaker) *before* the first interaction takes place (`initialMemoryResampling = TRUE`). If you want to do this (which is recommended in order to avoid artefacts during the simulations), you also need to specify the `initialMemoryResamplingFactor`. The resampling uses the production technique indicated by the parameters in the next section. Be aware that a large resampling factor, e.g. 10, will slow any change down, so many more interactions are needed (`nrOfSnapshots` and `interactionsPerSnapshot`, see below).
 
-`proportionGroupTokens` can be used to initialise agents with a proportion of tokens from their own speech community. So if an agent would usually receive 20 tokens from a real speaker and `proportionGroupTokens = 0.25`, the agent will instead be initialised with 15 tokens from the real speaker (i.e. 75%) and 5 random tokens from speakers of the agent's speaker group. Over the course of the interactions, it is often the case that all agents start to become less individual in their phonetic representations, i.e. all agents' categories collapse into one point. This result can be avoided by setting `rememberOwnTokens = TRUE`. It is then highly recommended to have a `proportionGroupTokens > 0`.
+`proportionGroupTokens` can be used to initialise agents with a proportion of tokens from their own speech community, e.g. age group/regional group/gender. So if an agent would usually receive 20 tokens from a real speaker and `proportionGroupTokens = 0.25`, the agent will instead be initialised with 15 tokens from the real speaker (i.e. 75%) and 5 random tokens from speakers of the agent's speaker group. Over the course of the interactions, it is often the case that all agents start to become less individual very quickly in their phonetic representations, i.e. all agents' categories collapse into one point. This effect can be slowed down by setting `rememberOwnTokens = TRUE`. It is then highly recommended to have a `proportionGroupTokens > 0`.
 
 ### Production
 
@@ -91,7 +91,7 @@ posteriorProbThr = 1/3                                    # only if memoryIntake
 perceptionNN = 5      # uneven full number; assign label to unknown word based on majority vote among perceptionNN nearest neighbours
 ```
 
-It is assumed that word recognition always works, i.e. the agent-listener does *not* decide whether or not he understands the word. Instead, it is decided whether the target phoneme in the produced token is probabilistically close enough to the agent-listener's distribution of that phoneme. If so, the new token is memorised, otherwise a new interaction begins. The parameter `memoryIntakeStrategy` indicates which kind of statistical decision is to be taken (combining strategies is also possible, e.g. `c("maxPosteriorProb", "mahalanobisDistance")`):
+It is assumed that word recognition always works, i.e. the agent-listener does *not* decide whether or not he understands the word or phoneme. Instead, it is decided whether the target phoneme in the produced token is probabilistically close enough to the agent-listener's distribution of that phoneme. If so, the new token is memorised, otherwise a new interaction begins. The parameter `memoryIntakeStrategy` indicates which kind of statistical decision is to be taken (combining strategies is also possible, e.g. `c("maxPosteriorProb", "mahalanobisDistance")`):
 
 - `"maxPosteriorProb"`: Maximum posterior probability decision, i.e. the produced token is only memorised if its probability of belonging to the listener's corresponding phonological category is higher than that of belonging to any of the other categories.
 - `"mahalanobisDistance"`: The distance between the token and the corresponding distribution in the listener's memory has to be smaller than a given threshold in order to be incorporated. The threshold is specified by setting `"mahalanobisThreshold"` where the degrees of freedom needs to be `length(params$features)`. This approach does not take into account any of the other phonological categories, i.e. it might not be the appropriate strategy if two or more categories in your data overlap or are very close to each other.
@@ -132,20 +132,21 @@ In certain cases, you may want to introduce an imbalance to the ABM concerning t
 splitAndMerge = FALSE                   # apply split & merge algorithm or not
 doSplitAndMergeBeforeABM = FALSE        # apply split & merge before the first interaction or not
 splitAndMergeInterval = 100             # any full positive number; after how many interactions an agent applies split & merge
+splitMergeMethod = "bic",               # "bic" or "t.test"; use Bayesian Information Criterion or t-test to decide on split or merge
 ```
 
-Perform split and merge. If `splitAndMerge == TRUE`, further parameters have to be set: `splitAndMergeInterval` specifies the number of interactions between each run of split and merge; `doSplitAndMergeBeforeABM` specifies whether to perform split and merge before simulation start. However, please avoid split & merge if possible, since it is still under heavy construction.
+Perform split and merge. If `splitAndMerge == TRUE`, further parameters have to be set: `splitAndMergeInterval` specifies the number of interactions between each run of split and merge; `doSplitAndMergeBeforeABM` specifies whether to perform split and merge before simulation start; `splitMergeMethod` specifies which method should be applied to decide whether classes split or merge: Bayesian Information Criterion or a simple t-test. However, please avoid split & merge if possible, since it is still under heavy construction.
 
 ### Runs
 
 ```{r eval=FALSE}
 runMode = "single"                      # "single" or "multiple"
-multipleABMRuns = 2                     # any full positive number; number of ABM runs if runMode == "multiple"
-nrOfSnapshots = 2                       # any full positive number; how often the population is archived during the simulation
+multipleABMRuns = 4                     # any full positive number; number of ABM runs if runMode == "multiple"
+nrOfSnapshots = 20                      # any full positive number; how often the population is archived during the simulation
 interactionsPerSnapshot = 1000          # any full positive number; how many interactions take place per snapshot
 ```
 
-The ABM system offers you two ways of running it: You can either perform one ABM run (`runMode = "single"`) in order to see the immediate results or you can perform multiple independent ABM runs (`runMode = "multiple"`) which makes it possible to check whether the ABM delivers stable results on your data. If multiple simulations are run, specify the number of runs by setting the parameter `multipleABMRuns`. In the current version, the `"multiple"` mode makes use of the `parallel` library and it is only supported for Linux. 
+The ABM system offers you two ways of running it: You can either perform one ABM run (`runMode = "single"`) in order to see the immediate results or you can perform multiple independent ABM runs (`runMode = "multiple"`) which makes it possible to check whether the ABM delivers stable results on your data. If multiple simulations are run, specify the number of runs by setting the parameter `multipleABMRuns`. In the current version, the `"multiple"` mode makes use of the `parallel` library. 
 
 A simulation is a sequence of `nrOfSnapshots * interactionsPerSnapshot` interactions. At every `interactionsPerSnapshot` interactions a snapshot of all agents' memories is taken and saved.
 
@@ -192,7 +193,7 @@ Besides the simulation results, `rootLogDir` also contains `simulations_register
 
 ## Analysis of Results
 
-When your simulations are finished, you can use `analysis.R` if you need help with loading, analysing or plotting the results.
+When your simulations are finished, you can use `analysis.R` if you need help with loading, analysing, or plotting the results.
 
 ## Demo
 
