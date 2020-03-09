@@ -18,6 +18,10 @@ update_cache <- function(agent, cacheName, method, ...) {
   agent$cache[name == cacheName, `:=`(value = list(method(agent, ...)), valid = TRUE)]
 }
 
+set_cache_value <- function(agent, cacheName, cacheValue) {
+  agent$cache[name == cacheName, `:=`(value = list(cacheValue), valid = TRUE)]
+}
+
 get_cache_value <- function(agent, cacheName) {
   agent$cache[name == cacheName, value][[1]]
 }
@@ -93,7 +97,7 @@ convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
                speaker = pop[[i]]$speaker,
                group = pop[[i]]$group)] %>%
       .[, equivalence := equal_class(initial, label)]
-  })) %>% {
+  }), fill = TRUE) %>% {
     # add every item from extraCols as a column to new pop data.table
     for (col in names(extraCols)) {
       .[, (col) := extraCols[[col]]]
@@ -122,6 +126,8 @@ knearest_fallback <- function(points, extendedIndices, targetIndices, K) {
   #    - list of targetIndices and fallback:
   #
   
+  
+  
   if (any(c(targetIndices, extendedIndices) < 0)) {
     stop("knearest_fallback: negative index notation not supported for targetIndices and extendedIndices")
   }
@@ -135,6 +141,7 @@ knearest_fallback <- function(points, extendedIndices, targetIndices, K) {
   # Stop if extendedIndices are not in points rows indices
   # note: all(NULL %in% something) == TRUE, hence does not stop when extendedIndices == NULL
   if (!all(extendedIndices %in% seq_len(nrow(points)))) {
+   
     stop("knearest_fallback: extendedIndices out of bound")
   }
   if (length(targetIndices) <= 0) {
@@ -212,16 +219,16 @@ one_exemplar2obj <- function(exemplar) {
 }
 
 
-exemplar2vector <- function(exemplars, ...) {
+exemplar2matrix <- function(exemplars, ...) {
   do.call(rbind, exemplars) 
 }
 
-vector2exemplar <- function(features, ...) {
+rowMatrix2exemplar <- function(features, ...) {
   list(as.numeric(features))
 }
 
 matrix2exemplar <- function(mat) {
-  apply(mat, 1, vector2exemplar) %>% unlist(recursive = FALSE) 
+  apply(mat, 1, rowMatrix2exemplar) %>% unlist(recursive = FALSE) 
 }
 
 # FPCA
@@ -229,7 +236,7 @@ all_fd2exemplar <- function(fdObj) {
   # Do not use to convert the fd of one curve, use one_fd2exemplar instead
   # convert an fd object into a list
   # used to build input.df exemlar column:
-  # input.df[, exemplar := fd2exemplar(my_fd)]
+  # input.df[, exemplar := all_fd2exemplar(my_fd)]
   nItems <- fdObj$coefs %>% dim %>% .[2]
   sapply(seq_len(nItems), function(i) {fdObj[i]}, simplify = FALSE)
 }
@@ -241,15 +248,104 @@ all_exemplar2fd <- function(exemplars) {
   dim2 <- exemplars[[1]][["coefs"]] %>% dim %>% .[2]
   if (dim2 == 1) {
     coefs <- abind(lapply(exemplars, `[[`, "coefs"), along = 2)
-    fdnames <- c("coefs", "curves")
     # coefs <- sapply(exemplars, `[[`, "coefs", simplify = TRUE)
   } else {
     coefs <- abind(lapply(exemplars, `[[`, "coefs"), along = 3) %>% aperm(c(1,3,2)) 
-    fdnames <- c("coefs", "curves", "dimensions")
   }
-  fd(coef = coefs, basisobj = exemplars[[1]][["basis"]], fdnames = fdnames)
+  fd(coef = coefs, basisobj = exemplars[[1]][["basis"]])
 }
 
 one_exemplar2fd <- one_exemplar2obj
 
+compute_fpca <- function(exemplars, agent, params) {
+  fdObj <- all_exemplar2fd(exemplars)
+  nDim <- ifelse(is.matrix(fdObj$coefs), 1, fdObj$coefs %>% dim %>% .[3])
+  pcafdPar  <- fdPar(fdObj$basis, 2, params[["lambdaFPCA"]])
+  fpcaObj <- pca.fd(fdobj = fdObj, nharm = fdObj$basis$nbasis * nDim, harmfdPar = pcafdPar)
+  nPC <- Position(function(x) {x >= params[["varCutoffFPCA"]]}, cumsum(fpcaObj$varprop))
+  MSE <- sapply(1:length(exemplars), function(i){
+    fdMSE(
+      FPCscores2fd(fpcaObj$scores[i, 1:nPC], fpcaObj),
+      fdObj[i]
+    )
+  }, simplify = TRUE)
+  set_cache_value(agent, "FPCA", fpcaObj)
+  set_cache_value(agent, "nPC", nPC)
+  set_cache_value(agent, "MSE", MSE)
+  fpcaObj$scores[, 1:nPC, drop = FALSE]
+}
 
+exemplar2FPCscores <- function(exemplar, agent, params) {
+  matrix(
+    compute_FPCscores(one_exemplar2fd(exemplar),
+                      get_cache_value(agent, "FPCA"),
+                      get_cache_value(agent, "nPC")),
+    nrow = 1
+  )
+}
+
+compute_FPCscores <- function(fdObj, fpcaObj, nPC) {
+  if (is.matrix(fpcaObj$meanfd$coefs)) { # 1D curve
+    inprod(fdObj - fpcaObj$meanfd, fpcaObj$harmonics[1:nPC]) %>% as.numeric
+  } else { # multi-D curve
+    nDim <- dim(fpcaObj$meanfd$coefs)[3]
+    sapply(1:nPC, function(pc) {
+      sapply(1:nDim, function(dimInd) {
+        inprod(fd(coef = fdObj$coefs[, dimInd] - fpcaObj$meanfd$coefs[, 1, dimInd], basisobj = fdObj$basis),
+               fpcaObj$harmonics[pc,dimInd])
+      }) %>% sum
+    }, simplify = TRUE)
+  }
+}
+
+FPCscores2exemplar <- function(features, agent, params) {
+  one_fd2exemplar(
+    FPCscores2fd(features, get_cache_value(agent, "FPCA"))
+  )
+}
+
+FPCscores2fd <- function(scores, fpcaObj) {
+  if (is.matrix(fpcaObj$meanfd$coefs)) { # 1D curve
+    coefs <- fpcaObj$meanfd$coefs + 
+      (sapply(seq_along(scores), function(pc) {
+        scores[pc] * fpcaObj$harmonics$coefs[, pc]
+        }, simplify = TRUE)
+       ) %>%
+      apply(1, sum)
+  } else { # multi-D curve
+    nDim <- dim(fpcaObj$meanfd$coefs)[3]
+    coefs <- do.call(cbind, lapply(1:nDim, function(dimInd) {
+      fpcaObj$meanfd$coefs[,1,dimInd] + 
+      (sapply(seq_along(scores), function(pc) {
+        scores[pc] * fpcaObj$harmonics$coefs[, pc, dimInd]
+      }, simplify = TRUE)
+      ) %>%
+      apply(1, sum)
+    }))
+  }
+  fd(coefs, fpcaObj$meanfd$basis)
+}
+
+fdMSE <- function(fd1, fd2) {
+  apply(fd1$coefs - fd2$coefs, -1L, function(x) {
+    defint.fd(exponentiate.fd(fd(x, fd1$basis), 2))
+  }) %>% sum %>% `/`(diff(fd1$basis$rangeval))
+}
+
+# memoryIntakeStrategy
+
+accept_all <- function(exemplar, features, agent, params) {
+  return(TRUE)
+}
+
+below_MSE_threshold  <- function(exemplar, features, agent, params) {
+  if ("MSEthreshold" %in% params[["memoryIntakeStrategy"]]) {
+    if (is.numeric(params[["MSEthresholdMaxCoef"]])) {
+      return(
+        fdMSE(one_exemplar2fd(exemplar), FPCscores2fd(features, get_cache_value(agent, "FPCA"))) <=
+          params[["MSEthresholdMaxCoef"]] * max(get_cache_value(agent, "MSE"))
+      )
+    }
+  }
+  return(TRUE)
+}

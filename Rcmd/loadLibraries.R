@@ -32,19 +32,32 @@ library("mclust")
 library("abind")
 library("fda")
 
+source("~/Programs/FPCA-phonetics-workshop-master/scripts/header.R")
+
 source(file.path(ABMpath, "functions/interactions.R"))
 source(file.path(ABMpath, "functions/calculations.R"))
 source(file.path(ABMpath, "functions/simulations.R"))
 source(file.path(ABMpath, "functions/splitandmerge.R"))
 source(file.path(ABMpath, "functions/debugging.R"))
 
-methodReg <- data.table(
-  method = c("identity"),
-  compute_features = c(exemplar2vector),
-  exemplar2features = c(exemplar2vector),
-  features2exemplar = c(vector2exemplar),
-  cacheEntries = NA_character_
-) %>% setkey(method)
+methodReg <- rbindlist(list(
+  data.table(
+    method = "identity",
+    compute_features = exemplar2matrix,
+    exemplar2features = exemplar2matrix,
+    features2exemplar = rowMatrix2exemplar,
+    memoryIntakeStrategy = accept_all,
+    cacheEntries = list(NA_character_)
+  ),
+  data.table(
+    method = "FPCA",
+    compute_features = compute_fpca,
+    exemplar2features = exemplar2FPCscores,
+    features2exemplar = FPCscores2exemplar,
+    memoryIntakeStrategy = below_MSE_threshold,
+    cacheEntries = list(c("FPCA", "nPC", "MSE"))
+  )
+))%>% setkey(method)
 
 
 coreABM <- function(input.df, params, logDir) {

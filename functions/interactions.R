@@ -61,7 +61,6 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   
   maxMemorySize <- initialMemorySize + memoryBuffer  
   
-  # initiate a list called population and search for P-columns in input.df
   population <- list()
   
   for (id in seq_len(nrOfAgents)) {
@@ -85,7 +84,7 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$group <- input.df[speaker == selectedSpeaker, group][1]
   agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
   agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
-  cacheNames <- c("qda", methodReg[params[["featureExtractionMethod"]], cacheEntries] %>% .[!is.na(.)])
+  cacheNames <- c("qda", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!is.na(.)])
   agent$cache <- data.table(name = cacheNames, value = list(), valid = FALSE)
   # init empty memory of size maxMemorySize
   agent$memory <- data.table(word = character(),
@@ -217,11 +216,13 @@ perform_interactions <- function(pop, logDir, params) {
   groupsInfo <- rbindlist(lapply(pop, function(agent) {data.table(agentID = agent$agentID, group = agent$group)}))[order(agentID),]
   
   # perform the interactions
-  for (nrSim in 1:params[["nrOfSnapshots"]]) {
+  for (snap in 1:params[["nrOfSnapshots"]]) {
     for (i in 1:params[["interactionsPerSnapshot"]]) {
-      perform_single_interaction(pop, interactionsLog, nrSim, groupsInfo, params)
+      # if (i == 30) browser()
+      print(i)
+      perform_single_interaction(pop, interactionsLog, snap, groupsInfo, params)
     }
-    save_population(pop, extraCols = list(condition = nrSim), logDir = logDir)
+    save_population(pop, extraCols = list(snapshot = snap), logDir = logDir)
   }
   return(interactionsLog)
 }
@@ -431,11 +432,25 @@ smote_one_class <- function(features, K, N) {
     # return N copies of the only token
     return(matrix(rep(as.numeric(features), N), ncol = ncol(features), byrow = TRUE))
   }
-  K <- min(K, nrow(features) - 1)
   
-  SMOTE(data.frame(features), rep("a", nrow(features)), K, ceiling(N/nrow(features))) %>%
+  K <- min(K, nrow(features) - 1)
+  if (ncol(features) == 1) {
+    # browser()
+  }
+  
+  smote_res <- SMOTE( # bug in SMOTE
+    if (ncol(features) == 1) {
+      cbind(as.data.frame(features), XCOL = 0)
+    } else {
+      as.data.frame(features)
+    },
+    rep("a", nrow(features)),
+    K,
+    ceiling(N/nrow(features))
+    )
+  smote_res %>%
     .$syn_data %>%
-    .[sample(nrow(.), N), -(ncol(features) + 1)] %>% 
+    .[sample(nrow(.), N), 1:ncol(features)] %>% 
     as.matrix
 }
 
@@ -605,6 +620,9 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     }
   }
   
+  # method-specific criterion
+  memorise %<>% `&`(memoryIntakeStrategy(producedToken$exemplar, features, agent, params))
+  
   # ... or just accept everything
   if ("acceptAll" %in% params[["memoryIntakeStrategy"]]) {
     memorise <- TRUE
@@ -634,8 +652,15 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     write_to_log(interactionsLog, producedToken, agent, perceiverLabel_, memorise, nrSim)
   }
   
-  # apply split&merge if needed
+  # update features if needed
   numReceivedTokens <- sum(interactionsLog$valid[interactionsLog$perceiverID == agent$agentID], na.rm = TRUE)
+  if (numReceivedTokens %% params[["computeFeaturesInterval"]] == 0) {
+    update_features(agent, compute_features(agent, params))
+    if (any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
+      invalidate_cache(agent, "qda")
+    }
+  }
+  # apply split&merge if needed
   if (params[["splitAndMerge"]] == T & numReceivedTokens %% params[["splitAndMergeInterval"]] == 0) {
     splitandmerge(agent, params, full = FALSE)
     if (any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
@@ -669,5 +694,9 @@ exemplar2features <- function(exemplar, agent, params) {
 
 features2exemplar  <- function(features, agent, params) {
   methodReg[params[["featureExtractionMethod"]], features2exemplar][[1]](features, agent, params)
+}
+
+memoryIntakeStrategy <- function(exemplar, features, agent, params) {
+  methodReg[params[["featureExtractionMethod"]], memoryIntakeStrategy][[1]](exemplar, features, agent, params)
 }
   
