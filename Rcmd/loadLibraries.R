@@ -11,30 +11,31 @@
 ################################################################################
 
 Sys.setlocale("LC_COLLATE", "C")
-require("data.table")
-require("plyr")
-require("dplyr")
-require("MASS")
-require("emuR")
-require("mvtnorm")
-require("ggplot2")
-require("RColorBrewer")
-require("cluster")
-require("matrixcalc")
-require("smotefamily")
-require("FNN")
-require("tools")
-library("Hmisc")
-library("magrittr")
-library("rlist")
-library("dtt")
-library("mclust")
+library(data.table)
+library(plyr)
+library(dplyr)
+library(MASS)
+library(emuR)
+library(mvtnorm)
+library(ggplot2)
+library(RColorBrewer)
+library(cluster)
+library(matrixcalc)
+library(smotefamily)
+library(FNN)
+library(tools)
+library(Hmisc)
+library(magrittr)
+library(rlist)
+library(dtt)
+library(mclust)
+library(parallel)
 
-source(file.path(ABMpath, "functions/interactions.R"))
-source(file.path(ABMpath, "functions/calculations.R"))
-source(file.path(ABMpath, "functions/simulations.R"))
-source(file.path(ABMpath, "functions/splitandmerge.R"))
-source(file.path(ABMpath, "functions/debugging.R"))
+source("functions/interactions.R")
+source("functions/calculations.R")
+source("functions/simulations.R")
+source("functions/splitandmerge.R")
+source("functions/debugging.R")
 
 coreABM <- function(input.df, params, logDir) {
   # This function runs the main ABM routine. Assumes that params and input.df have been loaded.
@@ -46,8 +47,6 @@ coreABM <- function(input.df, params, logDir) {
   # Returns:
   #    - nothing.
   #
-  
-  params <- check_params(params)
   
   pop <- create_population(input.df = input.df, params = params)
   

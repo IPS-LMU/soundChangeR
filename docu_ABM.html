@@ -11,7 +11,7 @@
 
 <meta name="author" content="Johanna Cronenberg and Michele Gubian" />
 
-<meta name="date" content="2020-01-30" />
+<meta name="date" content="2020-02-12" />
 
 <title>ABM User Manual</title>
 
@@ -525,7 +525,7 @@ summary {
 
 <h1 class="title toc-ignore">ABM User Manual</h1>
 <h4 class="author">Johanna Cronenberg and Michele Gubian</h4>
-<h4 class="date">January 30, 2020</h4>
+<h4 class="date">February 12, 2020</h4>
 
 </div>
 
@@ -538,14 +538,11 @@ summary {
 <h2>Setup</h2>
 <pre class="r"><code>R.version.string</code></pre>
 <pre><code>## [1] &quot;R version 3.6.2 (2019-12-12)&quot;</code></pre>
-<pre class="r"><code># from Rcmd/ABMmain.R
-ABMpath &lt;- &quot;/homes/myName/path/to/ABMcode&quot;</code></pre>
+<pre class="r"><code>setwd(&quot;/homes/myName/path/to/ABM&quot;)</code></pre>
 <ul>
 <li>Clone the <a href="https://github.com/IPS-LMU/ABM">github repo</a> or download the code from there.</li>
-<li>Make sure you have the R version indicated above (or newer).</li>
-<li>Go to the directory where you stored the ABM code (i.e. <code>ABMpath</code>) and open the script <code>Rcmd/ABMmain.R</code> in RStudio.</li>
-<li>In the first line of code (l. 13), adapt the variable <code>ABMpath</code>.</li>
-<li><code>ABMpath</code> will also be the reference point for all relative paths used in this manual.</li>
+<li>Open RStudio and use <code>setwd()</code> as shown above to navigate to the folder of the ABM code (if necessary). This path will the the reference point for all relative paths used in this manual and in the simulations.</li>
+<li>Make sure you have the R version indicated above (or newer) as well as the latest version of all packages (Tools &gt; Check for Package Updates).</li>
 <li>Adapt the ABM settings in <code>data/params.R</code>. Explanations of all parameters are provided below.</li>
 <li>Run the ABM using the following command:</li>
 </ul>
@@ -576,7 +573,7 @@ initialMemoryResamplingFactor = 1.0     # 1.0 or higher; only if initialMemoryRe
 proportionGroupTokens = 0.0             # between 0.0 and 1.0; proportion of tokens from own speaker group that an agent is initialised with
 rememberOwnTokens = TRUE                # whether or not to perceive one's own tokens</code></pre>
 <p>Usually, every human speaker is represented by one agent which is achieved by initialising the agent with the acoustic data of the speaker (<code>createPopulationMethod = &quot;speaker_is_agent&quot;</code>). However, there is the possibility to break this paradigm by applying <a href="https://en.wikipedia.org/wiki/Bootstrapping_(statistics)">bootstrapping</a>. If so, you will need to specify how many agents the new population should be comprised of (<code>bootstrapPopulationSize</code>). It is highly recommended to then do multiple ABM runs (<code>runMode = &quot;multiple&quot;</code>; see below).</p>
-<p>Since we often deal with sparse data in the phonetic sciences, it makes sense to augment the amount of data (i.e. tokens per word per speaker) <em>before</em> the first interaction takes place (<code>initialMemoryResampling = TRUE</code>). If you want to do this (which is recommended in order to avoid artefacts during the simulations), you also need to specify the <code>initialMemoryResamplingFactor</code>. The resampling uses the production technique indicated by the parameters in the next section.</p>
+<p>Since we often deal with sparse data in the phonetic sciences, it makes sense to augment the amount of data (i.e. tokens per word per speaker) <em>before</em> the first interaction takes place (<code>initialMemoryResampling = TRUE</code>). If you want to do this (which is recommended in order to avoid artefacts during the simulations), you also need to specify the <code>initialMemoryResamplingFactor</code>. The resampling uses the production technique indicated by the parameters in the next section. Be aware that a large resampling factor, e.g. 10, will slow any change down, so many more interactions are needed (<code>nrOfSnapshots</code> and <code>interactionsPerSnapshot</code>, see below).</p>
 <p><code>proportionGroupTokens</code> can be used to initialise agents with a proportion of tokens from their own speech community. So if an agent would usually receive 20 tokens from a real speaker and <code>proportionGroupTokens = 0.25</code>, the agent will instead be initialised with 15 tokens from the real speaker (i.e. 75%) and 5 random tokens from speakers of the agent’s speaker group. Over the course of the interactions, it is often the case that all agents start to become less individual in their phonetic representations, i.e. all agents’ categories collapse into one point. This result can be avoided by setting <code>rememberOwnTokens = TRUE</code>. It is then highly recommended to have a <code>proportionGroupTokens &gt; 0</code>.</p>
 </div>
 <div id="production" class="section level3">
@@ -644,7 +641,7 @@ interactionsPerSnapshot = 1000          # any full positive number; how many int
 <div id="data-structures-and-files-organisation" class="section level2">
 <h2>Data structures and files organisation</h2>
 <pre class="r"><code>rootLogDir = &quot;./logs&quot;                   # absolute or relative path to logging directory</code></pre>
-<p>The results of your simulations will be saved in <code>rootLogDir</code> in distinct folders called <code>ABM&lt;date&gt;&lt;time&gt;</code>, e.g. <code>ABM20191017115249</code>. <code>rootLogDir</code> will be created if it does not exist yet. If you ran multiple ABMs (<code>runMode = &quot;multiple&quot;</code>), there will be a folder for each separate simulation in <code>rootLogDir/ABM&lt;date&gt;&lt;time&gt;/</code>, called <code>1/</code>, <code>2/</code>, and so on. Every simulation folder, e.g. <code>ABM20191017115249</code> or <code>ABM20191017115249/1</code>, will contain the following objects:</p>
+<p>The results of your simulations will be saved in <code>rootLogDir</code> in distinct folders called <code>ABM&lt;date&gt;&lt;time&gt;</code>, e.g. <code>ABM20191017115249</code>. <code>rootLogDir</code> will be created if it does not exist yet. There will be a folder for each separate simulation in <code>rootLogDir/ABM&lt;date&gt;&lt;time&gt;/</code>, called <code>1/</code>, <code>2/</code>, and so on (or only <code>1/</code> for a single simulation). Every simulation folder, e.g. <code>ABM20191017115249/1</code>, will contain the following objects:</p>
 <ul>
 <li><code>input.rds</code>: the input data frame without any changes to your original data frame.</li>
 <li><code>pop.0.rds</code>: the input data frame with adapted column names (<code>P1</code>, <code>P2</code>, etc., <code>group</code>, <code>label</code>, <code>initial</code>, <code>word</code>, <code>speaker</code>) and comprising only of those speakers and labels that you subsetted there to be (<code>subsetSpeakers</code> and <code>subsetLabels</code> in <code>data/params.R</code>). However there are some further columns:</li>
@@ -757,8 +754,12 @@ interactionsPerSnapshot = 1000          # any full positive number; how many int
 </ul>
 <p>The <code>.rds</code> format is a kind of archive which can be read using the following command:</p>
 <pre class="r"><code># example of how to read RDS files
-intLog &lt;- readRDS(file.path(ABMpath, rootLogDir, 'ABM20191017115249/intLog.rds'))</code></pre>
+intLog &lt;- readRDS(file.path(rootLogDir, 'ABM20191017115249/intLog.rds'))</code></pre>
 <p>Besides the simulation results, <code>rootLogDir</code> also contains <code>simulations_register.rds</code>. This is a list of all the simulations that are stored in <code>rootLogDir</code>, more precisely of all <code>params.yaml</code> files that stored in <code>rootLogDir</code>’s subdirectories. You can use the functions in <code>functions/simulations.R</code> to e.g. find certain simulations by their parameters, delete unfinished ABM runs from both the <code>rootLogDir</code> and the simulation register, etc. Only use the functions provided, do not alter the <code>simulations_register.rds</code> directly.</p>
+</div>
+<div id="analysis-of-results" class="section level2">
+<h2>Analysis of Results</h2>
+<p>When your simulations are finished, you can use <code>analysis.R</code> if you need help with loading, analysing or plotting the results.</p>
 </div>
 <div id="demo" class="section level2">
 <h2>Demo</h2>
