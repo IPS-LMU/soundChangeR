@@ -42,7 +42,6 @@ params = list(
   
   ##### Perception
   
-  # perceptionModels = "singleGaussian",
   memoryIntakeStrategy = "mahalanobisDistance",  # "maxPosteriorProb" and/or "mahalanobisDistance" and/or "posteriorProbThr"
   mahalanobisThreshold = qchisq(.95, df = 3) %>% round(2),   # threshold if memoryIntakeStrategy == "mahalanobisDistance"
   posteriorProbThr = 1/3,                        # only if memoryIntakeStrategy == "posteriorProbThr"
@@ -64,7 +63,7 @@ params = list(
   splitAndMerge = FALSE,                         # apply split & merge algorithm or not
   doSplitAndMergeBeforeABM = FALSE,              # apply split & merge before the first interaction or not
   splitAndMergeInterval = 100,                   # any full positive number; after how many interactions an agent applies split & merge
-  splitMergeMethod = "bic",                      # "bic" or "t.test"; use Bayesion Information Criterion or t-test to decide on split or merge
+  splitMergeMethod = "bic",                      # "bic" or "t.test"; use Bayesian Information Criterion or t-test to decide on split or merge
   
   ##### Runs
   

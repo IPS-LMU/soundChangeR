@@ -564,7 +564,7 @@ forget_token <- function(agent, params) {
       }
     }
   }
-  currentNrTokens <- currentNrTokens %>% arrange(word)
+  currentNrTokens %<>% arrange(word)
   possibleWords <- currentNrTokens[as.numeric(currentNrTokens$n) > as.numeric(originalNrTokens$n),]$word
   tokenIndices <- which(agent$labels$word %in% possibleWords & agent$labels$valid == TRUE)
   if (length(tokenIndices) == 1) {
@@ -636,7 +636,6 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   # forget
   if (runif(1) < params[["forgettingRate"]]) {
     forget_token(agent, params)
-    # set(agent$labels, sample(which(agent$labels$valid == TRUE), 1), "valid", FALSE)
   }
   
   if (memorise) {

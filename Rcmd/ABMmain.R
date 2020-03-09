@@ -45,9 +45,9 @@ params[["commitHash"]] <- system("git log -n1 --format=format:\"%H\"", intern = 
 register_simulation(params)
 
 check <- check_params(params, input.df)
-params <- check[[1]]
+params <- check[["params"]]
 
-if (check[[2]]) {
+if (check[["runSimulation"]]) {
   # run simulations
   if (params[["runMode"]] == "single") {
     coreABM(input.df, params, file.path(logDir, "1"))

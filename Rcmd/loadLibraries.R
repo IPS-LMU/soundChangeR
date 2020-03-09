@@ -50,7 +50,7 @@ coreABM <- function(input.df, params, logDir) {
   
   pop <- create_population(input.df = input.df, params = params)
   
-  # define original number of tokens per word per speaker
+  # define original number of tokens per word per speaker so that forgetting will work
   params[["originalNrTokens"]] <- list()
   wordLabels <- unique(input.df$word)
   for (i in seq_along(pop)) {
@@ -68,9 +68,7 @@ coreABM <- function(input.df, params, logDir) {
       splitandmerge(pop[[j]], params, full = TRUE)
     }
   }
-  save_population(pop,
-                 extraCols = list(condition = 0),
-                 logDir = logDir)
+  save_population(pop, extraCols = list(condition = 0), logDir = logDir)
   
   interactionsLog <- perform_interactions(pop, logDir, params)
   save_interactions_log(interactionsLog, logDir = logDir)

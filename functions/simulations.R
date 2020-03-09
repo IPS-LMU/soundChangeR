@@ -309,5 +309,5 @@ check_params <- function(params, input.df) {
     }
   }
   
-  return(list(params, runSimulation))
+  return(list(params = params, runSimulation = runSimulation))
 }
