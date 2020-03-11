@@ -49,6 +49,7 @@ params = list(
   
   # perceptionModels = "singleGaussian",
   memoryIntakeStrategy = c("mahalanobisDistance", "MSEthreshold"), # , "maxPosteriorProb"
+  mahalanobisProbThreshold = .95,
   MSEthresholdMaxCoef = 2.0,
   memoryRemovalStrategy = "random",        # "outlierRemoval" or "timeDecay"
   maxMemoryExpansion = 1.0,                   # any decimal number; conditions the agents' maximum memory sizes
@@ -76,6 +77,5 @@ params = list(
   rootLogDir = "/homes/m.gubian/ABM/ABM/logDir/Wende", #  "/vdata/Projects/ABM/simulations/Michele/u-fronting_Language2017/resanpling_forgetting",
   doSplitAndMergeBeforeABM = TRUE,           # apply split & merge before the first interaction or not
   splitAndMergeInterval = 1000,                # any full positive number; after how many interactions an agent applies split & merge
-  mahalanobisThreshold = 10, #qchisq(.99, df = 3) %>% round(2),                 # any full positive number; threshold if memoryIntakeStrategy == "mahalanobisDistance"
   notes = "Wende 1.0 FPCA"         # optional: Some further notes on the current simulation for better documentation
 )

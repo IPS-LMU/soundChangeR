@@ -613,10 +613,11 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   if (memorise && any(c("mahalanobisDistance", "highestDensityRegion") %in% params[["memoryIntakeStrategy"]])) {
     mahalDist <- compute_mahal_distance(agent, features, perceiverLabel_)
     if ("mahalanobisDistance" %in% params[["memoryIntakeStrategy"]]) {
-      memorise %<>% `&`(mahalDist <= params[["mahalanobisThreshold"]])
-    } else if ("highestDensityRegion" %in% params[["memoryIntakeStrategy"]]) {
-      memorise %<>% `&`(runif(1) < pchisq(q = mahalDist, df = ncol(agent$features), lower.tail = FALSE))
+      memorise %<>% `&`(mahalDist <= qchisq(p = params[["mahalanobisProbThreshold"]], df = get_cache_value(agent, "nFeatures")))
     }
+  # else if ("highestDensityRegion" %in% params[["memoryIntakeStrategy"]]) {
+  #    memorise %<>% `&`(runif(1) < pchisq(q = mahalDist, df = ncol(agent$features), lower.tail = FALSE))
+  #  }
   }
   
   # method-specific criterion
