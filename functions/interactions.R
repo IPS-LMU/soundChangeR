@@ -84,7 +84,7 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$group <- input.df[speaker == selectedSpeaker, group][1]
   agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
   agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
-  cacheNames <- c("qda", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!is.na(.)])
+  cacheNames <- c("nFeatures", "qda", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!is.na(.)])
   agent$cache <- data.table(name = cacheNames, value = list(), valid = FALSE)
   # init empty memory of size maxMemorySize
   agent$memory <- data.table(word = character(),
@@ -218,8 +218,6 @@ perform_interactions <- function(pop, logDir, params) {
   # perform the interactions
   for (snap in 1:params[["nrOfSnapshots"]]) {
     for (i in 1:params[["interactionsPerSnapshot"]]) {
-      # if (i == 30) browser()
-      print(i)
       perform_single_interaction(pop, interactionsLog, snap, groupsInfo, params)
     }
     save_population(pop, extraCols = list(snapshot = snap), logDir = logDir)
@@ -562,6 +560,7 @@ update_features <- function(agent, features) {
     agent$features[, (nPnew+1):nPold := NULL]
   }
   agent$features[agent$memory$valid, paste0("P", 1:nPnew) := features %>% as.data.frame]
+  set_cache_value(agent, "nFeatures", nPnew)
 }
 
 

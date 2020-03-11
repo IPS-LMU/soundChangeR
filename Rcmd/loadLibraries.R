@@ -55,9 +55,9 @@ methodReg <- rbindlist(list(
     exemplar2features = exemplar2FPCscores,
     features2exemplar = FPCscores2exemplar,
     memoryIntakeStrategy = below_MSE_threshold,
-    cacheEntries = list(c("FPCA", "nPC", "MSE"))
+    cacheEntries = list(c("FPCA", "MSE"))
   )
-))%>% setkey(method)
+)) %>% setkey(method)
 
 
 coreABM <- function(input.df, params, logDir) {
@@ -81,7 +81,7 @@ coreABM <- function(input.df, params, logDir) {
     }
   }
   save_population(pop,
-                 extraCols = list(condition = 0),
+                 extraCols = list(snapshot = 0),
                  logDir = logDir)
   
   interactionsLog <- perform_interactions(pop, logDir, params)

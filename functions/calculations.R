@@ -270,7 +270,7 @@ compute_fpca <- function(exemplars, agent, params) {
     )
   }, simplify = TRUE)
   set_cache_value(agent, "FPCA", fpcaObj)
-  set_cache_value(agent, "nPC", nPC)
+  # set_cache_value(agent, "nPC", nPC)
   set_cache_value(agent, "MSE", MSE)
   fpcaObj$scores[, 1:nPC, drop = FALSE]
 }
@@ -279,7 +279,7 @@ exemplar2FPCscores <- function(exemplar, agent, params) {
   matrix(
     compute_FPCscores(one_exemplar2fd(exemplar),
                       get_cache_value(agent, "FPCA"),
-                      get_cache_value(agent, "nPC")),
+                      get_cache_value(agent, "nFeatures")),
     nrow = 1
   )
 }
