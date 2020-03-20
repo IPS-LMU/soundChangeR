@@ -67,14 +67,14 @@ params = list(
   
   ##### Runs
   
-  runMode = "single",                         # "single" or "multiple"
-  multipleABMRuns = 8,                       # any full positive number; number of ABM runs if runMode == "multiple"
-  nrOfSnapshots = 2,                         # any full positive number; how often the population is archived during the simulation
+  runMode = "multiple",                         # "single" or "multiple"
+  multipleABMRuns = 4,                       # any full positive number; number of ABM runs if runMode == "multiple"
+  nrOfSnapshots = 50,                         # any full positive number; how often the population is archived during the simulation
   interactionsPerSnapshot = 1000,              # any full positive number; how many interactions take place per snapshot
   
   ##### Other options
   
-  rootLogDir = "/homes/m.gubian/ABM/ABM/logDir/Wende", #  "/vdata/Projects/ABM/simulations/Michele/u-fronting_Language2017/resanpling_forgetting",
+  rootLogDir = "/vdata/ABM/simulations/Michele/u-fronting_Language2017/FPCA",  #"/homes/m.gubian/ABM/ABM/logDir/Wende", #  "/vdata/Projects/ABM/simulations/Michele/u-fronting_Language2017/resanpling_forgetting",
   doSplitAndMergeBeforeABM = TRUE,           # apply split & merge before the first interaction or not
   splitAndMergeInterval = 1000,                # any full positive number; after how many interactions an agent applies split & merge
   notes = "Wende 1.0 FPCA"         # optional: Some further notes on the current simulation for better documentation
