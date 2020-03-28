@@ -84,7 +84,6 @@ coreABM <- function(input.df, params, logDir) {
                  extraCols = list(snapshot = 0),
                  logDir = logDir)
   
-  interactionsLog <- perform_interactions(pop, logDir, params)
-  save_interactions_log(interactionsLog, logDir = logDir)
+  perform_interactions(pop, logDir, params)
 }
 

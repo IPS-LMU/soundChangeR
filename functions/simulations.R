@@ -37,7 +37,7 @@ save_population <- function(pop, extraCols = list(condition = "x"), logDir) {
   )
 }
 
-save_interactions_log <- function(interactionsLog, logDir) {
+save_interactions_log <- function(interactionsLog, extraCols = list(condition = "x"), logDir) {
   # This function saves the interaction log as a RDS archive.
   # Function call in loadLibraries.R, coreABM().
   #
@@ -52,7 +52,7 @@ save_interactions_log <- function(interactionsLog, logDir) {
   
   dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
   saveRDS(interactionsLog,
-          file.path(logDir, "intLog.rds")
+          file = file.path(logDir, paste("intLog", unlist(extraCols), "rds", sep = "."))
   )
 }
 
