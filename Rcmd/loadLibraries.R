@@ -33,6 +33,7 @@ library("abind")
 library("fda")
 
 source("~/Programs/FPCA-phonetics-workshop-master/scripts/header.R")
+# source("C:/Users/Michele/Dropbox/scambio_temp/work/FDA/FPCA-phonetics-workshop-master/scripts/header.R")
 
 source(file.path(ABMpath, "functions/interactions.R"))
 source(file.path(ABMpath, "functions/calculations.R"))
@@ -46,7 +47,12 @@ methodReg <- rbindlist(list(
     compute_features = exemplar2matrix,
     exemplar2features = exemplar2matrix,
     features2exemplar = rowMatrix2exemplar,
-    memoryIntakeStrategy = accept_all,
+    memoryIntakeStrategy = list(list(
+      acceptAll = accept_all,
+      mahalanobisDistance = mahalanobis_distance,
+      maxPosteriorProb = max_posterior_prob,
+      posteriorProbThr = posterior_prob_thr
+    )),
     cacheEntries = list(NA_character_)
   ),
   data.table(
@@ -54,7 +60,13 @@ methodReg <- rbindlist(list(
     compute_features = compute_fpca,
     exemplar2features = exemplar2FPCscores,
     features2exemplar = FPCscores2exemplar,
-    memoryIntakeStrategy = below_MSE_threshold,
+    memoryIntakeStrategy = list(list(
+      acceptAll = accept_all,
+      mahalanobisDistance = mahalanobis_distance,
+      maxPosteriorProb = max_posterior_prob,
+      posteriorProbThr = posterior_prob_thr,
+      MSEthreshold = MSE_threshold
+    )),
     cacheEntries = list(c("FPCA", "MSE"))
   )
 )) %>% setkey(method)

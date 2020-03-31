@@ -148,7 +148,7 @@ create_interactions_log <- function(nrOfInteractions) {
   interactionsLog <- data.table(word = NA_character_, producerID = NA_integer_, producerLabel = NA_character_,
                                 producerNrOfTimesHeard = NA_integer_, perceiverID = NA_integer_, 
                                 perceiverLabel = NA_character_, perceiverNrOfTimesHeard = NA_integer_,
-                                accepted = NA, simulationNr = NA_integer_, valid = NA)[0]
+                                accepted = NA, rejectionCriterion = NA_character_, simulationNr = NA_integer_, valid = NA)[0]
 
   rbindlist(list(
     interactionsLog, data.table(matrix(nrow = nrOfInteractions, ncol = ncol(interactionsLog)))
@@ -157,7 +157,7 @@ create_interactions_log <- function(nrOfInteractions) {
     .[]
 }
 
-write_to_log <- function(interactionsLog, producedToken, perceiver, perceiverLabel_, memorise, nrSim) {
+write_to_log <- function(interactionsLog, producedToken, perceiver, perceiverLabel_, memorise, strategy,  nrSim) {
   # This function updates the interactionLog.
   # Function call in interactions.R, perceive_token().
   #
@@ -189,6 +189,7 @@ write_to_log <- function(interactionsLog, producedToken, perceiver, perceiverLab
       }
     },
     accepted = memorise,
+    rejectionCriterion = ifelse(memorise, NA_character_, strategy),
     simulationNr = nrSim,
     valid = TRUE
   )]
@@ -476,7 +477,7 @@ row_to_overwrite <- function(perceiver, producedToken, params) {
       ]
     # ... or the farthest outlier of the token distribution
   } else if (params[["memoryRemovalStrategy"]] == "outlierRemoval") {
-    tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$memory$label == perceiverLabel_, , drop = FALSE])
+    tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$memory$label == perceiverLabel, , drop = FALSE])
     rowToOverwrite <- which(perceiver$memory$word == producedToken$word)[
       which.max(distance(as.matrix(perceiver$features)[perceiver$memory$word == producedToken$word, , drop = FALSE], tdat.mahal, metric = "mahal"))
       ]
@@ -585,45 +586,22 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   }
   
   # find out which phonological label the agent associates with the produced word
-  perceiverLabel_ <- unique(agent$memory$label[agent$memory$word == producedToken$word & agent$memory$valid == TRUE])
+  perceiverLabel <- unique(agent$memory$label[agent$memory$word == producedToken$word & agent$memory$valid == TRUE])
   
   # compute features on incoming token
   features <- exemplar2features(producedToken$exemplar, agent, params)
   
   # if word is unknown, assign label based on majority vote among perceptionNN nearest neighbours
-  if (length(perceiverLabel_) == 0) {
-    perceiverLabel_ <- names(which.max(table(agent$memory$label[agent$memory$valid == TRUE][
+  if (length(perceiverLabel) == 0) {
+    perceiverLabel <- names(which.max(table(agent$memory$label[agent$memory$valid == TRUE][
       knnx.index(agent$features[agent$memory$valid == TRUE,], features, params[["perceptionNN"]])
       ])))
   }
   
   memorise <- TRUE
-  # relative acceptance criterion
-  if (memorise && any(c("maxPosteriorProb", "posteriorProbThr") %in% params[["memoryIntakeStrategy"]])) { 
-    posteriorProb <- compute_posterior_probabilities(agent, features, params[["posteriorProbMethod"]])
-    if ("maxPosteriorProb" %in% params[["memoryIntakeStrategy"]]) {
-      memorise %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "maxPosteriorProb"))
-    } else if ("posteriorProbThr" %in% params[["memoryIntakeStrategy"]]) {
-      memorise %<>% `&`(recognize_posterior_probabilities(posteriorProb, perceiverLabel_, "posteriorProbThr", posteriorProbThr = params[["posteriorProbThr"]]))
-    }
-  }
-  # absolute acceptance criterion
-  if (memorise && any(c("mahalanobisDistance", "highestDensityRegion") %in% params[["memoryIntakeStrategy"]])) {
-    mahalDist <- compute_mahal_distance(agent, features, perceiverLabel_)
-    if ("mahalanobisDistance" %in% params[["memoryIntakeStrategy"]]) {
-      memorise %<>% `&`(mahalDist <= qchisq(p = params[["mahalanobisProbThreshold"]], df = get_cache_value(agent, "nFeatures")))
-    }
-  # else if ("highestDensityRegion" %in% params[["memoryIntakeStrategy"]]) {
-  #    memorise %<>% `&`(runif(1) < pchisq(q = mahalDist, df = ncol(agent$features), lower.tail = FALSE))
-  #  }
-  }
-  
-  # method-specific criterion
-  memorise %<>% `&`(memoryIntakeStrategy(producedToken$exemplar, features, agent, params))
-  
-  # ... or just accept everything
-  if ("acceptAll" %in% params[["memoryIntakeStrategy"]]) {
-    memorise <- TRUE
+  for (strategy in params[["memoryIntakeStrategy"]]) {
+    memorise <- memory_intake_strategy(strategy, exemplar, features, perceiverLabel, agent, params)
+    if (!memorise) break
   }
   
   # forget
@@ -636,7 +614,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     rowToWrite <- row_to_write(agent, producedToken, params)
     
     # write in agent's memory
-    write_memory(agent, producedToken, rowToWrite, perceiverLabel_)
+    write_memory(agent, producedToken, rowToWrite, perceiverLabel)
     write_features(agent, features, rowToWrite)
     
     # empty cache
@@ -647,7 +625,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   
   # write on interactionsLog
   if (isNotOwnToken) {
-    write_to_log(interactionsLog, producedToken, agent, perceiverLabel_, memorise, nrSim)
+    write_to_log(interactionsLog, producedToken, agent, perceiverLabel, memorise, strategy, nrSim)
   }
   
   # update features if needed
@@ -694,7 +672,7 @@ features2exemplar  <- function(features, agent, params) {
   methodReg[params[["featureExtractionMethod"]], features2exemplar][[1]](features, agent, params)
 }
 
-memoryIntakeStrategy <- function(exemplar, features, agent, params) {
-  methodReg[params[["featureExtractionMethod"]], memoryIntakeStrategy][[1]](exemplar, features, agent, params)
+memory_intake_strategy <- function(strategy, exemplar, features, label, agent, params) {
+  methodReg[params[["featureExtractionMethod"]], memoryIntakeStrategy][[1]][[strategy]](exemplar, features, label, agent, params)
 }
   

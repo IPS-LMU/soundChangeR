@@ -334,12 +334,26 @@ fdMSE <- function(fd1, fd2) {
 
 # memoryIntakeStrategy
 
-accept_all <- function(exemplar, features, agent, params) {
+accept_all <- function(exemplar, features, label, agent, params) {
   return(TRUE)
 }
 
-below_MSE_threshold  <- function(exemplar, features, agent, params) {
-  if ("MSEthreshold" %in% params[["memoryIntakeStrategy"]]) {
+mahalanobis_distance <- function(exemplar, features, label, agent, params) {
+  mahalDist <- compute_mahal_distance(agent, features, label)
+  mahalDist <= qchisq(p = params[["mahalanobisProbThreshold"]], df = get_cache_value(agent, "nFeatures"))
+}
+
+max_posterior_prob <- function(exemplar, features, label, agent, params) {
+  posteriorProb <- compute_posterior_probabilities(agent, features, params[["posteriorProbMethod"]])
+  recognize_posterior_probabilities(posteriorProb, label, "maxPosteriorProb")
+}
+
+posterior_prob_thr <- function(exemplar, features, label, agent, params) {
+  posteriorProb <- compute_posterior_probabilities(agent, features, params[["posteriorProbMethod"]])
+  recognize_posterior_probabilities(posteriorProb, label, "posteriorProbThr", posteriorProbThr = params[["posteriorProbThr"]])
+}
+
+MSE_threshold  <- function(exemplar, features, label, agent, params) {
     if (is.numeric(params[["MSEthresholdMaxCoef"]])) {
       return(
         fdMSE(one_exemplar2fd(exemplar), FPCscores2fd(features, get_cache_value(agent, "FPCA"))) <=
@@ -351,6 +365,5 @@ below_MSE_threshold  <- function(exemplar, features, agent, params) {
           quantile(get_cache_value(agent, "MSE"), probs = params[["MSEthresholdQuantile"]])
       )
     }
-  }
   return(TRUE)
 }
