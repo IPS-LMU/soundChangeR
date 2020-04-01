@@ -600,7 +600,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   
   memorise <- TRUE
   for (strategy in params[["memoryIntakeStrategy"]]) {
-    memorise <- memory_intake_strategy(strategy, exemplar, features, perceiverLabel, agent, params)
+    memorise <- memory_intake_strategy(strategy, producedToken$exemplar, features, perceiverLabel, agent, params)
     if (!memorise) break
   }
   
