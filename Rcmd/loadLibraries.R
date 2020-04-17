@@ -11,35 +11,37 @@
 ################################################################################
 
 Sys.setlocale("LC_COLLATE", "C")
-require("data.table")
-require("plyr")
-require("dplyr")
-require("MASS")
-require("emuR")
-require("mvtnorm")
-require("ggplot2")
-require("RColorBrewer")
-require("cluster")
-require("matrixcalc")
-require("smotefamily")
-require("FNN")
-require("tools")
-library("Hmisc")
-library("magrittr")
-library("rlist")
-library("dtt")
-library("mclust")
-library("abind")
-library("fda")
 
-source("~/Programs/FPCA-phonetics-workshop-master/scripts/header.R")
-# source("C:/Users/Michele/Dropbox/scambio_temp/work/FDA/FPCA-phonetics-workshop-master/scripts/header.R")
+library(data.table)
+library(plyr)
+library(dplyr)
+library(MASS)
+library(emuR)
+library(mvtnorm)
+library(ggplot2)
+library(RColorBrewer)
+library(cluster)
+library(matrixcalc)
+library(smotefamily)
+library(FNN)
+library(tools)
+library(Hmisc)
+library(magrittr)
+library(rlist)
+library(dtt)
+library(mclust)
+library(parallel)
+library(abind)
+library(fda)
 
-source(file.path(ABMpath, "functions/interactions.R"))
-source(file.path(ABMpath, "functions/calculations.R"))
-source(file.path(ABMpath, "functions/simulations.R"))
-source(file.path(ABMpath, "functions/splitandmerge.R"))
-source(file.path(ABMpath, "functions/debugging.R"))
+source("functions/interactions.R")
+source("functions/calculations.R")
+source("functions/simulations.R")
+source("functions/splitandmerge.R")
+source("functions/debugging.R")
+source("functions/pca.fd.R")
+source("functions/defint.fd.R")
+
 
 methodReg <- rbindlist(list(
   data.table(
@@ -82,8 +84,6 @@ coreABM <- function(input.df, params, logDir) {
   # Returns:
   #    - nothing.
   #
-  
-  params <- check_params(params)
   
   pop <- create_population(input.df = input.df, params = params)
   
