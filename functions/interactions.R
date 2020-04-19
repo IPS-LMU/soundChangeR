@@ -609,7 +609,11 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   
   # forget
   if (runif(1) < params[["forgettingRate"]]) {
-    set(agent$memory, sample(which(agent$memory$valid == TRUE), 1), "valid", FALSE)
+    candidateRow <- sample(which(agent$memory$valid == TRUE), 1)
+    candidateWord <- agent$memory$word[candidateRow]
+    if (sum(agent$memory$word == candidateWord, na.rm = TRUE) >= params[["productionMinTokens"]]) {
+      set(agent$memory, candidateRow, "valid", FALSE)
+    }
   }
   
   if (memorise) {
