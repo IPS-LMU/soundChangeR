@@ -9,14 +9,13 @@
 #                                                                              #
 ################################################################################
 
-create_population <- function(input.df, params, method = "speaker_is_agent") {
+create_population <- function(input.df, params) {
   # This function creates the agent population.
   # Function call in loadLibraries.R, coreABM().
   # 
   # Args:
   #    - input.df: the input data.frame
   #    - params: list of params from params.R
-  #    - method: string. Default: "speaker_is_agent"
   #
   # Returns:
   #    - population: a list
@@ -34,7 +33,16 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
   if (method == "speaker_is_agent") {
     nrOfAgents <- length(sortedSpeakers)
   } else if (method == "bootstrap") {
-    nrOfAgents <- params[["bootstrapPopulationSize"]]
+    if (length(params[["bootstrapPopulationSize"]]) == 1) {
+      nrOfAgents <- params[["bootstrapPopulationSize"]]
+    } else {
+      nrOfAgents <- sum(params[["bootstrapPopulationSize"]])
+      agentGroups <- cut(seq_len(nrOfAgents),
+                         breaks = c(1,cumsum(params[["bootstrapPopulationSize"]])),
+                         labels = names(params[["bootstrapPopulationSize"]]),
+                         include.lowest = TRUE)
+      speakerGroups <- input.df[, speaker, by = group] %>% unique
+    }
   } else {
     stop(paste("create_population: unrecognised createPopulationMethod:", method))
   }
@@ -67,7 +75,11 @@ create_population <- function(input.df, params, method = "speaker_is_agent") {
     if (method == "speaker_is_agent") {
       selectedSpeaker <- sortedSpeakers[id]
     } else if (method == "bootstrap") {
-      selectedSpeaker <- sample(sortedSpeakers, 1)
+      if (length(params[["bootstrapPopulationSize"]]) == 1) {
+        selectedSpeaker <- sample(sortedSpeakers, 1)
+      } else {
+        selectedSpeaker <- speakerGroups[group == agentGroups[id], sample(speaker, 1)]
+      }
     }
     population[[id]] <- create_agent(id, input.df, selectedSpeaker, maxMemorySize, params)
     if (params[["initialMemoryResampling"]]) {

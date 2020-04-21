@@ -5,25 +5,6 @@ input1.dt <- fread("input1.csv") %>%
   # "NB: sep2 is not yet implemented."
   .[, exemplar := strsplit(exemplar, "|", fixed = TRUE) %>% lapply(as.numeric)]
 
-# pop1_list <- readRDS('pop1_list.rds')
-# pop1_dt <- readRDS('pop1_dt.rds')
-
-# pop1_list_res <- create_population(input1.dt, params)
-# 
-# test_that("create_population matches expected output", {
-#   
-#   expect_equal(pop1_list_res %>% length, pop1_list %>% length)
-#   for (i in seq_along(pop1_list)) {
-#     expect_equal(pop1_list_res[[i]] %>% names, pop1_list[[i]] %>% names)
-#     expect_equal(pop1_list_res[[i]]$agentID, pop1_list[[i]]$agentID)
-#     expect_equal(pop1_list_res[[i]]$group, pop1_list[[i]]$group)
-#     expect_equal(pop1_list_res[[i]]$speaker, pop1_list[[i]]$speaker)
-#     expect_true(all_equal(pop1_list_res[[i]]$labels, pop1_list[[i]]$labels))
-#     expect_true(all_equal(pop1_list_res[[i]]$features, pop1_list[[i]]$features))
-#     expect_true(all_equal(pop1_list_res[[i]]$cache[, .(name, valid)], pop1_list[[i]]$cache[, .(name, valid)]))
-#     expect_null(pop1_list_res[[i]]$cache[name == 'qda', value][[1]])
-#   }
-# })
 
 params <- list(
   featureExtractionMethod = "identity",
@@ -57,5 +38,82 @@ test_that("create_agent produces exemplar column features table with expected co
   expect_equal(nrow(agent$features), nrow(agent$memory))
   expect_equal(agent$memory[valid == TRUE, exemplar] %>% lapply(function(x) {x[2]}) %>% unlist,
                agent$features[agent$memory$valid, P2])
+})
+
+input2.dt <- rbindlist(
+  sapply(
+    paste0('gr', 1:4), function(x) {
+      input1.dt[, .SD, .SDcols = -"group"][, speaker := paste(x, speaker, sep = '.')]
+    }, simplify = FALSE, USE.NAMES = TRUE)
+  , idcol = "group")
+
+mock_create_agent <- function (id, input.df, selectedSpeaker, maxMemorySize, params) {selectedSpeaker}
+
+test_that("create_population handles speaker_is_agent method correctly", {
+  params <- list(
+    initialMemoryResampling = FALSE,
+    nrOfInteractions = 1000,
+    rememberOwnTokens = FALSE
+  )
+  pop <- with_mock(
+    create_agent = mock_create_agent,
+    create_population(input2.dt, params)
+    )
+  expect_equal(pop %>% unlist %>% sort, input2.dt$speaker %>% unique %>% sort)
+})
+
+test_that("create_population handles bootstrap method correctly when total pop size provided", {
+  params <- list(
+    initialMemoryResampling = FALSE,
+    nrOfInteractions = 1000,
+    rememberOwnTokens = FALSE,
+    createPopulationMethod = "bootstrap",
+    bootstrapPopulationSize = 20
+  )
+  pop <- with_mock(
+    create_agent = mock_create_agent,
+    create_population(input2.dt, params)
+  )
+  expect_length(pop, 20)
+  expect_true(all(unlist(pop) %in% unique(input2.dt$speaker)))
+})
+
+test_that("create_population handles bootstrap method correctly when by-group pop sizes provided", {
+  params <- list(
+    initialMemoryResampling = FALSE,
+    nrOfInteractions = 1000,
+    rememberOwnTokens = FALSE,
+    createPopulationMethod = "bootstrap",
+    bootstrapPopulationSize = c(gr1 = 3, gr2 = 20)
+  )
+  pop <- with_mock(
+    create_agent = mock_create_agent,
+    create_population(input2.dt, params)
+  )
+  expect_length(pop, 23)
+  expect_length(grep("^gr1", unlist(pop)), 3)
+  expect_length(grep("^gr2", unlist(pop)), 20)
+  expect_true(all(unlist(pop) %in% unique(input2.dt$speaker)))
+  
+  params$bootstrapPopulationSize = c(gr1 = 3, gr2 = 20, gr3 = 12, gr4 = 1)
+  pop <- with_mock(
+    create_agent = mock_create_agent,
+    create_population(input2.dt, params)
+  )
+  expect_length(pop, 3+20+12+1)
+  expect_length(grep("^gr1", unlist(pop)), 3)
+  expect_length(grep("^gr2", unlist(pop)), 20)
+  expect_length(grep("^gr3", unlist(pop)), 12)
+  expect_length(grep("^gr4", unlist(pop)), 1)
+  expect_true(all(unlist(pop) %in% unique(input2.dt$speaker)))
+  
+  params$bootstrapPopulationSize = c(gr4 = 1)
+  pop <- with_mock(
+    create_agent = mock_create_agent,
+    create_population(input2.dt, params)
+  )
+  expect_length(pop, 1)
+  expect_length(grep("^gr4", unlist(pop)), 1)
+  expect_true(all(unlist(pop) %in% unique(input2.dt$speaker)))
 })
 
