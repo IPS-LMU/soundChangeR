@@ -33,6 +33,7 @@ library(mclust)
 library(parallel)
 library(abind)
 library(fda)
+library(NMF)
 
 source("functions/interactions.R")
 source("functions/calculations.R")

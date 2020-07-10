@@ -1,0 +1,92 @@
+context("GMM")
+
+test_that("logical_max produces expected result in ordinary conditions", {
+  x <- c(1, 1.2, 0) 
+  m <- c(FALSE, TRUE, FALSE)
+  expect_equal(logical_max(x), m)
+})
+
+test_that("logical_max produces a vector with only one TRUE value in case of a tie", {
+  x <- c(-1, 1.2, 1.2) 
+  expect_equal(sum(logical_max(x)), 1)
+})
+
+test_that("logical_max produces expected result also with row or column matrix", {
+  x <- matrix(c(1, 1.2, 0) , nrow = 1)
+  m <- c(FALSE, TRUE, FALSE)
+  expect_equal(logical_max(x), m)
+  expect_equal(logical_max(t(x)), m)
+})  
+
+test_that("reduced_word_cluster produces consistent results in ordinary conditions", {
+  NWords <- 20
+  wc <- matrix(runif(NWords * 4, 0, 30) %>% round, nrow = NWords)
+  rownames(wc) <- letters[1:NWords]
+  for (rank in 2:4) {
+    rwc <- reduced_word_clusters(wc, rank)
+    expect_equal(dim(rwc), c(NWords, rank))
+    expect_equal(rownames(rwc), rownames(wc))
+    expect_equal(apply(rwc, 1, sum), apply(wc, 1, sum))
+  }
+}) 
+
+test_that("reduced_word_cluster produces expected result when one cluster contains only one element", {
+  NWordsCluster <- 6
+  wc <- do.call(rbind, lapply(1:3, function(i) {matrix(diag(3)[i,], nrow = NWordsCluster, ncol = 3, byrow = TRUE) })) %*%
+    diag(c(50, 52, 53))
+  wc <- cbind(wc, 0)
+  wc[1, 4] <- 1
+  rownames(wc) <- letters[1:(3*NWordsCluster)]
+  rwc <- reduced_word_clusters(wc, 3)
+  wc.sortedCols <- wc[-1, -4] %>% apply(2, paste0, collapse = '') %>% sort
+  rwc.sortedCols <- rwc[-1, ] %>% apply(2, paste0, collapse = '') %>% sort
+  expect_equal(wc.sortedCols, rwc.sortedCols)
+})
+
+test_that("reduced_word_cluster tolerates zero columns when the result would not contain zero columns", {
+  NWordsCluster <- 6
+  wc <- do.call(rbind, lapply(1:3, function(i) {matrix(diag(3)[i,], nrow = NWordsCluster, ncol = 3, byrow = TRUE) })) %*%
+    diag(c(50, 52, 53))
+  wc <- cbind(wc, 0)
+  rownames(wc) <- letters[1:(3*NWordsCluster)]
+  rwc <- reduced_word_clusters(wc, 3)
+  wc.sortedCols <- wc[, -4] %>% apply(2, paste0, collapse = '') %>% sort
+  rwc.sortedCols <- rwc %>% apply(2, paste0, collapse = '') %>% sort
+  expect_equal(wc.sortedCols, rwc.sortedCols)
+})
+
+test_that("compute_purity produces expected results", {
+  NWordsCluster <- 5
+  wc <- do.call(rbind, lapply(1:3, function(i) {matrix(20 * diag(3)[i,], nrow = NWordsCluster, ncol = 3, byrow = TRUE) }))
+  expect_equal(compute_purity(wc, min), 1)
+  expect_equal(compute_purity(wc, mean), 1)
+  wc[1, 1] <- 19
+  wc[NWordsCluster + 1, 1] <- 1
+  expect_equal(compute_purity(wc, min), 0.99)
+  expect_equal(compute_purity(wc, mean), 1 - 0.01/3)
+})  
+
+test_that("estimate_number_of_labels_from_purity_matrix produces expected results", {
+  nCol <- 5
+  pm <- matrix(c(.98, .94, .83, .73), nrow = 4, ncol = nCol, byrow = FALSE) + runif(4 * nCol, -.01, .01)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, 1), 1)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .995), 1)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .96), 2)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .90), 3)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .80), 4)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .70), 5)
+  pm[4,1] <- NaN
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, 1), 1)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .995), 1)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .96), 2)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .90), 3)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .80), 4)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .70), 4)
+  pm[2,3] <- NaN
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, 1), 1)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .995), 1)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .96), 2)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .90), 2)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .80), 4)
+  expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .70), 4)
+})

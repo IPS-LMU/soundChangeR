@@ -276,3 +276,44 @@ phonsplit <- function(agent, splitMergeMethod) {
    }
    return(didSplit)
 }
+
+###### GMM-based split&merge
+
+logical_max <- function(x, vec = vector(mode = "logical", length = length(x))) {vec[which.max(x)] <- TRUE; vec}
+
+reduced_word_clusters <- function(fullWordClusters, rank) {
+  if (any(fullWordClusters <0)) {stop("reduced_word_clusters: fullWordClusters values cannot be negative")}
+  if (rank > ncol(fullWordClusters)) {stop("reduced_word_clusters: rank cannot exceed number of columns of fullWordClusters")}
+  zeroCols <- apply(fullWordClusters, 2, sum) == 0
+  if (rank > ncol(fullWordClusters) - sum(zeroCols)) {stop("reduced_word_clusters: too many zero columns")}
+  if (sum(zeroCols) > 0) {fullWordClusters <- fullWordClusters[, !zeroCols]}
+  if (rank == 1) {return(apply(fullWordClusters, 1, sum) %>% as.matrix(ncol = 1))}
+  nmfObj <- nmf(x = fullWordClusters, rank = rank, method = "nsNMF")
+  reducedClusters <- nmfObj %>% coef() %>%  apply(2, logical_max)
+  return(fullWordClusters %*% t(reducedClusters))
+}
+
+compute_purity <- function(clustersMat, summaryFunc = min) {
+  whichMax <- clustersMat %>% apply(1, which.max)
+  sapply(seq_len(ncol(clustersMat)), function(j) {
+    sum(clustersMat[whichMax == j, j]) / sum(clustersMat[, j])
+  }) %>% summaryFunc
+}
+
+compute_purity_matrix <- function(fullWordCluster, reps) {
+  purity <- matrix(0, nrow = ncol(fullWordCluster)-1, ncol = reps)
+  for (r in 2:ncol(fullWordCluster)) {
+    for (rr in 1:reps) {
+      purity[r-1, rr] <- reduced_word_cluster(fullWordCluster, r) %>% compute_purity
+    }
+  }
+  return(purity)
+}
+
+estimate_number_of_labels_from_purity_matrix <- function(purityMatrix, purityThr) {
+  1 + Position(function(x) {!is.na(x) & x > purityThr},
+               purityMatrix %>% apply(1, mean),
+               right = TRUE,
+               nomatch = 0)
+}
+
