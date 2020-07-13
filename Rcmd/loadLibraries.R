@@ -34,6 +34,7 @@ library(parallel)
 library(abind)
 library(fda)
 library(NMF)
+library(purrr)
 
 source("functions/interactions.R")
 source("functions/calculations.R")

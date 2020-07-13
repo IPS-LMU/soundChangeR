@@ -59,15 +59,28 @@ recognize_posterior_probabilities <- function(posteriorProb, label, method, ...)
 }
 
 compute_mahal_distance <- function(agent, features, label, method = NULL) {
-  if (is.null(method)) {
+  if (is.null(method) | method == "singleGaussian") {
     # no other option at the moment
     # a wrapper to mahalanobis()
     mahalanobis(features,
                 apply(as.matrix(agent$features)[agent$memory$valid == TRUE & 
                                                       agent$memory$label == label, , drop = FALSE], 2, mean),
                 cov(as.matrix(agent$features)[agent$memory$valid == TRUE & 
-                                                    agent$memory$label == label, , drop = FALSE]))
+                                                agent$memory$label == label, , drop = FALSE]))
     
+  } else if (grepl("^GMM(s)?", method)) {
+    GMM <- get_cache_value(agent, "GMM") # check if valid?
+    # return the min of Mahal dist to each GMM component
+    # in case only one component, return the Mahal dist to that component (handled implicitly)
+    if (GMM$d == 1) { # case 1D features
+      map2(GMM$models[[label]]$parameters$mean,
+           GMM$models[[label]]$parameters$variance$sigmasq, 
+           ~ mahalanobis(features, .x, .y)) %>% unlist %>% min
+    } else { # case multi-D features
+      map2(lapply(1:GMM$models[[label]]$G, function(g) {GMM$models[[label]]$parameters$mean[,g] %>% t}),
+           lapply(1:GMM$models[[label]]$G, function(g) {GMM$models[[label]]$parameters$variance$sigma[,,g]}),
+           ~ mahalanobis(features, .x, .y)) %>% unlist %>% min
+    }  
   }
 }
 
@@ -339,7 +352,7 @@ accept_all <- function(exemplar, features, label, agent, params) {
 }
 
 mahalanobis_distance <- function(exemplar, features, label, agent, params) {
-  mahalDist <- compute_mahal_distance(agent, features, label)
+  mahalDist <- compute_mahal_distance(agent, features, label, params[["perceptionModels"]])
   mahalDist <= qchisq(p = params[["mahalanobisProbThreshold"]], df = get_cache_value(agent, "nFeatures"))
 }
 

@@ -133,6 +133,8 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$features <- data.table(P1 = double()) %>% .[1:maxMemorySize]
   update_features(agent, compute_features(agent, params))
   
+  # estimate_GMMs(agent, params)
+  
   return(agent)
 }
 

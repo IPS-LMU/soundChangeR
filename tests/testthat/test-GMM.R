@@ -90,3 +90,28 @@ test_that("estimate_number_of_labels_from_purity_matrix produces expected result
   expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .80), 4)
   expect_equal(estimate_number_of_labels_from_purity_matrix(pm, .70), 4)
 })
+
+test_that("compute_mahal_distance produces expected results depending on dimensionalities", {
+  agent <- list(cache = data.table(name = "GMM", value = list(), valid = FALSE))
+  # case multidim features, 1 GMM component
+  gmm <- readRDS("GMM.model1.G1.d3.rds")
+  set_cache_value(agent, "GMM", gmm)
+  features <- gmm$models$`1`$parameters$mean %>% t # the mean should give distance = 0
+  expect_equal(compute_mahal_distance(agent, features, label = 1, method = "GMM"), 0)
+  features <- gmm$data[1,]
+  expect_gt(compute_mahal_distance(agent, features, label = 1, method = "GMM"), 0)
+  # case 1-dim features, 2 GMM components
+  gmm <- readRDS("GMM.model2.G2.2.d1.rds")
+  set_cache_value(agent, "GMM", gmm)
+  features <- gmm$models$`1`$parameters$mean[1]  # the mean should give distance = 0
+  expect_equal(compute_mahal_distance(agent, features, label = 1, method = "GMM"), 0)
+  features <- gmm$data[1,]
+  expect_gt(compute_mahal_distance(agent, features, label = 1, method = "GMM"), 0)
+  # case multidim features, many GMM components
+  gmm <- readRDS("GMM.model4.G3.4.3.3.d3.rds")
+  set_cache_value(agent, "GMM", gmm)
+  features <- gmm$models$`2`$parameters$mean[,3] %>% t # the mean should give distance = 0
+  expect_equal(compute_mahal_distance(agent, features, label = 2, method = "GMM"), 0)
+  features <- gmm$data[1,]
+  expect_gt(compute_mahal_distance(agent, features, label = 1, method = "GMM"), 0)
+})

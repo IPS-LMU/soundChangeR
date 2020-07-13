@@ -301,10 +301,13 @@ compute_purity <- function(clustersMat, summaryFunc = min) {
 }
 
 compute_purity_matrix <- function(fullWordCluster, reps) {
+  # compute reps time each purity for solution with r clusters,
+  # from 2 to number of clusters in fullWordCluster (= ncol)
+  # organise it in a reps by ncol(fullWordCluster)-1 matrix
   purity <- matrix(0, nrow = ncol(fullWordCluster)-1, ncol = reps)
   for (r in 2:ncol(fullWordCluster)) {
     for (rr in 1:reps) {
-      purity[r-1, rr] <- reduced_word_cluster(fullWordCluster, r) %>% compute_purity
+      purity[r-1, rr] <- reduced_word_clusters(fullWordCluster, r) %>% compute_purity
     }
   }
   return(purity)
