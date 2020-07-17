@@ -115,3 +115,30 @@ test_that("compute_mahal_distance produces expected results depending on dimensi
   features <- gmm$data[1,]
   expect_gt(compute_mahal_distance(agent, features, label = 1, method = "GMM"), 0)
 })
+
+test_that("compute_posterior_probabilities produces expected results depending on dimensionalities", {
+  agent <- list(cache = data.table(name = "GMM", value = list(), valid = FALSE))
+  # case multidim features, 1 GMM component, 1 label (model)
+  gmm <- readRDS("GMM.model1.G1.d3.rds")
+  set_cache_value(agent, "GMM", gmm)
+  # 1 model, so we get prob == 1 anyway
+  features <- gmm$data[1,,drop = FALSE]
+  posteriorProb <- compute_posterior_probabilities(agent, features, method = "GMM")
+  expect_equal(dim(posteriorProb), c(1,1))
+  expect_equal(posteriorProb[1,1] %>% as.numeric, 1)
+  expect_true(recognize_posterior_probabilities(posteriorProb, 1, "maxPosteriorProb"))
+  # case 1-dim features, 2 GMM components, 2 models (labels)
+  gmm <- readRDS("GMM.model2.G2.2.d1.rds")
+  set_cache_value(agent, "GMM", gmm)
+  features <- gmm$data[1,,drop = FALSE]
+  posteriorProb <- compute_posterior_probabilities(agent, features, method = "GMM")
+  expect_equal(dim(posteriorProb), c(1,2))
+  expect_equal(posteriorProb %>% as.numeric %>% sum, 1)
+  # case multidim features, many GMM components, 4 models (labels) 
+  gmm <- readRDS("GMM.model4.G3.4.3.3.d3.rds")
+  set_cache_value(agent, "GMM", gmm)
+  features <- gmm$data[1,,drop = FALSE]
+  posteriorProb <- compute_posterior_probabilities(agent, features, method = "GMM")
+  expect_equal(dim(posteriorProb), c(1,4))
+  expect_equal(posteriorProb %>% as.numeric %>% sum, 1)
+})

@@ -39,12 +39,14 @@ compute_qda <- function(agent) {
 
 compute_posterior_probabilities <- function(agent, features, method) {
   if (method == "qda") {
-    # no other option at the moment
     if (!is_cache_valid(agent, "qda")) {
       update_cache(agent, "qda", compute_qda)
       # cacheMissCounter <<- cacheMissCounter + 1
     }
     predict(get_cache_value(agent, "qda"), features)$posterior
+  } else if (method == "GMM") {
+    # not checking validity of cache entry for GMM, I assume it's valid
+    predict(get_cache_value(agent, "GMM"), features)$z[1, , drop=FALSE]
   } else {
     NULL
   }
@@ -60,7 +62,6 @@ recognize_posterior_probabilities <- function(posteriorProb, label, method, ...)
 
 compute_mahal_distance <- function(agent, features, label, method = NULL) {
   if (is.null(method) | method == "singleGaussian") {
-    # no other option at the moment
     # a wrapper to mahalanobis()
     mahalanobis(features,
                 apply(as.matrix(agent$features)[agent$memory$valid == TRUE & 
