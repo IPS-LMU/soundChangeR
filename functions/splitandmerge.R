@@ -320,3 +320,33 @@ estimate_number_of_labels_from_purity_matrix <- function(purityMatrix, purityThr
                nomatch = 0)
 }
 
+all_words_to_one_label_ <- function(memory) {
+  data.table(word = memory[valid == TRUE, word] %>% unique,
+             label = factor(1))
+}
+
+assign_words_to_labels <- function(agent, params) {
+  agent$memory[valid == TRUE,
+               cluster := Mclust(as.matrix(agent$features)[agent$memory$valid, , drop = FALSE])$classification]
+  fullWordCluster <- agent$memory[valid == TRUE, .(word, cluster)] %>% table %>% unclass
+  agent$memory[, cluster := NULL]
+  if (ncol(fullWordCluster) == 1) {
+    return(all_words_to_one_label_(agent$memory))
+  }
+  purityMat <- compute_purity_matrix(fullWordCluster, params[['purityRepetitions']])
+  nLabels <- estimate_number_of_labels_from_purity_matrix(purityMat, params[['purityThreshold']])
+  if (nLabels == 1) {
+    return(all_words_to_one_label_(agent$memory))
+  }
+  while({reducedWordCluster <- reduced_word_clusters(fullWordCluster, nLabels);
+  is.na(reducedWordCluster %>% compute_purity)}) {}
+  return(data.table(word = reducedWordCluster %>% rownames,
+                    label = reducedWordCluster %>% apply(1, which.max) %>% factor))
+}
+  
+estimate_GMM <- function(agent, params) {
+  agent$memory[assign_words_to_labels(agent, params), on = "word", label := i.label]
+  GMM <- MclustDA(data = as.matrix(agent$features)[agent$memory$valid, , drop = FALSE],
+                  class = agent$memory$label[agent$memory$valid])
+  set_cache_value(agent, "GMM", GMM)
+}

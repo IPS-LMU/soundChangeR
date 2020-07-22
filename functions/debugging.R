@@ -24,7 +24,7 @@ convert_pop_dt_to_list <- function(pop.dt) {
   for (id in pop.dt$agentID %>% unique) {
     population[[id]] <- list()
     population[[id]]$agentID <- id
-    population[[id]]$labels <- pop.dt[agentID == id, .(word, label, valid, nrOfTimesHeard, producerID, timeStamp)]
+    population[[id]]$memory <- pop.dt[agentID == id, .(word, label, valid, nrOfTimesHeard, producerID, timeStamp)]
     population[[id]]$group <- pop.dt[agentID == id, group][1]
     population[[id]]$speaker <- pop.dt[agentID == id, speaker][1]
     population[[id]]$features <- pop.dt[agentID == id, .SD, .SDcols = Pcols]

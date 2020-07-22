@@ -142,3 +142,45 @@ test_that("compute_posterior_probabilities produces expected results depending o
   expect_equal(dim(posteriorProb), c(1,4))
   expect_equal(posteriorProb %>% as.numeric %>% sum, 1)
 })
+
+test_that("assign_words_to_labels and estimate_GMM produces expected results depending on dimensionalities", {
+  params <- list()
+  params[['purityRepetitions']] <- 5
+  params[['purityThreshold']] <- 0.9
+  # case 1-dim features
+  agent <- readRDS("agent1d.rds")
+  nValid <- agent$memory[valid == TRUE, .N]
+  words <- agent$memory[valid == TRUE, word] %>% unique %>% sort
+  w2l <- assign_words_to_labels(agent, params)
+  expect_equal(names(w2l) %>% sort, c("label", "word"))
+  expect_equal(w2l$word %>% sort, words)
+  expect_lte(w2l$label %>% uniqueN, length(words))
+  estimate_GMM(agent, params)
+  expect_equal(agent$memory[valid == TRUE, .N], nValid)
+  nlabels <- agent$memory[valid == TRUE, label] %>% uniqueN
+  wordLabels <- agent$memory[valid == TRUE, .(word, label)] %>% table %>% unclass
+  expect_equal(apply(wordLabels, 1, function(x) {(x > 0) %>% sum}) %>% as.integer, rep(1, length(words)))
+  expect_equal(apply(wordLabels, 1, function(x) {(x == 0) %>% sum}) %>% as.integer, rep(nlabels - 1, length(words)))
+  agent$memory[valid == FALSE, word := "_invalid_word_"]
+  expect_error(estimate_GMM(agent, params), NA)
+  expect_equal(agent$memory[valid == TRUE, .N], nValid)
+  # case 3-dim features
+  agent <- readRDS("agent3d.rds")
+  nValid <- agent$memory[valid == TRUE, .N]
+  words <- agent$memory[valid == TRUE, word] %>% unique %>% sort
+  w2l <- assign_words_to_labels(agent, params)
+  expect_equal(names(w2l) %>% sort, c("label", "word"))
+  expect_equal(w2l$word %>% sort, words)
+  expect_lte(w2l$label %>% uniqueN, length(words))
+  estimate_GMM(agent, params)
+  expect_equal(agent$memory[valid == TRUE, .N], nValid)
+  nlabels <- agent$memory[valid == TRUE, label] %>% uniqueN
+  wordLabels <- agent$memory[valid == TRUE, .(word, label)] %>% table %>% unclass
+  expect_equal(apply(wordLabels, 1, function(x) {(x > 0) %>% sum}) %>% as.integer, rep(1, length(words)))
+  expect_equal(apply(wordLabels, 1, function(x) {(x == 0) %>% sum}) %>% as.integer, rep(nlabels - 1, length(words)))
+  agent$memory[valid == FALSE, word := "_invalid_word_"]
+  expect_error(estimate_GMM(agent, params), NA)
+  expect_equal(agent$memory[valid == TRUE, .N], nValid)
+})
+
+
