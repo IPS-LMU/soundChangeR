@@ -369,7 +369,13 @@ produce_token <- function(agent, params) {
   
   if (grepl("^GMM(s)?", params[["perceptionModels"]])) {
     GMM <- get_cache_value(agent, "GMM")
-    # ...
+    # pick a random token of producedWord
+    wordIdx <- sample(which(agent$memory$word == producedWord & agent$memory$valid == TRUE), 1)
+    features <- as.matrix(agent$features)[wordIdx, , drop = FALSE]
+    # identify the closest Gaussian component from GMM of producedLabel
+    GIdx <- which.min(compute_mahal_distances_GMM(GMM$models[[producedLabel]], features))
+    gaussParams <- get_mean_cov_from_GMM_component(GMM$models[[producedLabel]], GIdx)
+    # then extract from that Gaussian
   } else {
     
     if (grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
@@ -394,10 +400,10 @@ produce_token <- function(agent, params) {
         stop(paste("produce_token: unrecognised productionResampling method:", params[["productionResampling"]]))
       }
     }
-    tokenGauss <- estimate_gaussian(basisTokens)
+    gaussParams <- estimate_gaussian(basisTokens)
   }
   # generate producedToken as a list
-  features <- rmvnorm(1, tokenGauss$mean, tokenGauss$cov)
+  features <- rmvnorm(1, gaussParams$mean, gaussParams$cov)
   producedToken <- data.table(word = producedWord,
                               label = producedLabel,
                               initial = producedInitial,
@@ -414,16 +420,16 @@ estimate_gaussian <- function(features, epsilon_diag = 1e-6) {
   # epsilon_diag: starting value for 'water filling' of cov diagonal in case of non positive definiteness
   # returns a list of mean and cov.
   
-  tokenGauss <- list(
+  gaussParams <- list(
     mean = apply(features, 2, mean),
     cov = cov(features))
   
   epsilon_diag <- 1e-6
-  while (!is.positive.definite(tokenGauss$cov)) {
-    tokenGauss$cov <- tokenGauss$cov + epsilon_diag * diag(nrow(tokenGauss$cov))
+  while (!is.positive.definite(gaussParams$cov)) {
+    gaussParams$cov <- gaussParams$cov + epsilon_diag * diag(nrow(gaussParams$cov))
     epsilon_diag <- 2 * epsilon_diag
   }
-  return(tokenGauss)
+  return(gaussParams)
 }
 
 smote_one_class <- function(features, K, N) {

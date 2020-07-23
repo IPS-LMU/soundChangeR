@@ -149,6 +149,7 @@ test_that("assign_words_to_labels and estimate_GMM produces expected results dep
   params[['purityThreshold']] <- 0.9
   # case 1-dim features
   agent <- readRDS("agent1d.rds")
+  agent$cache[name == "GMM", value := list(FALSE)]
   nValid <- agent$memory[valid == TRUE, .N]
   words <- agent$memory[valid == TRUE, word] %>% unique %>% sort
   w2l <- assign_words_to_labels(agent, params)
@@ -166,6 +167,7 @@ test_that("assign_words_to_labels and estimate_GMM produces expected results dep
   expect_equal(agent$memory[valid == TRUE, .N], nValid)
   # case 3-dim features
   agent <- readRDS("agent3d.rds")
+  agent$cache[name == "GMM", value := list(FALSE)]
   nValid <- agent$memory[valid == TRUE, .N]
   words <- agent$memory[valid == TRUE, word] %>% unique %>% sort
   w2l <- assign_words_to_labels(agent, params)

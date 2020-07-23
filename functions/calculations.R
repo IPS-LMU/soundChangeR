@@ -60,6 +60,18 @@ recognize_posterior_probabilities <- function(posteriorProb, label, method, ...)
   }
 }
 
+get_mean_cov_from_GMM_component <- function(GMM, GIdx) {
+  # mean is either a numeric or a row matrix
+  # cov is always a matrix, 1 by 1 if 1-dimensional
+  if (GMM$d == 1) { # case 1D
+    list(mean = GMM$parameters$mean[GIdx],
+         cov =  matrix(GMM$parameters$variance$sigmasq[GIdx]))
+  } else { # case multi-D
+    list(mean = GMM$parameters$mean[, GIdx] %>% t,
+         cov =  GMM$parameters$variance$sigma[, , GIdx])
+  }
+}
+
 compute_mahal_distances_GMM <- function(GMM, features) {
   if (GMM$d == 1) { # case 1D features
     map2(GMM$parameters$mean,
@@ -86,15 +98,6 @@ compute_mahal_distance <- function(agent, features, label, method = NULL) {
     # return the min of Mahal dist to each GMM component
     # in case only one component, return the Mahal dist to that component (handled implicitly)
     compute_mahal_distances_GMM(GMM$models[[label]], features) %>% min
-    # if (GMM$d == 1) { # case 1D features
-    #   map2(GMM$models[[label]]$parameters$mean,
-    #        GMM$models[[label]]$parameters$variance$sigmasq, 
-    #        ~ mahalanobis(features, .x, .y)) %>% unlist %>% min
-    # } else { # case multi-D features
-    #   map2(lapply(1:GMM$models[[label]]$G, function(g) {GMM$models[[label]]$parameters$mean[,g] %>% t}),
-    #        lapply(1:GMM$models[[label]]$G, function(g) {GMM$models[[label]]$parameters$variance$sigma[,,g]}),
-    #        ~ mahalanobis(features, .x, .y)) %>% unlist %>% min
-    # }  
   }
 }
 
