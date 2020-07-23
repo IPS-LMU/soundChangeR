@@ -60,6 +60,18 @@ recognize_posterior_probabilities <- function(posteriorProb, label, method, ...)
   }
 }
 
+compute_mahal_distances_GMM <- function(GMM, features) {
+  if (GMM$d == 1) { # case 1D features
+    map2(GMM$parameters$mean,
+         GMM$parameters$variance$sigmasq, 
+         ~ mahalanobis(features, .x, .y)) %>% unlist
+  } else { # case multi-D features
+    map2(lapply(1:GMM$G, function(g) {GMM$parameters$mean[,g] %>% t}),
+         lapply(1:GMM$G, function(g) {GMM$parameters$variance$sigma[,,g]}),
+         ~ mahalanobis(features, .x, .y)) %>% unlist
+  } 
+}
+
 compute_mahal_distance <- function(agent, features, label, method = NULL) {
   if (is.null(method) | method == "singleGaussian") {
     # a wrapper to mahalanobis()
@@ -73,15 +85,16 @@ compute_mahal_distance <- function(agent, features, label, method = NULL) {
     GMM <- get_cache_value(agent, "GMM") # check if valid?
     # return the min of Mahal dist to each GMM component
     # in case only one component, return the Mahal dist to that component (handled implicitly)
-    if (GMM$d == 1) { # case 1D features
-      map2(GMM$models[[label]]$parameters$mean,
-           GMM$models[[label]]$parameters$variance$sigmasq, 
-           ~ mahalanobis(features, .x, .y)) %>% unlist %>% min
-    } else { # case multi-D features
-      map2(lapply(1:GMM$models[[label]]$G, function(g) {GMM$models[[label]]$parameters$mean[,g] %>% t}),
-           lapply(1:GMM$models[[label]]$G, function(g) {GMM$models[[label]]$parameters$variance$sigma[,,g]}),
-           ~ mahalanobis(features, .x, .y)) %>% unlist %>% min
-    }  
+    compute_mahal_distances_GMM(GMM$models[[label]], features) %>% min
+    # if (GMM$d == 1) { # case 1D features
+    #   map2(GMM$models[[label]]$parameters$mean,
+    #        GMM$models[[label]]$parameters$variance$sigmasq, 
+    #        ~ mahalanobis(features, .x, .y)) %>% unlist %>% min
+    # } else { # case multi-D features
+    #   map2(lapply(1:GMM$models[[label]]$G, function(g) {GMM$models[[label]]$parameters$mean[,g] %>% t}),
+    #        lapply(1:GMM$models[[label]]$G, function(g) {GMM$models[[label]]$parameters$variance$sigma[,,g]}),
+    #        ~ mahalanobis(features, .x, .y)) %>% unlist %>% min
+    # }  
   }
 }
 

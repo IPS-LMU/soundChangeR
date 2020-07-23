@@ -96,7 +96,7 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$group <- input.df[speaker == selectedSpeaker, group][1]
   agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
   agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
-  cacheNames <- c("nFeatures", "qda", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!is.na(.)])
+  cacheNames <- c("nFeatures", "qda", "GMM", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!is.na(.)])
   agent$cache <- data.table(name = cacheNames, value = list(), valid = FALSE)
   # init empty memory of size maxMemorySize
   agent$memory <- data.table(word = character(),
@@ -133,8 +133,9 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$features <- data.table(P1 = double()) %>% .[1:maxMemorySize]
   update_features(agent, compute_features(agent, params))
   
-  # estimate_GMMs(agent, params)
-  
+  if (grepl("^GMM(s)?", params[["perceptionModels"]])) {
+    estimate_GMM(agent, params)
+  }
   return(agent)
 }
 
@@ -366,30 +367,35 @@ produce_token <- function(agent, params) {
   producedInitial <- agent$initial$initial[agent$initial$word == producedWord]
   nrOfTimesHeard <- agent$memory$nrOfTimesHeard[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
   
-  if (grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
-    basisIdx <- which(agent$memory$word == producedWord & agent$memory$valid == TRUE)
-  } else if (grepl("^(target)?([lL]abel|[pP]honeme)$", params[["productionBasis"]])) {
-    basisIdx <- which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
-  }
-  basisTokens <- as.matrix(agent$features)[basisIdx, , drop = FALSE]
-  
-  if (!is.null(params[["productionResampling"]])) {
-    if (grepl("SMOTE", params[["productionResampling"]], ignore.case = TRUE)) {
-      nExtraTokens <- params[["productionMinTokens"]] - length(basisIdx)
-      if (nExtraTokens > 0) {
-        extendedIdx <- NULL
-        if (grepl("label|phoneme", params[["productionResamplingFallback"]], ignore.case = TRUE)) {
-          extendedIdx <- which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
-        }
-        extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["productionSMOTENN"]], nExtraTokens)
-        basisTokens <- rbind(basisTokens, extraTokens)
-      }
-    } else {
-      stop(paste("produce_token: unrecognised productionResampling method:", params[["productionResampling"]]))
+  if (grepl("^GMM(s)?", params[["perceptionModels"]])) {
+    GMM <- get_cache_value(agent, "GMM")
+    # ...
+  } else {
+    
+    if (grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
+      basisIdx <- which(agent$memory$word == producedWord & agent$memory$valid == TRUE)
+    } else if (grepl("^(target)?([lL]abel|[pP]honeme)$", params[["productionBasis"]])) {
+      basisIdx <- which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
     }
+    basisTokens <- as.matrix(agent$features)[basisIdx, , drop = FALSE]
+    
+    if (!is.null(params[["productionResampling"]])) {
+      if (grepl("SMOTE", params[["productionResampling"]], ignore.case = TRUE)) {
+        nExtraTokens <- params[["productionMinTokens"]] - length(basisIdx)
+        if (nExtraTokens > 0) {
+          extendedIdx <- NULL
+          if (grepl("label|phoneme", params[["productionResamplingFallback"]], ignore.case = TRUE)) {
+            extendedIdx <- which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
+          }
+          extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["productionSMOTENN"]], nExtraTokens)
+          basisTokens <- rbind(basisTokens, extraTokens)
+        }
+      } else {
+        stop(paste("produce_token: unrecognised productionResampling method:", params[["productionResampling"]]))
+      }
+    }
+    tokenGauss <- estimate_gaussian(basisTokens)
   }
-  tokenGauss <- estimate_gaussian(basisTokens)
-  
   # generate producedToken as a list
   features <- rmvnorm(1, tokenGauss$mean, tokenGauss$cov)
   producedToken <- data.table(word = producedWord,
