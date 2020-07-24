@@ -669,6 +669,12 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
       invalidate_cache(agent, "qda")
     }
   }
+  # re-estimate GMMs if needed
+  if (grepl("^GMM(s)?", params[["perceptionModels"]]) && numReceivedTokens %% params[["computeGMMsInterval"]] == 0) {
+      estimate_GMM(agent, params)
+  }
+  
+  
   # apply split&merge if needed
   if (params[["splitAndMerge"]] == T & numReceivedTokens %% params[["splitAndMergeInterval"]] == 0) {
     splitandmerge(agent, params, full = FALSE)

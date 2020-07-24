@@ -1,4 +1,4 @@
-context("Perception")
+context("memoryIntakeStrategy")
 
 params = list(
   inputDataFile = "u-fronting_NoLob_F2bark.csv",  # absolute or relative path to input data
