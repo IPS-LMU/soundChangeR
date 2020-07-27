@@ -346,7 +346,9 @@ assign_words_to_labels <- function(agent, params) {
   
 estimate_GMM <- function(agent, params) {
   agent$memory[assign_words_to_labels(agent, params), on = "word", label := i.label]
+  if (ncol(agent$features) == 1) {modelNames <- c("X", "V")} else {modelNames <- c("XXX", "VVV")}
   GMM <- MclustDA(data = as.matrix(agent$features)[agent$memory$valid, , drop = FALSE],
-                  class = agent$memory$label[agent$memory$valid])
+                  class = agent$memory$label[agent$memory$valid],
+                  modelNames = modelNames)
   set_cache_value(agent, "GMM", GMM)
 }
