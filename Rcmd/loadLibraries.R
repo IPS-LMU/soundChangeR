@@ -87,14 +87,12 @@ coreABM <- function(input.df, params, logDir) {
   
   pop <- create_population(input.df = input.df, params = params)
   
-  if (params[['splitAndMerge']] == TRUE & params[['doSplitAndMergeBeforeABM']] == TRUE) {
+  if (params[["splitAndMerge"]] == TRUE & params[["doSplitAndMergeBeforeABM"]] == TRUE) {
     for (j in seq_along(pop)) {
       splitandmerge(pop[[j]], params, full = TRUE)
     }
   }
-  save_population(pop,
-                 extraCols = list(snapshot = 0),
-                 logDir = logDir)
+  save_population(pop, extraCols = list(snapshot = 0), logDir = logDir)
   
   perform_interactions(pop, logDir, params)
 }
