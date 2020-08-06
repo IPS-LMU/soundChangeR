@@ -361,8 +361,12 @@ produce_token <- function(agent, params) {
   }
   
   producedLabel <- agent$memory$label[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
-  # next line can issue a warning if producedWord is not in agent's vocabulary
   producedInitial <- agent$initial$initial[agent$initial$word == producedWord]
+  # if initial label is unknown to agent, sample one of the unique initial labels as producedInitial
+  if (length(producedInitial) == 0) {
+    cat("initial for word", producedWord, "unknown to agent", agent$agentID, agent$speaker, "\n")
+    producedInitial <- agent$initial$initial %>% unique %>% sample(1)
+  }
   nrOfTimesHeard <- agent$memory$nrOfTimesHeard[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
   
   if (grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
@@ -613,6 +617,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     perceiverLabel <- names(which.max(table(agent$memory$label[agent$memory$valid == TRUE][
       knnx.index(agent$features[agent$memory$valid == TRUE,], features, params[["perceptionNN"]])
       ])))
+    
   }
   
   memorise <- TRUE
