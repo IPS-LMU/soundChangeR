@@ -326,8 +326,10 @@ all_words_to_one_label_ <- function(memory) {
 }
 
 assign_words_to_labels <- function(agent, params) {
+  if (ncol(agent$features) == 1) {modelNames <- "X"} else {modelNames <- "XXX"}
   agent$memory[valid == TRUE,
-               cluster := Mclust(as.matrix(agent$features)[agent$memory$valid, , drop = FALSE])$classification]
+               cluster := Mclust(as.matrix(agent$features)[agent$memory$valid, , drop = FALSE],
+                                 modelNames = modelNames)$classification]
   fullWordCluster <- agent$memory[valid == TRUE, .(word, cluster)] %>% table %>% unclass
   agent$memory[, cluster := NULL]
   if (ncol(fullWordCluster) == 1) {
