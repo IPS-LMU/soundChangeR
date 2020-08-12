@@ -33,6 +33,8 @@ library(mclust)
 library(parallel)
 library(abind)
 library(fda)
+# install.packages("BiocManager")
+# BiocManager::install("NMF")
 library(NMF)
 library(purrr)
 
