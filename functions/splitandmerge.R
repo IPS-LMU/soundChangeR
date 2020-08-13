@@ -289,9 +289,8 @@ reduced_clusters_incidence_matrix <- function(fullClusters, rank) {
   if (sum(zeroCols) > 0) {fullClusters <- fullClusters[, !zeroCols]}
   if (rank == 1) {return(apply(fullClusters, 1, sum) %>% as.matrix(ncol = 1))}
   nmfObj <- nmf(x = fullClusters, rank = rank, method = "nsNMF")
-  reducedClusters <- nmfObj %>% coef() %>%  apply(2, logical_max)
-  return(reducedClusters) # incidence matrix
-  # return(fullWordClusters %*% t(reducedClusters))
+  incidenceMatrix <- nmfObj %>% coef() %>%  apply(2, logical_max)
+  return(incidenceMatrix)
 }
 
 compute_purity <- function(clustersMat, summaryFunc = min) {
@@ -301,14 +300,16 @@ compute_purity <- function(clustersMat, summaryFunc = min) {
   }) %>% summaryFunc
 }
 
-compute_purity_matrix <- function(fullWordClusters, reps) {
+compute_purity_matrix <- function(fullClusters, reps) {
   # compute reps time each purity for solution with r clusters,
-  # from 2 to number of clusters in fullWordClusters (= ncol)
-  # organise it in a reps by ncol(fullWordClusters)-1 matrix
-  purity <- matrix(0, nrow = ncol(fullWordClusters)-1, ncol = reps)
-  for (r in 2:ncol(fullWordClusters)) {
+  # from 2 to number of clusters in fullClusters (= ncol)
+  # organise it in a reps by ncol(fullClusters)-1 matrix
+  purity <- matrix(0, nrow = ncol(fullClusters)-1, ncol = reps)
+  for (r in 2:ncol(fullClusters)) {
     for (rr in 1:reps) {
-      purity[r-1, rr] <- reduced_word_clusters(fullWordClusters, r) %>% compute_purity
+      purity[r-1, rr] <- reduced_clusters_incidence_matrix(fullClusters, r) %>%
+        get_reduced_clusters(fullClusters, .) %>%
+        compute_purity
     }
   }
   return(purity)
@@ -321,13 +322,13 @@ estimate_number_of_clusters_from_purity_matrix <- function(purityMatrix, purityT
                nomatch = 0)
 }
 
-all_words_to_one_label_ <- function(memory) {
-  data.table(word = memory[valid == TRUE, word] %>% unique,
-             label = factor(1))
-}
+# all_words_to_one_label_ <- function(memory) {
+#   data.table(word = memory[valid == TRUE, word] %>% unique,
+#              label = factor(1))
+# }
 
-collapsed_incidence_matrix_ <- function(fullWordClusters) {
-  matrix(TRUE, nrow = 1, ncol = ncol(fullWordClusters))
+collapsed_incidence_matrix_ <- function(fullClusters) {
+  matrix(TRUE, nrow = 1, ncol = ncol(fullClusters))
 }
 
 estimate_raw_clusters <- function(agent, params) {
@@ -377,56 +378,69 @@ estimate_reduced_clusters_incidence_matrix <- function(fullClusters, purityRepet
 #                     label = reducedWordCluster %>% apply(1, which.max) %>% factor))
 # }
 
-assign_words_to_labels <- function(wordClusters, agent, params) {
+assign_words_to_labels <- function(wordClusters) {
   data.table(word = wordClusters %>% rownames,
              label = wordClusters %>% apply(1, which.max) %>% factor)
 }
 
-build_GMM <- function(rawClusters, incidenceMatrix) {
-  if (ncol(incidenceMatrix) != rawClusters$G) {stop("build_GMM: ncol incidenceMatrix should be == rawClusters$G")}
-  nClasses <- nrow(incidenceMatrix)
-  clusters <- list()
-  clusters$n <- rawClusters$n
-  clusters$d <- rawClusters$d
-  clusters$prop <- (incidenceMatrix %*% rawClusters$parameters$pro) %>% as.vector
-  names(clusters$prop) <- seq_len(nClasses) %>% as.character
-  clusters$models <- list()
-  for (cl in seq_len(nClasses)) {
-    clusters$models[[as.character(cl)]] <- list(
-      n = (rawClusters$classification %in% which(incidenceMatrix[cl,])) %>% sum,
-      d = rawClusters$d,
-      G = incidenceMatrix[cl,] %>% sum,
-      modelName = "VVV",
-      parameters = list(
-        pro = rawClusters$parameters$pro[incidenceMatrix[cl,]] / clusters$prop[cl],
-        mean = rawClusters$parameters$mean[, incidenceMatrix[cl,], drop = FALSE],
-        variance = list(
-          modelName = "VVV",
-          d = rawClusters$d,
-          G = incidenceMatrix[cl,] %>% sum,
-          sigma = rawClusters$parameters$variance$sigma[,,incidenceMatrix[cl,], drop = FALSE]
-        )
-      )
-    )
-  }
-  return(structure(clusters, class = "MclustDA"))
+# build_GMM <- function(rawClusters, incidenceMatrix) {
+#   if (ncol(incidenceMatrix) != rawClusters$G) {stop("build_GMM: ncol incidenceMatrix should be == rawClusters$G")}
+#   nClasses <- nrow(incidenceMatrix)
+#   clusters <- list()
+#   clusters$n <- rawClusters$n
+#   clusters$d <- rawClusters$d
+#   clusters$prop <- (incidenceMatrix %*% rawClusters$parameters$pro) %>% as.vector
+#   names(clusters$prop) <- seq_len(nClasses) %>% as.character
+#   clusters$models <- list()
+#   for (cl in seq_len(nClasses)) {
+#     clusters$models[[as.character(cl)]] <- list(
+#       n = (rawClusters$classification %in% which(incidenceMatrix[cl,])) %>% sum,
+#       d = rawClusters$d,
+#       G = incidenceMatrix[cl,] %>% sum,
+#       modelName = "VVV",
+#       parameters = list(
+#         pro = rawClusters$parameters$pro[incidenceMatrix[cl,]] / clusters$prop[cl],
+#         mean = rawClusters$parameters$mean[, incidenceMatrix[cl,], drop = FALSE],
+#         variance = list(
+#           modelName = "VVV",
+#           d = rawClusters$d,
+#           G = incidenceMatrix[cl,] %>% sum,
+#           sigma = rawClusters$parameters$variance$sigma[,,incidenceMatrix[cl,], drop = FALSE]
+#         )
+#       )
+#     )
+#   }
+#   return(structure(clusters, class = "MclustDA"))
+# }
+
+reestimate_GMM <- function(rawGMM, incidenceMatrix) {
+  incidenceVector <- apply(incidenceMatrix, 2, which)
+  aggregatedClasses <- incidenceVector[rawGMM$classification]
+  names(aggregatedClasses) <- NULL
+  G <- apply(incidenceMatrix, 1, sum) %>% sapply(list)
+  GMM <- MclustDA(data = rawGMM$data, class = aggregatedClasses, G = G)
+  return(GMM)
 }
 
-estimate_GMM2 <- function(agent, params) {
-  rawClusters <- estimate_raw_clusters(agent, params)
-  fullWordClusters <- get_full_word_clusters(rawClusters, agent, param)
+estimate_GMM <- function(agent, params) {
+  rawGMM <- estimate_raw_clusters(agent, params)
+  fullWordClusters <- get_full_word_clusters(rawGMM, agent, param)
   reducedWordClustersIncidenceMatrix <- estimate_reduced_clusters_incidence_matrix(
     fullWordClusters, params[['purityRepetitions']], params[['purityThreshold']])
+  
+  GMM <- reestimate_GMM(rawGMM, reducedWordClustersIncidenceMatrix)
+  set_cache_value(agent, "GMM", GMM)
+  
   reducedWordClusters <- get_reduced_clusters(fullWordClusters, reducedWordClustersIncidenceMatrix)
-  wordLabels <- assign_words_to_labels(reducedWordClusters, agent, params)
-  GMM <- build_GMM(rawClusters, reducedWordClustersIncidenceMatrix)
+  wordLabels <- assign_words_to_labels(reducedWordClusters)
+  agent$memory[wordLabels, on = "word", label := i.label]
 }
   
-estimate_GMM <- function(agent, params) {
-  agent$memory[assign_words_to_labels(agent, params), on = "word", label := i.label]
-  if (ncol(agent$features) == 1) {modelNames <- c("X", "V")} else {modelNames <- c("XXX", "VVV")}
-  GMM <- MclustDA(data = as.matrix(agent$features)[agent$memory$valid, , drop = FALSE],
-                  class = agent$memory$label[agent$memory$valid],
-                  modelNames = modelNames)
-  set_cache_value(agent, "GMM", GMM)
-}
+# estimate_GMM <- function(agent, params) {
+#   agent$memory[assign_words_to_labels(agent, params), on = "word", label := i.label]
+#   if (ncol(agent$features) == 1) {modelNames <- c("X", "V")} else {modelNames <- c("XXX", "VVV")}
+#   GMM <- MclustDA(data = as.matrix(agent$features)[agent$memory$valid, , drop = FALSE],
+#                   class = agent$memory$label[agent$memory$valid],
+#                   modelNames = modelNames)
+#   set_cache_value(agent, "GMM", GMM)
+# }
