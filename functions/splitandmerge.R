@@ -413,25 +413,43 @@ assign_words_to_labels <- function(wordClusters) {
 #   return(structure(clusters, class = "MclustDA"))
 # }
 
-reestimate_GMM <- function(rawGMM, incidenceMatrix) {
-  incidenceVector <- apply(incidenceMatrix, 2, which)
-  aggregatedClasses <- incidenceVector[rawGMM$classification]
+map_classes_to_incidence_matrix <- function(classification, incidenceMatrix) {
+  incidenceVector <- apply(incidenceMatrix, 2, which) %>% unlist
+  aggregatedClasses <- incidenceVector[classification %>% as.character]
   names(aggregatedClasses) <- NULL
+  return(aggregatedClasses)
+}
+
+reestimate_GMM <- function(rawGMM, incidenceMatrix) {
+  aggregatedClasses <- map_classes_to_incidence_matrix(rawGMM$classification, incidenceMatrix)
   G <- apply(incidenceMatrix, 1, sum) %>% sapply(list)
-  GMM <- MclustDA(data = rawGMM$data, class = aggregatedClasses, G = G)
+  GMM <- MclustDA(data = rawGMM$data[!is.na(aggregatedClasses) ,],
+                  class = aggregatedClasses %>% na.exclude,
+                  G = G)
   return(GMM)
 }
 
 estimate_GMM <- function(agent, params) {
+  print(agent$speaker)
   rawGMM <- estimate_raw_clusters(agent, params)
-  fullWordClusters <- get_full_word_clusters(rawGMM, agent, param)
+  fullWordClusters <- get_full_word_clusters(rawGMM, agent, params)
   reducedWordClustersIncidenceMatrix <- estimate_reduced_clusters_incidence_matrix(
     fullWordClusters, params[['purityRepetitions']], params[['purityThreshold']])
+  # 
+  reducedWordClusters <- get_reduced_clusters(fullWordClusters, reducedWordClustersIncidenceMatrix)
+  
+  excludedClassIdx <- reducedWordClusters %>% apply(2, sum) %>% `<`(rawGMM %>% ncol) %>% which
+  if (length(excludedClassIdx) > 0) {
+    reducedWordClustersIncidenceMatrix <- reducedWordClustersIncidenceMatrix[-excludedClassIdx,]
+    reducedWordClusters <- reducedWordClusters[, -excludedClassIdx]
+    excludedTokenIdx <- map_classes_to_incidence_matrix(rawGMM$classification, reducedWordClustersIncidenceMatrix) %>%
+      is.na %>% which
+    agent$memory[excludedTokenIdx, valid := FALSE]
+  }
   
   GMM <- reestimate_GMM(rawGMM, reducedWordClustersIncidenceMatrix)
   set_cache_value(agent, "GMM", GMM)
   
-  reducedWordClusters <- get_reduced_clusters(fullWordClusters, reducedWordClustersIncidenceMatrix)
   wordLabels <- assign_words_to_labels(reducedWordClusters)
   agent$memory[wordLabels, on = "word", label := i.label]
 }
