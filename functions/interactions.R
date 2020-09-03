@@ -175,7 +175,7 @@ create_interactions_log <- function(nrOfInteractions) {
     .[]
 }
 
-write_to_log <- function(interactionsLog, producedToken, perceiver, perceiverLabel_, memorise, strategy,  nrSim) {
+write_interactions_log <- function(interactionsLog, producedToken, perceiver, perceiverLabel_, memorise, strategy,  nrSim) {
   # This function updates the interactionLog.
   # Function call in interactions.R, perceive_token().
   #
@@ -658,7 +658,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   
   # write on interactionsLog
   if (isNotOwnToken) {
-    write_to_log(interactionsLog, producedToken, agent, perceiverLabel, memorise, strategy, nrSim)
+    write_interactions_log(interactionsLog, producedToken, agent, perceiverLabel, memorise, strategy, nrSim)
   }
   
   # update features if needed

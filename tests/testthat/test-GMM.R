@@ -18,41 +18,39 @@ test_that("logical_max produces expected result also with row or column matrix",
   expect_equal(logical_max(t(x)), m)
 })  
 
-test_that("reduced_word_cluster produces consistent results in ordinary conditions", {
+test_that("reduced_clusters_incidence_matrix returns a sound incidence matrix with correct dimensions", {
   NWords <- 20
-  wc <- matrix(runif(NWords * 4, 0, 30) %>% round, nrow = NWords)
+  Nclusters <- 4
+  wc <- matrix(runif(NWords * Nclusters, 0, 30) %>% round, nrow = NWords)
   rownames(wc) <- letters[1:NWords]
   for (rank in 2:4) {
-    rwc <- reduced_word_clusters(wc, rank)
-    expect_equal(dim(rwc), c(NWords, rank))
-    expect_equal(rownames(rwc), rownames(wc))
-    expect_equal(apply(rwc, 1, sum), apply(wc, 1, sum))
+    im <- reduced_clusters_incidence_matrix(wc, rank)
+    expect_equal(dim(im), c(rank, Nclusters))
+    expect_equal(apply(im, 2, sum), rep(1, ncol(im)))
   }
 }) 
 
-test_that("reduced_word_cluster produces expected result when one cluster contains only one element", {
+test_that("reduced_clusters_incidence_matrix produces expected result when one cluster contains only one element", {
   NWordsCluster <- 6
   wc <- do.call(rbind, lapply(1:3, function(i) {matrix(diag(3)[i,], nrow = NWordsCluster, ncol = 3, byrow = TRUE) })) %*%
     diag(c(50, 52, 53))
   wc <- cbind(wc, 0)
   wc[1, 4] <- 1
   rownames(wc) <- letters[1:(3*NWordsCluster)]
-  rwc <- reduced_word_clusters(wc, 3)
-  wc.sortedCols <- wc[-1, -4] %>% apply(2, paste0, collapse = '') %>% sort
-  rwc.sortedCols <- rwc[-1, ] %>% apply(2, paste0, collapse = '') %>% sort
-  expect_equal(wc.sortedCols, rwc.sortedCols)
+  im <- reduced_clusters_incidence_matrix(wc, 3)
+  # cluster 4 should be merged to one of the others
+  expect_equal(sum(im[which(im[,4]), ]), 2)
 })
 
-test_that("reduced_word_cluster tolerates zero columns when the result would not contain zero columns", {
+test_that("reduced_clusters_incidence_matrix tolerates zero columns when the result would not contain zero columns", {
   NWordsCluster <- 6
   wc <- do.call(rbind, lapply(1:3, function(i) {matrix(diag(3)[i,], nrow = NWordsCluster, ncol = 3, byrow = TRUE) })) %*%
     diag(c(50, 52, 53))
-  wc <- cbind(wc, 0)
+  wc <- cbind(wc[, 1], 0, wc[, 2], wc[, 3])
   rownames(wc) <- letters[1:(3*NWordsCluster)]
-  rwc <- reduced_word_clusters(wc, 3)
-  wc.sortedCols <- wc[, -4] %>% apply(2, paste0, collapse = '') %>% sort
-  rwc.sortedCols <- rwc %>% apply(2, paste0, collapse = '') %>% sort
-  expect_equal(wc.sortedCols, rwc.sortedCols)
+  im <- reduced_clusters_incidence_matrix(wc, 3)
+  expect_equal(dim(im), c(3, 4))
+  expect_equal(apply(im, 2, sum), c(1,0,1,1))
 })
 
 test_that("compute_purity produces expected results", {

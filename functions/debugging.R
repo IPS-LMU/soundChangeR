@@ -74,3 +74,23 @@ get_equivalence_clusters <- function(population, eLabels) {
       , .(N_Agents = sum(!is.na(N))), by = equivalence
       ]
 }
+
+get_logDir <- function(agent, params) {
+  logDir <- if (is.null(params[['logDir']])) {
+    file.path(params[['rootLogDir']], params[['simulationName']])
+  } else {
+    params[['logDir']]
+  }
+  dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
+  return(logDir)
+}
+
+write_log <- function(msg, agent, params) {
+  logDir <- get_logDir(agent, params)
+  write(msg, file.path(logDir, "log.txt"), append = TRUE)
+}
+
+dump_obj <- function(obj, name, agent, params) {
+  logDir <- get_logDir(agent, params)
+  saveRDS(obj, file.path(logDir, paste(name, "rds", sep = ".")))
+}

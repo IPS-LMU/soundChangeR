@@ -287,10 +287,19 @@ reduced_clusters_incidence_matrix <- function(fullClusters, rank) {
   zeroCols <- apply(fullClusters, 2, sum) == 0
   if (rank > ncol(fullClusters) - sum(zeroCols)) {stop("reduced_clusters_incidence_matrix: too many zero columns")}
   if (sum(zeroCols) > 0) {fullClusters <- fullClusters[, !zeroCols]}
-  if (rank == 1) {return(apply(fullClusters, 1, sum) %>% as.matrix(ncol = 1))}
-  nmfObj <- nmf(x = fullClusters, rank = rank, method = "nsNMF")
-  incidenceMatrix <- nmfObj %>% coef() %>%  apply(2, logical_max)
-  return(incidenceMatrix)
+  if (rank == 1) {
+    incidenceMatrix <- matrix(TRUE, nrow = 1, ncol = ncol(fullClusters))
+  } else {
+    nmfObj <- nmf(x = fullClusters, rank = rank, method = "nsNMF")
+    incidenceMatrix <- nmfObj %>% coef() %>%  apply(2, logical_max)
+  }
+  if (sum(zeroCols) == 0) {
+    return(incidenceMatrix)
+  } else {
+    incidenceMatrixZeroCols <- matrix(FALSE, nrow = rank, ncol = length(zeroCols))
+    incidenceMatrixZeroCols[, !zeroCols] <- incidenceMatrix
+    return(incidenceMatrixZeroCols)
+  }
 }
 
 compute_purity <- function(clustersMat, summaryFunc = min) {
@@ -414,8 +423,9 @@ assign_words_to_labels <- function(wordClusters) {
 # }
 
 map_classes_to_incidence_matrix <- function(classification, incidenceMatrix) {
-  incidenceVector <- apply(incidenceMatrix, 2, which) %>% unlist
-  aggregatedClasses <- incidenceVector[classification %>% as.character]
+  incidenceVector <- apply(incidenceMatrix, 2, which) %>%
+    sapply(function(x) {if(length(x) == 0) NA else x})
+  aggregatedClasses <- incidenceVector[classification]
   names(aggregatedClasses) <- NULL
   return(aggregatedClasses)
 }
@@ -423,31 +433,41 @@ map_classes_to_incidence_matrix <- function(classification, incidenceMatrix) {
 reestimate_GMM <- function(rawGMM, incidenceMatrix) {
   aggregatedClasses <- map_classes_to_incidence_matrix(rawGMM$classification, incidenceMatrix)
   G <- apply(incidenceMatrix, 1, sum) %>% sapply(list)
+  
   GMM <- MclustDA(data = rawGMM$data[!is.na(aggregatedClasses) ,],
                   class = aggregatedClasses %>% na.exclude,
                   G = G)
+  # MclustDA bug: when only one class, G is ignored and set to 1.
   return(GMM)
 }
 
 estimate_GMM <- function(agent, params) {
-  print(agent$speaker)
+  write_log(agent$speaker, agent, params)
   rawGMM <- estimate_raw_clusters(agent, params)
   fullWordClusters <- get_full_word_clusters(rawGMM, agent, params)
   reducedWordClustersIncidenceMatrix <- estimate_reduced_clusters_incidence_matrix(
     fullWordClusters, params[['purityRepetitions']], params[['purityThreshold']])
-  # 
   reducedWordClusters <- get_reduced_clusters(fullWordClusters, reducedWordClustersIncidenceMatrix)
   
-  excludedClassIdx <- reducedWordClusters %>% apply(2, sum) %>% `<`(rawGMM %>% ncol) %>% which
+  # take care of classes with too few tokens
+  excludedClassIdx <- reducedWordClusters %>% apply(2, sum) %>% `<`(rawGMM$d) %>% which
   if (length(excludedClassIdx) > 0) {
-    reducedWordClustersIncidenceMatrix <- reducedWordClustersIncidenceMatrix[-excludedClassIdx,]
-    reducedWordClusters <- reducedWordClusters[, -excludedClassIdx]
+    write_log(paste("excludedClassIdx", excludedClassIdx),  agent, params)
+    reducedWordClustersIncidenceMatrix <- reducedWordClustersIncidenceMatrix[-excludedClassIdx, , drop = FALSE]
+    reducedWordClusters <- reducedWordClusters[, -excludedClassIdx, drop = FALSE]
     excludedTokenIdx <- map_classes_to_incidence_matrix(rawGMM$classification, reducedWordClustersIncidenceMatrix) %>%
       is.na %>% which
-    agent$memory[excludedTokenIdx, valid := FALSE]
+    agent$memory[which(agent$memory$valid)[excludedTokenIdx], valid := FALSE]
+    write_log(paste("excludedTokenIdx", excludedTokenIdx), agent, params)
   }
-  
+  tryCatch({
   GMM <- reestimate_GMM(rawGMM, reducedWordClustersIncidenceMatrix)
+  }, error = function(c) {
+    write_log(paste(conditionMessage(c), conditionCall(c), sep = "\n"), agent, params)
+    dump_obj(rawGMM, "rawGMM", agent, params)
+    dump_obj(reducedWordClustersIncidenceMatrix, "reducedWordClustersIncidenceMatrix", agent, params)
+    stop(c)
+  })
   set_cache_value(agent, "GMM", GMM)
   
   wordLabels <- assign_words_to_labels(reducedWordClusters)
