@@ -76,10 +76,10 @@ compute_mahal_distances_GMM <- function(GMM, features) {
   if (GMM$d == 1) { # case 1D features
     map2(GMM$parameters$mean,
          GMM$parameters$variance$sigmasq, 
-         ~ mahalanobis(features, .x, .y)) %>% unlist
+         ~ mahalanobis(features, .x, .y, tol = 1e-20)) %>% unlist
   } else { # case multi-D features
     map2(lapply(1:GMM$G, function(g) {GMM$parameters$mean[,g] %>% t}),
-         lapply(1:GMM$G, function(g) {GMM$parameters$variance$sigma[,,g]}),
+         lapply(1:GMM$G, function(g) {GMM$parameters$variance$sigma[,,g] %>% water_filling}),
          ~ mahalanobis(features, .x, .y)) %>% unlist
   } 
 }
@@ -97,8 +97,25 @@ compute_mahal_distance <- function(agent, features, label, method = NULL) {
     GMM <- get_cache_value(agent, "GMM") # check if valid?
     # return the min of Mahal dist to each GMM component
     # in case only one component, return the Mahal dist to that component (handled implicitly)
+    tryCatch({
     compute_mahal_distances_GMM(GMM$models[[label]], features) %>% min
+    }, error = function(c) {
+      write_log(paste("compute_mahal_distances_GMM", "label", label, conditionMessage(c),
+                      paste(conditionCall(c), collapse = " "), sep = "\n"), agent, params)
+      dump_obj(GMM, "GMM", agent, params)
+      stop(c)
+    })
   }
+}
+
+water_filling <- function(mat, eps = 1e-6) {
+  # rudimentary trick to make a matrix invertible
+  if (!is.square.matrix(mat)) stop("water_filling: input mat is not a square matrix")
+  eps <- max(eps, min(diag(mat)))
+  while(is.singular.matrix(mat)) {
+    mat <- mat + eps * diag(nrow(mat))
+  }
+  return(mat)
 }
 
 convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {

@@ -50,6 +50,7 @@ params <- check[[1]]
 if (check[[2]]) {
   # run simulations
   if (params[["runMode"]] == "single") {
+    params[['logDir']] <- file.path(logDir, "1")
     coreABM(input.df, params, file.path(logDir, "1"))
   } else if (params[["runMode"]] == "multiple") {
     numCores <- detectCores() - 1
@@ -64,6 +65,7 @@ if (check[[2]]) {
     }
     clusterSetRNGStream(cl)
     parLapply(cl, seq_len(params[["multipleABMRuns"]]), function(abmName) {
+      params[['logDir']] <- file.path(logDir, abmName)
       coreABM(input.df, params, file.path(logDir, abmName))
     })
     stopCluster(cl)
