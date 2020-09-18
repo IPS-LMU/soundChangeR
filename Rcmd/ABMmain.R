@@ -33,7 +33,20 @@ if (!is.null(params[["subsetSpeakers"]])) {
 if (!is.null(params[["subsetLabels"]])) {
   input.df <- input.df[label %in% params[["subsetLabels"]]]
 }
-set_feature_names(input.df, params[["features"]])
+
+if (params[["featureExtractionMethod"]] == "identity") {
+  set_feature_names(input.df, params[["features"]])
+  input.df[, exemplar := matrix2exemplar(.SD), .SDcols = names(input.df) %like% "^P[[:digit:]]"]
+} else if (params[["featureExtractionMethod"]] == "FPCA") {
+  fdObj <- readRDS(params[["inputExemplarsFile"]])
+  if (!is.null(params[["subsetSpeakers"]])) {
+    fdObj[[1]] <- fdObj[[1]][1:10, unique(input.df$sl_rowIdx), 1:2]
+  }
+  if (!is.null(params[["subsetLabels"]])) {
+    fdObj[[1]] <- fdObj[[1]][1:10, unique(input.df$sl_rowIdx), 1:2]
+  }
+  input.df[, exemplar := all_fd2exemplar(fdObj)]
+}
 
 # save input.df
 saveRDS(input.df, file.path(logDir, "input.rds"))
@@ -50,7 +63,7 @@ params <- check[[1]]
 if (check[[2]]) {
   # run simulations
   if (params[["runMode"]] == "single") {
-    params[['logDir']] <- file.path(logDir, "1")
+    params[["logDir"]] <- file.path(logDir, "1")
     coreABM(input.df, params, file.path(logDir, "1"))
   } else if (params[["runMode"]] == "multiple") {
     numCores <- detectCores() - 1

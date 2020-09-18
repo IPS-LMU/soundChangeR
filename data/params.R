@@ -32,6 +32,13 @@ params = list(
   proportionGroupTokens = 0.0,                   # between 0.0 and 1.0; proportion of tokens from own speaker group that an agent is initialised with
   rememberOwnTokens = FALSE,                     # whether or not to perceive one's own tokens
   
+  ##### Feature Extraction
+  
+  featureExtractionMethod = "identity",          # "FPCA" or "identity"; which method is to be used to extract features from exemplars
+  lambdaFPCA = 1e-8,                             # only if featureExtractionMethod == "FPCA"
+  varCutoffFPCA = 0.5,                           # must be greater than 0.0 and smaller than 1.0; variance cutoff
+  computeFeaturesInterval = 1000,                # interval by which to compute features again
+  
   ##### Production
   
   productionBasis = "word",                      # "word" or "label"; estimate Gaussian based on tokens associated with words or labels
@@ -42,11 +49,15 @@ params = list(
   
   ##### Perception
   
-  # perceptionModels = "singleGaussian",
+  perceptionModels = "GMM",
   memoryIntakeStrategy = "mahalanobisDistance",  # "maxPosteriorProb" and/or "mahalanobisDistance" and/or "posteriorProbThr"
-  mahalanobisThreshold = qchisq(.95, df = 3) %>% round(2),   # threshold if memoryIntakeStrategy == "mahalanobisDistance"
+  mahalanobisProbThreshold = .95,                # threshold if memoryIntakeStrategy == "mahalanobisDistance", between 0.0 and 1.0
+  MSEthresholdQuantile = 0.999,                  # threshold if memoryIntakeStrategy == "MSEthreshold", between 0.0 and 1.0
   posteriorProbThr = 1/3,                        # only if memoryIntakeStrategy == "posteriorProbThr"
-  perceptionNN = 5,                              # uneven full number; assign label to unknown word based on majority vote among perceptionNN nearest neighbours
+  perceptionOOVNN = 5,                           # uneven full number; assign label to unknown word based on majority vote among perceptionOOVNN nearest neighbours
+  computeGMMsInterval = 10,                      # how many tokens an agent must have accepted for it to re-compute GMM
+  purityRepetitions = 5,                         # 
+  purityThreshold = 0.75,                        # 
   
   ##### Forgetting
   
@@ -75,7 +86,7 @@ params = list(
 
   ##### Other options
   
-  rootLogDir = "./logs",                         # absolute or relative path to logging directory
+  rootLogDir = "./logDir",                       # absolute or relative path to logging directory
   notes = "u-fronting, three phonemes"           # some further notes on the current simulation for better documentation
 
 )
