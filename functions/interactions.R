@@ -96,8 +96,9 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$group <- input.df[speaker == selectedSpeaker, group][1]
   agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
   agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
-  cacheNames <- c("nFeatures", "qda", "GMM", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!is.na(.)])
+  cacheNames <- c("nFeatures", "qda", "GMM", "nAccepted", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!is.na(.)])
   agent$cache <- data.table(name = cacheNames, value = list(), valid = FALSE)
+  set_cache_value(agent, "nAccepted", 0)
   # init empty memory of size maxMemorySize
   agent$memory <- data.table(word = character(),
                              label = character(),
@@ -620,10 +621,10 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   # compute features on incoming token
   features <- exemplar2features(producedToken$exemplar, agent, params)
   
-  # if word is unknown, assign label based on majority vote among perceptionNN nearest neighbours
+  # if word is unknown, assign label based on majority vote among perceptionOOVNN nearest neighbours
   if (length(perceiverLabel) == 0) {
     perceiverLabel <- names(which.max(table(agent$memory$label[agent$memory$valid == TRUE][
-      knnx.index(agent$features[agent$memory$valid == TRUE,], features, params[["perceptionNN"]])
+      knnx.index(agent$features[agent$memory$valid == TRUE,], features, params[["perceptionOOVNN"]])
       ])))
   }
   
@@ -650,6 +651,9 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     write_memory(agent, producedToken, rowToWrite, perceiverLabel)
     write_features(agent, features, rowToWrite)
     
+    # update cache
+    set_cache_value(agent, "nAccepted", get_cache_value(agent, "nAccepted") + 1)
+    
     # empty cache
     if (any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
       invalidate_cache(agent, "qda")
@@ -670,7 +674,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     }
   }
   # re-estimate GMMs if needed
-  if (grepl("^GMM(s)?", params[["perceptionModels"]]) && numReceivedTokens %% params[["computeGMMsInterval"]] == 0) {
+  if (grepl("^GMM(s)?", params[["perceptionModels"]]) && get_cache_value(agent, "nAccepted") %% params[["computeGMMsInterval"]] == 0) {
       estimate_GMM(agent, params)
   }
   
