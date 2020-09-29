@@ -293,12 +293,12 @@ check_params <- function(params, input.df) {
   # define number of interactions
   params[["nrOfInteractions"]] <- params[["nrOfSnapshots"]] * params[["interactionsPerSnapshot"]]
   
-  # define perceptionNN
-  if (is.null(params[["perceptionNN"]])) {
-    params[["perceptionNN"]] <- 5
+  # define perceptionOVNN
+  if (is.null(params[["perceptionOVNN"]])) {
+    params[["perceptionOVNN"]] <- 5
   }
-  if (params[["perceptionNN"]] %% 2 == 1) {
-    params[["perceptionNN"]] <- params[["perceptionNN"]] + 1
+  if (params[["perceptionOVNN"]] %% 2 == 1) {
+    params[["perceptionOVNN"]] <- params[["perceptionOVNN"]] + 1
   }
   
   # check featureExtractionMethod
@@ -309,8 +309,9 @@ check_params <- function(params, input.df) {
     # stop(paste("Unknown featureExtractionMethod:", params[["featureExtractionMethod"]]))
     runSimulation <- FALSE
   }
+  
   # check splitMergeMethod
-  if (!any(c("t.test", "bic") %in% params[["splitMergeMethod"]])) {
+  if (params[["splitAndMerge"]] && !any(c("t.test", "bic") %in% params[["splitMergeMethod"]])) {
     params[["splitMergeMethod"]] <- "bic"
   }
   
@@ -325,8 +326,22 @@ check_params <- function(params, input.df) {
     }
   }
   
+  # check that either GMM or split&merge is applied, not both
+  if (params[["splitAndMerge"]]) {
+    params[["perceptionModels"]] <- "singleGaussian"
+  }
+  
+  # check that all re-computation intervals are equal
+  if (!params[["splitAndMerge"]] && params[["computeGMMsInterval"]] != params[["computeFeaturesInterval"]]) {
+    params[["computeGMMsInterval"]] <- params[["computeFeaturesInterval"]]
+  }
+  if (params[["splitAndMerge"]] && params[["splitAndMergeInterval"]] != params[["computeFeaturesInterval"]]) {
+    params[["splitAndMergeInterval"]] <- params[["computeFeaturesInterval"]]
+  }
+  
+  # don't run simulation on wrong fda package version
   if (params[["featureExtractionMethod"]] == "FPCA") {
-    if (packageVersion("fda") > '2.4.0') {
+    if (packageVersion("fda") > "2.4.0") {
       runSimulation <- FALSE
     }
   }

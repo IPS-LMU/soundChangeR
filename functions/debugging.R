@@ -76,10 +76,10 @@ get_equivalence_clusters <- function(population, eLabels) {
 }
 
 get_logDir <- function(agent, params) {
-  logDir <- if (is.null(params[['logDir']])) {
-    file.path(params[['rootLogDir']], params[['simulationName']])
+  logDir <- if (is.null(params[["logDir"]])) {
+    file.path(params[["rootLogDir"]], params[["simulationName"]])
   } else {
-    params[['logDir']]
+    params[["logDir"]]
   }
   dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
   return(logDir)

@@ -49,7 +49,7 @@ params = list(
   
   ##### Perception
   
-  perceptionModels = "GMM",
+  perceptionModels = "GMM",                      # "singleGaussian" or "GMM"; whether or not to use GMMs
   memoryIntakeStrategy = "mahalanobisDistance",  # "maxPosteriorProb" and/or "mahalanobisDistance" and/or "posteriorProbThr"
   mahalanobisProbThreshold = .95,                # threshold if memoryIntakeStrategy == "mahalanobisDistance", between 0.0 and 1.0
   MSEthresholdQuantile = 0.999,                  # threshold if memoryIntakeStrategy == "MSEthreshold", between 0.0 and 1.0

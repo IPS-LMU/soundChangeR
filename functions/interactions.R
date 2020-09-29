@@ -523,7 +523,6 @@ row_to_overwrite <- function(perceiver, producedToken, params) {
   return(rowToOverwrite)
 }
 
-
 row_to_write <- function(agent, producedToken, params) {
   # This function finds the row that the newly produced token will be stored in.
   # Function call in interactions.R, perceive_token().
@@ -598,7 +597,6 @@ update_features <- function(agent, features) {
   set_cache_value(agent, "nFeatures", nPnew)
 }
 
-
 perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params, isNotOwnToken) {
   # This function tests whether the produced token is to be memorized by the listening agent.
   # Function call in interactions.R, perform_single_interaction().
@@ -632,7 +630,6 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     perceiverLabel <- names(which.max(table(agent$memory$label[agent$memory$valid == TRUE][
       knnx.index(agent$features[agent$memory$valid == TRUE,], features, params[["perceptionOOVNN"]])
       ])))
-    
   }
   
   memorise <- TRUE
@@ -673,8 +670,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   }
   
   # update features if needed
-  numReceivedTokens <- sum(interactionsLog$valid[interactionsLog$perceiverID == agent$agentID], na.rm = TRUE)
-  if (numReceivedTokens %% params[["computeFeaturesInterval"]] == 0) {
+  if (get_cache_value(agent, "nAccepted") %% params[["computeFeaturesInterval"]] == 0) {
     update_features(agent, compute_features(agent, params))
     if (any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
       invalidate_cache(agent, "qda")
@@ -684,10 +680,8 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   if (grepl("^GMM(s)?", params[["perceptionModels"]]) && get_cache_value(agent, "nAccepted") %% params[["computeGMMsInterval"]] == 0) {
       estimate_GMM(agent, params)
   }
-  
-  
   # apply split&merge if needed
-  if (params[["splitAndMerge"]] == T & numReceivedTokens %% params[["splitAndMergeInterval"]] == 0) {
+  if (params[["splitAndMerge"]] == T && get_cache_value(agent, "nAccepted") %% params[["splitAndMergeInterval"]] == 0) {
     splitandmerge(agent, params, full = FALSE)
     if (any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
       invalidate_cache(agent, "qda")

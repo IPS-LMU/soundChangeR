@@ -87,7 +87,6 @@ train_gaussian_model <- function(x, lab = rep("x", nrow(x))) {
   return(mat)
 }
 
-
 phonmerge <- function(agent, splitMergeMethod) {
   # This function performs the actual merge on two phoneme classes.
   # Function call in splitandmerge.R, splitandmerge().
@@ -173,7 +172,6 @@ split_merge_metric <- function(P) {
   }
 }
 
-
 split_is_justified <- function(P, wordValues, splitValues, method = "t.test") {
   # This function essentially performs the t.test which 
   # decides whether or not two classes should be splitted.
@@ -219,7 +217,6 @@ split_is_justified <- function(P, wordValues, splitValues, method = "t.test") {
   }
 }
 
-
 phonsplit.sub <- function(P, wordValues, label, splitMergeMethod) {
   # This function returns the new label if a split is performed.
   # Function call in splitandmerge.R, phonsplit().
@@ -263,7 +260,6 @@ phonsplit.sub <- function(P, wordValues, label, splitMergeMethod) {
   }
   return(label)
 }
-
 
 phonsplit <- function(agent, splitMergeMethod) {
   # This function performs the actual split on two phoneme classes.
@@ -463,7 +459,7 @@ estimate_GMM <- function(agent, params) {
   rawGMM <- estimate_raw_clusters(agent, params)
   fullWordClusters <- get_full_word_clusters(rawGMM, agent, params)
   reducedWordClustersIncidenceMatrix <- estimate_reduced_clusters_incidence_matrix(
-    fullWordClusters, params[['purityRepetitions']], params[['purityThreshold']])
+    fullWordClusters, params[["purityRepetitions"]], params[["purityThreshold"]])
   reducedWordClusters <- get_reduced_clusters(fullWordClusters, reducedWordClustersIncidenceMatrix)
   
   # take care of classes with too few tokens

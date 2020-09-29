@@ -137,7 +137,7 @@ convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
     # and the 'initial' columns, for the current agent (pop[[i]])
     cbind(pop[[i]]$features, pop[[i]]$memory) %>%
       .[valid == TRUE] %>%
-      inner_join(pop[[i]]$initial, by = 'word') %>%
+      inner_join(pop[[i]]$initial, by = "word") %>%
       setDT %>%
       # the next four lines set agentID, speaker, group, equivalence for the current agent
       .[, `:=`(agentID = pop[[i]]$agentID,
@@ -172,8 +172,6 @@ knearest_fallback <- function(points, extendedIndices, targetIndices, K) {
   # Returns:
   #    - list of targetIndices and fallback:
   #
-  
-  
   
   if (any(c(targetIndices, extendedIndices) < 0)) {
     stop("knearest_fallback: negative index notation not supported for targetIndices and extendedIndices")
@@ -264,7 +262,6 @@ one_exemplar2obj <- function(exemplar) {
   exemplar[[1]]
 }
 
-
 exemplar2matrix <- function(exemplars, ...) {
   do.call(rbind, exemplars) 
 }
@@ -277,7 +274,6 @@ matrix2exemplar <- function(mat) {
   apply(mat, 1, rowMatrix2exemplar) %>% unlist(recursive = FALSE) 
 }
 
-# FPCA
 all_fd2exemplar <- function(fdObj) {
   # Do not use to convert the fd of one curve, use one_fd2exemplar instead
   # convert an fd object into a list
@@ -378,8 +374,6 @@ fdMSE <- function(fd1, fd2) {
   }) %>% sum %>% `/`(diff(fd1$basis$rangeval))
 }
 
-# memoryIntakeStrategy
-
 accept_all <- function(exemplar, features, label, agent, params) {
   return(TRUE)
 }
@@ -413,3 +407,4 @@ MSE_threshold  <- function(exemplar, features, label, agent, params) {
     }
   return(TRUE)
 }
+

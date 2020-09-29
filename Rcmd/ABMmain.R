@@ -78,7 +78,7 @@ if (check[[2]]) {
     }
     clusterSetRNGStream(cl)
     parLapply(cl, seq_len(params[["multipleABMRuns"]]), function(abmName) {
-      params[['logDir']] <- file.path(logDir, abmName)
+      params[["logDir"]] <- file.path(logDir, abmName)
       coreABM(input.df, params, file.path(logDir, abmName))
     })
     stopCluster(cl)
