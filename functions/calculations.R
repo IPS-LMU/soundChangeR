@@ -39,12 +39,14 @@ compute_qda <- function(agent) {
 
 compute_posterior_probabilities <- function(agent, features, method) {
   if (method == "qda") {
-    # no other option at the moment
     if (!is_cache_valid(agent, "qda")) {
       update_cache(agent, "qda", compute_qda)
       # cacheMissCounter <<- cacheMissCounter + 1
     }
     predict(get_cache_value(agent, "qda"), features)$posterior
+  } else if (method == "GMM") {
+    # not checking validity of cache entry for GMM, I assume it's valid
+    predict(get_cache_value(agent, "GMM"), features)$z[1, , drop=FALSE]
   } else {
     NULL
   }
@@ -58,18 +60,62 @@ recognize_posterior_probabilities <- function(posteriorProb, label, method, ...)
   }
 }
 
+get_mean_cov_from_GMM_component <- function(GMM, GIdx) {
+  # mean is either a numeric or a row matrix
+  # cov is always a matrix, 1 by 1 if 1-dimensional
+  if (GMM$d == 1) { # case 1D
+    list(mean = GMM$parameters$mean[GIdx],
+         cov =  matrix(GMM$parameters$variance$sigmasq[GIdx]))
+  } else { # case multi-D
+    list(mean = GMM$parameters$mean[, GIdx] %>% t,
+         cov =  GMM$parameters$variance$sigma[, , GIdx])
+  }
+}
+
+compute_mahal_distances_GMM <- function(GMM, features) {
+  if (GMM$d == 1) { # case 1D features
+    map2(GMM$parameters$mean,
+         GMM$parameters$variance$sigmasq, 
+         ~ mahalanobis(features, .x, .y, tol = 1e-20)) %>% unlist
+  } else { # case multi-D features
+    map2(lapply(1:GMM$G, function(g) {GMM$parameters$mean[,g] %>% t}),
+         lapply(1:GMM$G, function(g) {GMM$parameters$variance$sigma[,,g] %>% water_filling}),
+         ~ mahalanobis(features, .x, .y)) %>% unlist
+  } 
+}
+
 compute_mahal_distance <- function(agent, features, label, method = NULL) {
-  if (is.null(method)) {
-    # no other option at the moment
+  if (is.null(method) | method == "singleGaussian") {
     # a wrapper to mahalanobis()
     mahalanobis(features,
                 apply(as.matrix(agent$features)[agent$memory$valid == TRUE & 
                                                       agent$memory$label == label, , drop = FALSE], 2, mean),
                 cov(as.matrix(agent$features)[agent$memory$valid == TRUE & 
-                                                    agent$memory$label == label, , drop = FALSE]), 
-                tol=1e-30)
+                                                agent$memory$label == label, , drop = FALSE]), tol=1e-30)
     
+  } else if (grepl("^GMM(s)?", method)) {
+    GMM <- get_cache_value(agent, "GMM") # check if valid?
+    # return the min of Mahal dist to each GMM component
+    # in case only one component, return the Mahal dist to that component (handled implicitly)
+    tryCatch({
+    compute_mahal_distances_GMM(GMM$models[[label]], features) %>% min
+    }, error = function(c) {
+      write_log(paste("compute_mahal_distances_GMM", "label", label, conditionMessage(c),
+                      paste(conditionCall(c), collapse = " "), sep = "\n"), agent, params)
+      dump_obj(GMM, "GMM", agent, params)
+      stop(c)
+    })
   }
+}
+
+water_filling <- function(mat, eps = 1e-6) {
+  # rudimentary trick to make a matrix invertible
+  if (!is.square.matrix(mat)) stop("water_filling: input mat is not a square matrix")
+  eps <- max(eps, min(diag(mat)))
+  while(is.singular.matrix(mat)) {
+    mat <- mat + eps * diag(nrow(mat))
+  }
+  return(mat)
 }
 
 convert_pop_list_to_dt <- function(pop, extraCols = list(condition = "x")) {
@@ -339,7 +385,7 @@ accept_all <- function(exemplar, features, label, agent, params) {
 }
 
 mahalanobis_distance <- function(exemplar, features, label, agent, params) {
-  mahalDist <- compute_mahal_distance(agent, features, label)
+  mahalDist <- compute_mahal_distance(agent, features, label, params[["perceptionModels"]])
   mahalDist <= qchisq(p = params[["mahalanobisProbThreshold"]], df = get_cache_value(agent, "nFeatures"))
 }
 

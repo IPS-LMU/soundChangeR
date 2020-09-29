@@ -96,8 +96,9 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$group <- input.df[speaker == selectedSpeaker, group][1]
   agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
   agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
-  cacheNames <- c("nFeatures", "qda", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!is.na(.)])
+  cacheNames <- c("nFeatures", "qda", "GMM", "nAccepted", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!is.na(.)])
   agent$cache <- data.table(name = cacheNames, value = list(), valid = FALSE)
+  set_cache_value(agent, "nAccepted", 0)
   # init empty memory of size maxMemorySize
   agent$memory <- data.table(word = character(),
                              label = character(),
@@ -133,6 +134,9 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$features <- data.table(P1 = double()) %>% .[1:maxMemorySize]
   update_features(agent, compute_features(agent, params))
   
+  if (grepl("^GMM(s)?", params[["perceptionModels"]])) {
+    estimate_GMM(agent, params)
+  }
   return(agent)
 }
 
@@ -172,7 +176,7 @@ create_interactions_log <- function(nrOfInteractions) {
     .[]
 }
 
-write_to_log <- function(interactionsLog, producedToken, perceiver, perceiverLabel_, memorise, strategy,  nrSim) {
+write_interactions_log <- function(interactionsLog, producedToken, perceiver, perceiverLabel_, memorise, strategy,  nrSim) {
   # This function updates the interactionLog.
   # Function call in interactions.R, perceive_token().
   #
@@ -368,33 +372,44 @@ produce_token <- function(agent, params) {
     producedInitial <- agent$initial$initial %>% unique %>% sample(1)
   }
   nrOfTimesHeard <- agent$memory$nrOfTimesHeard[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
-  
-  if (grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
-    basisIdx <- which(agent$memory$word == producedWord & agent$memory$valid == TRUE)
-  } else if (grepl("^(target)?([lL]abel|[pP]honeme)$", params[["productionBasis"]])) {
-    basisIdx <- which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
-  }
-  basisTokens <- as.matrix(agent$features)[basisIdx, , drop = FALSE]
-  
-  if (!is.null(params[["productionResampling"]])) {
-    if (grepl("SMOTE", params[["productionResampling"]], ignore.case = TRUE)) {
-      nExtraTokens <- params[["productionMinTokens"]] - length(basisIdx)
-      if (nExtraTokens > 0) {
-        extendedIdx <- NULL
-        if (grepl("label|phoneme", params[["productionResamplingFallback"]], ignore.case = TRUE)) {
-          extendedIdx <- which(agent$memory$label == producedLabel & agent$memory$valid == TRUE) 
-        }
-        extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["productionSMOTENN"]], nExtraTokens)
-        basisTokens <- rbind(basisTokens, extraTokens)
-      }
-    } else {
-      stop(paste("produce_token: unrecognised productionResampling method:", params[["productionResampling"]]))
+
+  if (grepl("^GMM(s)?", params[["perceptionModels"]])) {
+    GMM <- get_cache_value(agent, "GMM")
+    # pick a random token of producedWord
+    wordIdx <- sample(which(agent$memory$word == producedWord & agent$memory$valid == TRUE), 1)
+    features <- as.matrix(agent$features)[wordIdx, , drop = FALSE]
+    # identify the closest Gaussian component from GMM of producedLabel
+    GIdx <- which.min(compute_mahal_distances_GMM(GMM$models[[producedLabel]], features))
+    gaussParams <- get_mean_cov_from_GMM_component(GMM$models[[producedLabel]], GIdx)
+    # then extract from that Gaussian
+  } else {
+    
+    if (grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
+      basisIdx <- which(agent$memory$word == producedWord & agent$memory$valid == TRUE)
+    } else if (grepl("^(target)?([lL]abel|[pP]honeme)$", params[["productionBasis"]])) {
+      basisIdx <- which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
     }
+    basisTokens <- as.matrix(agent$features)[basisIdx, , drop = FALSE]
+    
+    if (!is.null(params[["productionResampling"]])) {
+      if (grepl("SMOTE", params[["productionResampling"]], ignore.case = TRUE)) {
+        nExtraTokens <- params[["productionMinTokens"]] - length(basisIdx)
+        if (nExtraTokens > 0) {
+          extendedIdx <- NULL
+          if (grepl("label|phoneme", params[["productionResamplingFallback"]], ignore.case = TRUE)) {
+            extendedIdx <- which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
+          }
+          extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["productionSMOTENN"]], nExtraTokens)
+          basisTokens <- rbind(basisTokens, extraTokens)
+        }
+      } else {
+        stop(paste("produce_token: unrecognised productionResampling method:", params[["productionResampling"]]))
+      }
+    }
+    gaussParams <- estimate_gaussian(basisTokens)
   }
-  tokenGauss <- estimate_gaussian(basisTokens)
-  
   # generate producedToken as a list
-  features <- rmvnorm(1, tokenGauss$mean, tokenGauss$cov)
+  features <- rmvnorm(1, gaussParams$mean, gaussParams$cov)
   producedToken <- data.table(word = producedWord,
                               label = producedLabel,
                               initial = producedInitial,
@@ -410,13 +425,13 @@ estimate_gaussian <- function(features, epsilon_diag = 1e-6) {
   # epsilon_diag: starting value for 'water filling' of cov diagonal in case of non positive definiteness
   # returns a list of mean and cov.
   
-  tokenGauss <- list(
+  gaussParams <- list(
     mean = apply(features, 2, mean),
     cov = cov(features))
   
   epsilon_diag <- 1e-6
-  while (!is.positive.definite(tokenGauss$cov)) {
-    tokenGauss$cov <- tokenGauss$cov + epsilon_diag * diag(nrow(tokenGauss$cov))
+  while (!is.positive.definite(gaussParams$cov)) {
+    gaussParams$cov <- gaussParams$cov + epsilon_diag * diag(nrow(gaussParams$cov))
     epsilon_diag <- 2 * epsilon_diag
   }
   tokenGauss$invcov <- solve(tokenGauss$cov)
@@ -612,10 +627,10 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   # compute features on incoming token
   features <- exemplar2features(producedToken$exemplar, agent, params)
   
-  # if word is unknown, assign label based on majority vote among perceptionNN nearest neighbours
+  # if word is unknown, assign label based on majority vote among perceptionOOVNN nearest neighbours
   if (length(perceiverLabel) == 0) {
     perceiverLabel <- names(which.max(table(agent$memory$label[agent$memory$valid == TRUE][
-      knnx.index(agent$features[agent$memory$valid == TRUE,], features, params[["perceptionNN"]])
+      knnx.index(agent$features[agent$memory$valid == TRUE,], features, params[["perceptionOOVNN"]])
       ])))
     
   }
@@ -630,7 +645,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   if (runif(1) < params[["forgettingRate"]]) {
     candidateRow <- sample(which(agent$memory$valid == TRUE), 1)
     candidateWord <- agent$memory$word[candidateRow]
-    if (sum(agent$memory$word == candidateWord & agent$memory$valid, na.rm = TRUE) >= params[["productionMinTokens"]]) { 
+    if (sum(agent$memory$word == candidateWord & agent$memory$valid, na.rm = TRUE) >= params[["productionMinTokens"]]) {
       set(agent$memory, candidateRow, "valid", FALSE)
     }
   }
@@ -643,6 +658,9 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     write_memory(agent, producedToken, rowToWrite, perceiverLabel)
     write_features(agent, features, rowToWrite)
     
+    # update cache
+    set_cache_value(agent, "nAccepted", get_cache_value(agent, "nAccepted") + 1)
+    
     # empty cache
     if (any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
       invalidate_cache(agent, "qda")
@@ -651,7 +669,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   
   # write on interactionsLog
   if (isNotOwnToken) {
-    write_to_log(interactionsLog, producedToken, agent, perceiverLabel, memorise, strategy, nrSim)
+    write_interactions_log(interactionsLog, producedToken, agent, perceiverLabel, memorise, strategy, nrSim)
   }
   
   # update features if needed
@@ -662,6 +680,12 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
       invalidate_cache(agent, "qda")
     }
   }
+  # re-estimate GMMs if needed
+  if (grepl("^GMM(s)?", params[["perceptionModels"]]) && get_cache_value(agent, "nAccepted") %% params[["computeGMMsInterval"]] == 0) {
+      estimate_GMM(agent, params)
+  }
+  
+  
   # apply split&merge if needed
   if (params[["splitAndMerge"]] == T & numReceivedTokens %% params[["splitAndMergeInterval"]] == 0) {
     splitandmerge(agent, params, full = FALSE)

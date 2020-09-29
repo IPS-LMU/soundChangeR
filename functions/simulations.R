@@ -282,7 +282,11 @@ check_params <- function(params, input.df) {
   # posterior probability
   if (any(c("maxPosteriorProb", "posteriorProbThr") %in% params[["memoryIntakeStrategy"]])) {
     if (is.null(params[["posteriorProbMethod"]])) {
-      params[["posteriorProbMethod"]] <- "qda"
+      if (is.null(params[["perceptionModels"]]) || params[["perceptionModels"]] == "singleGaussian") {
+        params[["posteriorProbMethod"]] <- "qda"
+      } else if (grepl("^GMM(s)?", params[["perceptionModels"]])) {
+        params[["posteriorProbMethod"]] <- "GMM"
+      }
     }
   }
   
