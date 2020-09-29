@@ -145,7 +145,7 @@ apply_resampling <- function(agent, finalN, params) {
   tokens <- replicate(extraN, produce_token(agent, params), simplify = FALSE)
   lapply(seq_along(tokens), function(i) {
     rowToWrite <- row_to_write(agent, tokens[[i]], params)
-    write_memory(agent, tokens[[i]], rowToWrite, tokens[[i]]$memory$label) 
+    write_memory(agent, tokens[[i]], rowToWrite, tokens[[i]]$label) # tokens[[i]]$memory$label 
   })
 }
 
@@ -362,6 +362,11 @@ produce_token <- function(agent, params) {
   
   producedLabel <- agent$memory$label[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
   producedInitial <- agent$initial$initial[agent$initial$word == producedWord]
+  # if initial label is unknown to agent, sample one of the unique initial labels as producedInitial
+  if (length(producedInitial) == 0) {
+    cat("initial for word", producedWord, "unknown to agent", agent$agentID, agent$speaker, "\n")
+    producedInitial <- agent$initial$initial %>% unique %>% sample(1)
+  }
   nrOfTimesHeard <- agent$memory$nrOfTimesHeard[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
   
   if (grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
@@ -377,7 +382,7 @@ produce_token <- function(agent, params) {
       if (nExtraTokens > 0) {
         extendedIdx <- NULL
         if (grepl("label|phoneme", params[["productionResamplingFallback"]], ignore.case = TRUE)) {
-          extendedIdx <- which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
+          extendedIdx <- which(agent$memory$label == producedLabel & agent$memory$valid == TRUE) 
         }
         extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["productionSMOTENN"]], nExtraTokens)
         basisTokens <- rbind(basisTokens, extraTokens)
@@ -395,8 +400,7 @@ produce_token <- function(agent, params) {
                               initial = producedInitial,
                               exemplar = features2exemplar(features, agent, params),
                               nrOfTimesHeard = nrOfTimesHeard,
-                              producerID = agent$agentID
-                              )
+                              producerID = agent$agentID)
   return(producedToken)
 }
 
@@ -415,6 +419,7 @@ estimate_gaussian <- function(features, epsilon_diag = 1e-6) {
     tokenGauss$cov <- tokenGauss$cov + epsilon_diag * diag(nrow(tokenGauss$cov))
     epsilon_diag <- 2 * epsilon_diag
   }
+  tokenGauss$invcov <- solve(tokenGauss$cov)
   return(tokenGauss)
 }
 
@@ -494,7 +499,7 @@ row_to_overwrite <- function(perceiver, producedToken, params) {
   } else if (params[["memoryRemovalStrategy"]] == "outlierRemoval") {
     tdat.mahal <- train(as.matrix(perceiver$features)[perceiver$memory$label == perceiverLabel, , drop = FALSE])
     rowToOverwrite <- which(perceiver$memory$word == producedToken$word)[
-      which.max(distance(as.matrix(perceiver$features)[perceiver$memory$word == producedToken$word, , drop = FALSE], tdat.mahal, metric = "mahal"))
+      which.max(emuR::distance(as.matrix(perceiver$features)[perceiver$memory$word == producedToken$word, , drop = FALSE], tdat.mahal, metric = "mahal"))
       ]
     # ... or random token (recommended)
   } else if (params[["memoryRemovalStrategy"]] == "random") {
@@ -554,6 +559,7 @@ write_memory <- function(agent, producedToken, rowToWrite, label_) {
   )]
   agent$memory[agent$memory$word == producedToken$word & agent$memory$valid == TRUE, 
                    nrOfTimesHeard := updatedNrOfTimesHeard]
+  write_features(agent, exemplar2features(producedToken$exemplar, agent, params), rowToWrite)
 }
 
 write_features <- function(agent, features, rowToWrite) {
@@ -611,6 +617,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     perceiverLabel <- names(which.max(table(agent$memory$label[agent$memory$valid == TRUE][
       knnx.index(agent$features[agent$memory$valid == TRUE,], features, params[["perceptionNN"]])
       ])))
+    
   }
   
   memorise <- TRUE
@@ -623,7 +630,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   if (runif(1) < params[["forgettingRate"]]) {
     candidateRow <- sample(which(agent$memory$valid == TRUE), 1)
     candidateWord <- agent$memory$word[candidateRow]
-    if (sum(agent$memory$word == candidateWord, na.rm = TRUE) >= params[["productionMinTokens"]]) {
+    if (sum(agent$memory$word == candidateWord & agent$memory$valid, na.rm = TRUE) >= params[["productionMinTokens"]]) { 
       set(agent$memory, candidateRow, "valid", FALSE)
     }
   }
