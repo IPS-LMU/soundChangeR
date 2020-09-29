@@ -91,7 +91,7 @@ compute_mahal_distance <- function(agent, features, label, method = NULL) {
                 apply(as.matrix(agent$features)[agent$memory$valid == TRUE & 
                                                       agent$memory$label == label, , drop = FALSE], 2, mean),
                 cov(as.matrix(agent$features)[agent$memory$valid == TRUE & 
-                                                agent$memory$label == label, , drop = FALSE]))
+                                                agent$memory$label == label, , drop = FALSE]), tol=1e-30)
     
   } else if (grepl("^GMM(s)?", method)) {
     GMM <- get_cache_value(agent, "GMM") # check if valid?
@@ -215,7 +215,6 @@ knearest_fallback <- function(points, extendedIndices, targetIndices, K) {
   if (nFallback <= 0) {
     return(targetIndices)
   }
-  
   # apply a K nearest neighbor algorithm on the points,
   # and sample as many as nFallback tokens from the unique neighbors 
   # that are not equal to the targetIndices

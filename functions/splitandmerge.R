@@ -23,12 +23,12 @@ splitandmerge <- function(agent, params, full = FALSE) {
   # Returns:
   #    - nothing.
   #
-  
+
   phoneFuncList <- list(split = phonsplit, merge = phonmerge)
   for (phoneFunc in c("split", "merge")) {
     didOneSM <- FALSE
-    while (phoneFuncList[[phoneFunc]](agent, params[['splitMergeMethod']])) {
-      if (params[['runMode']] == "single" && !didOneSM) {
+    while (phoneFuncList[[phoneFunc]](agent, params[["splitMergeMethod"]])) {
+      if (params[["runMode"]] == "single" && !didOneSM) {
         cat("Agent", agent$agentID, "did", phoneFunc, "\n")
         didOneSM <- TRUE
       }
@@ -37,7 +37,7 @@ splitandmerge <- function(agent, params, full = FALSE) {
   }
 }
 
-train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
+train_gaussian_model <- function(x, lab = rep("x", nrow(x))) {
   # This function builds a Gaussian distribution on the basis of data in x.
   # Function call in splitandmerge.R, split_merge_metric().
   #
@@ -57,7 +57,8 @@ train_gaussian_model <- function (x, lab = rep("x", nrow(x))) {
     for (j in unique(lab)) {
       temp <- lab == j
       if (sum(temp) <= 3) {
-        stop("In train_gaussian_model: There are only 3 or less data points, so a Gaussian model cannot be generated.")
+        print("In train_gaussian_model: There are only 3 or less data points, so a Gaussian model cannot be generated.")
+        return(NULL)
       }
       values <- x[temp, ]
       meanvals <- apply(values, 2, mean)
@@ -99,9 +100,8 @@ phonmerge <- function(agent, splitMergeMethod) {
   #      there has been a merger
   #
   
-  # one agent
   # skip entire function if there's only one category
-  if (length(unique(agent$labels$label[agent$labels$valid])) <= 1) {
+  if (length(unique(agent$memory$label[agent$memory$valid])) <= 1) {
     return(FALSE)
   }
   
@@ -110,35 +110,35 @@ phonmerge <- function(agent, splitMergeMethod) {
   didMerge <- FALSE
   didOneMerge <- TRUE
   
-  # test wether there are two classes to be merged
+  # test whether there are two classes to be merged
   while(didOneMerge) {
-    ulab <- unique(agent$labels$label[agent$labels$valid])
+    ulab <- unique(agent$memory$label[agent$memory$valid])
     distCentroids <- dist(t(sapply(ulab, function(lab) {
-      if(!is.null(ncol(as.matrix(agent$features)[agent$labels$label == lab & agent$labels$valid, ]))) {
-        apply(as.matrix(agent$features)[agent$labels$label == lab & agent$labels$valid, ], 2, mean) 
+      if(!is.null(ncol(as.matrix(agent$features)[agent$memory$label == lab & agent$memory$valid, ]))) {
+        apply(as.matrix(agent$features)[agent$memory$label == lab & agent$memory$valid, ], 2, mean) 
       } else {
-        mean(as.matrix(agent$features)[agent$labels$label == lab & agent$labels$valid, ])
+        mean(as.matrix(agent$features)[agent$memory$label == lab & agent$memory$valid, ])
       }
     })))
     didOneMerge <- FALSE
     for (i in order(distCentroids)) {
       ulab.pair <- labels(distCentroids)[which(lower.tri(distCentroids),arr.ind=TRUE)[i,]]
-      ulab.pair.mask <- agent$labels$label %in% ulab.pair
+      ulab.pair.mask <- agent$memory$label %in% ulab.pair
       if (! split_is_justified(as.matrix(agent$features)[ulab.pair.mask,],
-                               agent$labels$word[ulab.pair.mask],
-                               as.integer(as.factor(agent$labels$label[ulab.pair.mask])),
+                               agent$memory$word[ulab.pair.mask],
+                               as.integer(as.factor(agent$memory$label[ulab.pair.mask])),
                                splitMergeMethod)) {
         while ((mergeLabel <- paste(sample(letters[1:26])[1:6], collapse = "")) %in% ulab) {}
         # stri_rand_strings(1, 6, "[a-z]")) # this is a bit nicer than paste(sample... collapse = ""))
         # but for testing purpose I keep the original one, otherwise we get different random strings with same params[['seed']].
-        agent$labels[ulab.pair.mask, label := mergeLabel]
+        agent$memory[ulab.pair.mask, label := mergeLabel]
         didOneMerge <- TRUE
         break
       }
     }
     
     didMerge <- didMerge || didOneMerge
-    if (length(unique(agent$labels$word[agent$labels$valid])) == 1) {
+    if (length(unique(agent$memory$word[agent$memory$valid])) == 1) {
       return (didMerge)
     }
   }
@@ -158,12 +158,17 @@ split_merge_metric <- function(P) {
   # Returns:
   #    - a numeric vector of length nrow(P) providing the metric for each row of P.
   #
-
+  
   if (!is.null(nrow(P))) {
-    tdat <- train_gaussian_model(P)
-    as.numeric(distance(P, tdat, metric = "bayes"))
+    tdat <- estimate_gaussian(P)
+    tdat$label <- "x" # hack because of emuR::distance
+    tdat$means <- matrix(tdat$mean, ncol = ncol(P)) # hack because of emuR::distance
+    as.numeric(emuR::distance(P, tdat, metric = "bayes"))
   } else {
     tdat <- train_gaussian_model(P, lab = rep("x", length(P)))
+    if(is.null(tdat)) {
+      return()
+    }
     as.numeric(log(abs((P - tdat$means)/tdat$cov)))
   }
 }
@@ -183,9 +188,17 @@ split_is_justified <- function(P, wordValues, splitValues, method = "t.test") {
   #    - a boolean; TRUE means that the split should be performed 
   #      according to the t-test and metric
   #
+  
+  P <- as.data.table(P)
+  if (nrow(P) <= 3) {
+    return(FALSE)
+  }
   if (method == "t.test") {
-    metric.split <- numeric(nrow(P))
+    metric.split <- as.numeric(nrow(P))
     for (spl in 1:2) { # assume 2 clusters labelled as 1, 2
+      if (nrow(P[splitValues == spl, ]) <= 3) {
+        return(FALSE)
+      }
       metric.split[splitValues == spl] <- split_merge_metric(P[splitValues == spl, ])
     }
     metric.merge <- split_merge_metric(P)
@@ -264,13 +277,17 @@ phonsplit <- function(agent, splitMergeMethod) {
   #
   
   didSplit <- FALSE
-  for (lab in unique(agent$labels$label[agent$labels$valid])) {
-     splitLab <- phonsplit.sub(as.matrix(agent$features)[agent$labels$label == lab & agent$labels$valid, ],
-                               agent$labels$word[agent$labels$label == lab & agent$labels$valid],
+  for (lab in unique(agent$memory$label[agent$memory$valid])) {
+	 if (ncol(agent$features) == 1 && length(agent$features[agent$memory$label == lab & agent$memory$valid, ][["P1"]]) <= 2 | 
+	 ncol(agent$features) > 1 && nrow(as.matrix(agent$features)[agent$memory$label == lab & agent$memory$valid, ]) <= 2) {
+	   return(didSplit)
+     }
+     splitLab <- phonsplit.sub(as.matrix(agent$features)[agent$memory$label == lab & agent$memory$valid, ],
+                               agent$memory$word[agent$memory$label == lab & agent$memory$valid],
                                lab,
                                splitMergeMethod)
      if (splitLab[1] != lab) {
-       agent$labels[label == lab & valid == TRUE, label := splitLab]
+       agent$memory[label == lab & valid == TRUE, label := splitLab]
        didSplit <- TRUE
      }
    }

@@ -96,9 +96,7 @@ coreABM <- function(input.df, params, logDir) {
       splitandmerge(pop[[j]], params, full = TRUE)
     }
   }
-  save_population(pop,
-                 extraCols = list(snapshot = 0),
-                 logDir = logDir)
+  save_population(pop, extraCols = list(snapshot = 0), logDir = logDir)
   
   perform_interactions(pop, logDir, params)
 }
