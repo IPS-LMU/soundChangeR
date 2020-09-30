@@ -279,6 +279,11 @@ check_params <- function(params, input.df) {
   
   runSimulation <- TRUE
   
+  # check that either GMM or split&merge is applied, not both
+  if (params[["splitAndMerge"]]) {
+    params[["perceptionModels"]] <- "singleGaussian"
+  }
+  
   # posterior probability
   if (any(c("maxPosteriorProb", "posteriorProbThr") %in% params[["memoryIntakeStrategy"]])) {
     if (is.null(params[["posteriorProbMethod"]])) {
@@ -324,11 +329,6 @@ check_params <- function(params, input.df) {
     if (any(df$nInputGroupNeeded > df$nInputGroupAvailable)) {
       runSimulation <- FALSE
     }
-  }
-  
-  # check that either GMM or split&merge is applied, not both
-  if (params[["splitAndMerge"]]) {
-    params[["perceptionModels"]] <- "singleGaussian"
   }
   
   # check that all re-computation intervals are equal

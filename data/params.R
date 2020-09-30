@@ -13,7 +13,8 @@ params = list(
   
   ##### Input data
   
-  inputDataFile = "./data/u-fronting.csv",    # absolute or relative path to input data
+  inputDataFile = "./data/u-fronting.csv",       # absolute or relative path to input data
+  inputExemplarsFile = "./data/u-fronting.rds",  # absolute or relative path to fda data (if applicable)
   features = c("DCT0", "DCT1", "DCT2"),          # the column(s) in inputDataFile that is/are used as features
   group = "age",                                 # the column in inputDataFile that defines the agents' groups
   label = "phoneme",                             # the column in inputDataFile that stores the phonological labels (can be changed)

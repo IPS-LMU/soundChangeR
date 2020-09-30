@@ -434,8 +434,8 @@ estimate_gaussian <- function(features, epsilon_diag = 1e-6) {
     gaussParams$cov <- gaussParams$cov + epsilon_diag * diag(nrow(gaussParams$cov))
     epsilon_diag <- 2 * epsilon_diag
   }
-  tokenGauss$invcov <- solve(tokenGauss$cov)
-  return(tokenGauss)
+  gaussParams$invcov <- solve(gaussParams$cov)
+  return(gaussParams)
 }
 
 smote_one_class <- function(features, K, N) {
@@ -678,7 +678,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   }
   # re-estimate GMMs if needed
   if (grepl("^GMM(s)?", params[["perceptionModels"]]) && get_cache_value(agent, "nAccepted") %% params[["computeGMMsInterval"]] == 0) {
-      estimate_GMM(agent, params)
+    estimate_GMM(agent, params)
   }
   # apply split&merge if needed
   if (params[["splitAndMerge"]] == T && get_cache_value(agent, "nAccepted") %% params[["splitAndMergeInterval"]] == 0) {

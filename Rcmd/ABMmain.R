@@ -54,11 +54,11 @@ saveRDS(input.df, file.path(logDir, "input.rds"))
 # save commit hash so that it is known which version of the ABM was used here
 params[["commitHash"]] <- system("git log -n1 --format=format:\"%H\"", intern = TRUE)
 
-# log simulation in register and save params
-register_simulation(params)
-
 check <- check_params(params, input.df)
 params <- check[[1]]
+
+# log simulation in register and save params
+register_simulation(params)
 
 if (check[[2]]) {
   # run simulations
