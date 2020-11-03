@@ -96,9 +96,10 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$group <- input.df[speaker == selectedSpeaker, group][1]
   agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
   agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% unique
-  cacheNames <- c("nFeatures", "qda", "GMM", "nAccepted", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!is.na(.)])
+  cacheNames <- c("nFeatures", "qda", "GMM", "nAccepted", "nForgotten", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!is.na(.)])
   agent$cache <- data.table(name = cacheNames, value = list(), valid = FALSE)
   set_cache_value(agent, "nAccepted", 0)
+  set_cache_value(agent, "nForgotten", 0)
   # init empty memory of size maxMemorySize
   agent$memory <- data.table(word = character(),
                              label = character(),
@@ -644,6 +645,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     candidateWord <- agent$memory$word[candidateRow]
     if (sum(agent$memory$word == candidateWord & agent$memory$valid, na.rm = TRUE) >= params[["productionMinTokens"]]) {
       set(agent$memory, candidateRow, "valid", FALSE)
+      set_cache_value(agent, "nForgotten", get_cache_value(agent, "nForgotten") + 1)
     }
   }
   
