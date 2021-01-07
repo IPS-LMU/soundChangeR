@@ -346,5 +346,15 @@ check_params <- function(params, input.df) {
     }
   }
   
+  # check interactionProbs
+  if (!class(params[["interactionProbs"]]) %in% c("data.frame", "data.table") || ncol(params[["interactionProbs"]]) != 3) {
+    runSimulation <- FALSE
+  }
+  colnames(params[["interactionProbs"]])[1:2] <- c("Var1", "Var2")
+  fullGroups <- expand.grid(unique(input.df$group), unique(input.df$group))
+  if (nrow(dplyr::anti_join(fullGroups, params[["interactionProbs"]], by = c("Var1", "Var2")) != 0)) {
+    runSimulation <- FALSE
+  }
+  
   return(list(params, runSimulation))
 }

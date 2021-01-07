@@ -281,10 +281,20 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo, 
       randomGroups <- sample(unique(groupsInfo$group), 2)
       randomPercGroup <- randomGroups[1]
       randomProdGroup <- randomGroups[2]
-      prodNr <- sample(groupsInfo$agentID[groupsInfo$group == randomPercGroup], 1, 
-                       prob = params[["speakerProb"]][groupsInfo$group == randomPercGroup])
-      percNr <- sample(groupsInfo$agentID[groupsInfo$group == randomProdGroup], 1, 
-                       prob = params[["listenerProb"]][groupsInfo$group == randomProdGroup])
+      prodNr <- sample(groupsInfo$agentID[groupsInfo$group == randomProdGroup], 1, 
+                       prob = params[["speakerProb"]][groupsInfo$group == randomProdGroup])
+      percNr <- sample(groupsInfo$agentID[groupsInfo$group == randomPercGroup], 1, 
+                       prob = params[["listenerProb"]][groupsInfo$group == randomPercGroup])
+      
+      # or choose interaction partners asymmetrically
+    } else if (params[["interactionPartners"]] == "asymmetric") {
+      randomRow <- sample(nrow(params[["interactionProbs"]]), size = 1, prob = params[["interactionProbs"]]$probs)
+      randomPercGroup <- params[["interactionProbs"]][randomRow, 2]
+      randomProdGroup <- params[["interactionProbs"]][randomRow, 1]
+      prodNr <- sample(groupsInfo$agentID[groupsInfo$group == randomProdGroup], 1, 
+                       prob = params[["speakerProb"]][groupsInfo$group == randomProdGroup])
+      percNr <- sample(groupsInfo$agentID[groupsInfo$group == randomPercGroup], 1, 
+                       prob = params[["listenerProb"]][groupsInfo$group == randomPercGroup])
       
       # or let agents talk to themselves (developer option)
     } else if (params[["interactionPartners"]] == "selfTalk") {

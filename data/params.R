@@ -67,9 +67,14 @@ params = list(
   
   ##### Interactions
   
-  interactionPartners = "betweenGroups",         # "random" or "betweenGroups" or "withinGroups"; from which groups the interacting agents must be
+  interactionPartners = "betweenGroups",         # "random" or "betweenGroups" or "withinGroups" or "asymmetric"; from which groups the interacting agents must be
   speakerProb = NULL,                            # NULL or a vector of numerics; whether some agents should speak more often than others
   listenerProb = NULL,                           # NULL or a vector of numerics; whether some agents should listen more often than others
+  interactionProbs = cbind(expand.grid(c("younger", "older"), c("younger", "older")), 
+                           probs = c(0.25, 0.25, 0.25, 0.25)), # only if interactionPartners == "asymmetric"; a data frame with all possible group combinations 
+                                                 # where the first column is the producer group, the second column is the perceiver group; and a further column called 
+                                                 # probs specifies the likelihood that an interaction between agents from these groups occurs. The probabilities can 
+                                                 # take any non-negative values and need not sum up to one, as they are internally normalized by (probs / sum(probs))
   
   ##### Split and merge
   
