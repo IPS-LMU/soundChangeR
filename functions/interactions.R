@@ -33,14 +33,14 @@ create_population <- function(input.df, params) {
   if (method == "speaker_is_agent") {
     nrOfAgents <- length(sortedSpeakers)
   } else if (method == "bootstrap") {
-    if (length(params[["bootstrapPopulationSize"]]) == 1) {
+    if (is.null(names(params[["bootstrapPopulationSize"]]))) {
       nrOfAgents <- params[["bootstrapPopulationSize"]]
     } else {
       nrOfAgents <- sum(params[["bootstrapPopulationSize"]])
       agentGroups <- cut(seq_len(nrOfAgents),
-                         breaks = c(1,cumsum(params[["bootstrapPopulationSize"]])),
-                         labels = names(params[["bootstrapPopulationSize"]]),
-                         include.lowest = TRUE)
+                         breaks = c(0,cumsum(params[["bootstrapPopulationSize"]])),
+                         labels = names(params[["bootstrapPopulationSize"]])
+                         )
       speakerGroups <- input.df[, speaker, by = group] %>% unique
     }
   } else {
@@ -75,7 +75,7 @@ create_population <- function(input.df, params) {
     if (method == "speaker_is_agent") {
       selectedSpeaker <- sortedSpeakers[id]
     } else if (method == "bootstrap") {
-      if (length(params[["bootstrapPopulationSize"]]) == 1) {
+      if (is.null(names(params[["bootstrapPopulationSize"]]))) {
         selectedSpeaker <- sample(sortedSpeakers, 1)
       } else {
         selectedSpeaker <- speakerGroups[group == agentGroups[id], sample(speaker, 1)]

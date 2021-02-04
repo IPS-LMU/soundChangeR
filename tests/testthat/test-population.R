@@ -9,7 +9,9 @@ input1.dt <- fread("input1.csv") %>%
 params <- list(
   featureExtractionMethod = "identity",
   initialMemoryResampling = FALSE,
-  proportionGroupTokens = 0.0
+  proportionGroupTokens = 0.0,
+  perceptionModels = "singleGaussian",
+  logDir = "logDir"
 )
 
 agent <- create_agent(2, input1.dt, "SP2", 20, params)
@@ -84,15 +86,15 @@ test_that("create_population handles bootstrap method correctly when by-group po
     nrOfInteractions = 1000,
     rememberOwnTokens = FALSE,
     createPopulationMethod = "bootstrap",
-    bootstrapPopulationSize = c(gr1 = 3, gr2 = 20)
+    bootstrapPopulationSize = c(gr3 = 1, gr2 = 2)
   )
   pop <- with_mock(
     create_agent = mock_create_agent,
     create_population(input2.dt, params)
   )
-  expect_length(pop, 23)
-  expect_length(grep("^gr1", unlist(pop)), 3)
-  expect_length(grep("^gr2", unlist(pop)), 20)
+  expect_length(pop, 3)
+  expect_length(grep("^gr3", unlist(pop)), 1)
+  expect_length(grep("^gr2", unlist(pop)), 2)
   expect_true(all(unlist(pop) %in% unique(input2.dt$speaker)))
   
   params$bootstrapPopulationSize = c(gr1 = 3, gr2 = 20, gr3 = 12, gr4 = 1)
@@ -115,5 +117,16 @@ test_that("create_population handles bootstrap method correctly when by-group po
   expect_length(pop, 1)
   expect_length(grep("^gr4", unlist(pop)), 1)
   expect_true(all(unlist(pop) %in% unique(input2.dt$speaker)))
+  
+  params$bootstrapPopulationSize = c(gr1 = 10)
+  pop <- with_mock(
+    create_agent = mock_create_agent,
+    create_population(input2.dt, params)
+  )
+  expect_length(pop, 10)
+  expect_length(grep("^gr1", unlist(pop)), 10)
+  expect_true(all(unlist(pop) %in% unique(input2.dt$speaker)))
+  
+  
 })
 
