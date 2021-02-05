@@ -55,6 +55,26 @@ for (perceptionModels in c("singleGaussian", "GMMs")) {
     expect_equal(agent$memory[valid == TRUE, exemplar] %>% lapply(function(x) {x[2]}) %>% unlist,
                  agent$features[agent$memory$valid, P2])
   })
+  
+  test_that("apply_resampling produces the right number of tokens", {
+    params$productionBasis <- "word"
+    params$productionResampling <- "SMOTE"
+    params$productionResamplingFallback <- "label"
+    params$productionMinTokens <- 10
+    params$productionSMOTENN <- 5 
+    for (removeOriginalExemplarsAfterResampling in c(FALSE, TRUE)) {
+      agent <- create_agent(2, input1.dt, "SP2", 100, params)
+      initialN <- agent$memory[valid == TRUE, .N]
+      finalN <- 3 * initialN
+      params$removeOriginalExemplarsAfterResampling <- removeOriginalExemplarsAfterResampling
+      apply_resampling(agent, finalN, params)
+      if (removeOriginalExemplarsAfterResampling) {
+        expect_equal(agent$memory[valid == TRUE, .N], finalN - initialN)
+      } else {
+        expect_equal(agent$memory[valid == TRUE, .N], finalN)
+      }
+    }
+  })
 }
 
 input2.dt <- rbindlist(

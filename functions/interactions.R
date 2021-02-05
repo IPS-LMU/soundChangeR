@@ -148,10 +148,15 @@ apply_resampling <- function(agent, finalN, params) {
   extraN <- min(finalN, nrow(agent$memory)) - initialN
   # a list of produced tokens, all based on the initial memory
   tokens <- replicate(extraN, produce_token(agent, params), simplify = FALSE)
-  lapply(seq_along(tokens), function(i) {
-    rowToWrite <- row_to_write(agent, tokens[[i]], params)
-    write_memory(agent, tokens[[i]], rowToWrite, tokens[[i]]$label) # tokens[[i]]$memory$label 
-  })
+  if (params[["removeOriginalExemplarsAfterResampling"]]) {
+    agent$memory[, valid := FALSE]
+  }
+  invisible(
+    lapply(seq_along(tokens), function(i) {
+      rowToWrite <- row_to_write(agent, tokens[[i]], params)
+      write_memory(agent, tokens[[i]], rowToWrite, tokens[[i]]$label) # tokens[[i]]$memory$label 
+    })
+  )
 }
 
 create_interactions_log <- function(nrOfInteractions) {
