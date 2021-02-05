@@ -10,37 +10,52 @@ params <- list(
   featureExtractionMethod = "identity",
   initialMemoryResampling = FALSE,
   proportionGroupTokens = 0.0,
-  perceptionModels = "singleGaussian",
   logDir = "logDir"
 )
 
-agent <- create_agent(2, input1.dt, "SP2", 20, params)
-# expected results
 agent.initial <- data.table(word = letters[1:4], initial = rep(LETTERS[1:2], each = 2))
 agent.memory.counts <- data.table(word = c(letters[1:4], NA), label = c(rep(LETTERS[1:2], each = 2), NA), N = 4)
 
-test_that("create_agent produces expected metadata", {
-  expect_equal(agent$agentID, 2)
-  expect_equal(agent$group, "all")
-  expect_equal(agent$speaker, "SP2")
-  expect_equal(agent$initial[order(word)], agent.initial)
-})
-
-test_that("create_agent produces memory with expected item counts", {
-  expect_equal(agent$memory %>% nrow, 20)
-  expect_equal(agent$memory[valid == TRUE, .N], 16)
-  expect_equal(agent$memory[order(word), .N, by= .(word,label)], agent.memory.counts)
-})
-
-test_that("create_agent produces exemplar column features table with expected content (identity case)", {
-  expect_equal(agent$memory[valid == TRUE, exemplar] %>% lapply(length) %>% unlist %>% unique, 3)
-  expect_equal(agent$memory[valid == TRUE, exemplar] %>% lapply(function(x) {x[1]}) %>% unlist %>% sort,
-               0.1 + 17:32)
-  expect_equal(colnames(agent$features), paste0("P", 1:3))
-  expect_equal(nrow(agent$features), nrow(agent$memory))
-  expect_equal(agent$memory[valid == TRUE, exemplar] %>% lapply(function(x) {x[2]}) %>% unlist,
-               agent$features[agent$memory$valid, P2])
-})
+for (perceptionModels in c("singleGaussian", "GMMs")) {
+  params$perceptionModels <- perceptionModels
+  if (params$perceptionModels == "GMMs") {
+    params$purityRepetitions <- 5
+    params$purityThreshold <- .95
+    fm <- matrix(rnorm(3*48), ncol = 3)
+    input1.dt[, exemplar := matrix2exemplar(fm)]
+    
+  }
+  agent <- create_agent(2, input1.dt, "SP2", 20, params)
+  
+  test_that("create_agent produces expected metadata", {
+    expect_equal(agent$agentID, 2)
+    expect_equal(agent$group, "all")
+    expect_equal(agent$speaker, "SP2")
+    expect_equal(agent$initial[order(word)], agent.initial)
+  })
+  
+  test_that("create_agent produces memory with expected item counts", {
+    expect_equal(agent$memory %>% nrow, 20)
+    expect_equal(agent$memory[valid == TRUE, .N], 16)
+    if (params$perceptionModels == "singleGaussian") {
+      expect_equal(agent$memory[order(word), .N, by= .(word,label)], agent.memory.counts)
+    } else if (params$perceptionModels == "GMMs") {
+      expect_equal(agent$memory[order(word), .N, by= .(word,label)][, .(word, N)], agent.memory.counts[, .(word, N)])
+    }
+  })
+  
+  test_that("create_agent produces exemplar column features table with expected content (identity case)", {
+    expect_equal(agent$memory[valid == TRUE, exemplar] %>% lapply(length) %>% unlist %>% unique, 3)
+    if (params$perceptionModels == "singleGaussian") {
+      expect_equal(agent$memory[valid == TRUE, exemplar] %>% lapply(function(x) {x[1]}) %>% unlist %>% sort,
+                   0.1 + 17:32)
+    }
+    expect_equal(colnames(agent$features), paste0("P", 1:3))
+    expect_equal(nrow(agent$features), nrow(agent$memory))
+    expect_equal(agent$memory[valid == TRUE, exemplar] %>% lapply(function(x) {x[2]}) %>% unlist,
+                 agent$features[agent$memory$valid, P2])
+  })
+}
 
 input2.dt <- rbindlist(
   sapply(
@@ -60,7 +75,7 @@ test_that("create_population handles speaker_is_agent method correctly", {
   pop <- with_mock(
     create_agent = mock_create_agent,
     create_population(input2.dt, params)
-    )
+  )
   expect_equal(pop %>% unlist %>% sort, input2.dt$speaker %>% unique %>% sort)
 })
 
