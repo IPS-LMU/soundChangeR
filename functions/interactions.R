@@ -157,6 +157,9 @@ apply_resampling <- function(agent, finalN, params) {
       write_memory(agent, tokens[[i]], rowToWrite, tokens[[i]]$label) # tokens[[i]]$memory$label 
     })
   )
+  if (grepl("^GMM(s)?", params[["perceptionModels"]])) {
+    estimate_GMM(agent, params)
+  }
 }
 
 create_interactions_log <- function(nrOfInteractions) {
