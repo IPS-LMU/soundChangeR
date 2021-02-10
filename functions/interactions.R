@@ -382,16 +382,16 @@ produce_token <- function(agent, params) {
   }
   nrOfTimesHeard <- agent$memory$nrOfTimesHeard[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
 
-  if (grepl("^GMM(s)?", params[["perceptionModels"]])) {
-    GMM <- get_cache_value(agent, "GMM")
-    # pick a random token of producedWord
-    wordIdx <- sample(which(agent$memory$word == producedWord & agent$memory$valid == TRUE), 1)
-    features <- as.matrix(agent$features)[wordIdx, , drop = FALSE]
-    # identify the closest Gaussian component from GMM of producedLabel
-    GIdx <- which.min(compute_mahal_distances_GMM(GMM$models[[producedLabel]], features))
-    gaussParams <- get_mean_cov_from_GMM_component(GMM$models[[producedLabel]], GIdx)
-    # then extract from that Gaussian
-  } else {
+  # if (grepl("^GMM(s)?", params[["perceptionModels"]])) {
+  #   GMM <- get_cache_value(agent, "GMM")
+  #   # pick a random token of producedWord
+  #   wordIdx <- sample(which(agent$memory$word == producedWord & agent$memory$valid == TRUE), 1)
+  #   features <- as.matrix(agent$features)[wordIdx, , drop = FALSE]
+  #   # identify the closest Gaussian component from GMM of producedLabel
+  #   GIdx <- which.min(compute_mahal_distances_GMM(GMM$models[[producedLabel]], features))
+  #   gaussParams <- get_mean_cov_from_GMM_component(GMM$models[[producedLabel]], GIdx)
+  #   # then extract from that Gaussian
+  # } else {
     
     if (grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
       basisIdx <- which(agent$memory$word == producedWord & agent$memory$valid == TRUE)
@@ -416,7 +416,7 @@ produce_token <- function(agent, params) {
       }
     }
     gaussParams <- estimate_gaussian(basisTokens)
-  }
+  # }
   # generate producedToken as a list
   features <- rmvnorm(1, gaussParams$mean, gaussParams$cov)
   producedToken <- data.table(word = producedWord,
