@@ -97,7 +97,8 @@ coreABM <- function(input.df, params, logDir) {
     }
   }
   save_population(pop, extraCols = list(snapshot = 0), logDir = logDir)
-  
-  perform_interactions(pop, logDir, params)
+  if (params[["nrOfInteractions"]] > 0) {
+    perform_interactions(pop, logDir, params)
+  }
 }
 

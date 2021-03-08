@@ -284,6 +284,23 @@ check_params <- function(params, input.df) {
     params[["perceptionModels"]] <- "singleGaussian"
   }
   
+  # default behaviour of initialMemoryResampling
+  if (is.null(params[["initialMemoryResampling"]])) {
+    params[["initialMemoryResampling"]] <- FALSE
+  }
+  if (params[["initialMemoryResampling"]]) {
+    if (is.null(params[["initialMemoryResamplingFactor"]])) {
+      params[["initialMemoryResamplingFactor"]] <- 1
+    } else if (!is.numeric(params[["initialMemoryResamplingFactor"]]) |
+               params[["initialMemoryResamplingFactor"]] <= 0) {
+      runSimulation <- FALSE
+    }
+  }
+  # default behaviour of removeOriginalExemplarsAfterResampling
+  if (is.null(params[["removeOriginalExemplarsAfterResampling"]])) {
+    params[["removeOriginalExemplarsAfterResampling"]] <- FALSE
+  }
+  
   # posterior probability
   if (any(c("maxPosteriorProb", "posteriorProbThr") %in% params[["memoryIntakeStrategy"]])) {
     if (is.null(params[["posteriorProbMethod"]])) {
