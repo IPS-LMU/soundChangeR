@@ -367,14 +367,14 @@ check_params <- function(params, input.df) {
 }
 
 load_logs <- function(logName, logDir, runs, snaps) {
-  bind_rows(lapply(runs, function(run) {
-    bind_rows(lapply(snaps, function(snap) {
+  bind_rows(sapply(runs %>% as.character(), function(run) {
+    bind_rows(sapply(snaps %>% as.character(), function(snap) {
       logFile <- file.path(logDir, run, paste(logName, snap, "rds", sep = "."))
       if (file.exists(logFile)) {
         readRDS(logFile)
       }
-    }), .id = "snapshot")
-  }),  id. = "run")
+    }, simplify = F, USE.NAMES = T), .id = "snapshot")
+  }, simplify = F, USE.NAMES = T), .id = "run")
 }
 
 load_pop <- function(logDir, runs, snaps) {
