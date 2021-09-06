@@ -348,9 +348,17 @@ collapsed_incidence_matrix_ <- function(fullClusters) {
   matrix(TRUE, nrow = 1, ncol = ncol(fullClusters))
 }
 
+get_model_names <- function(agent, params) {
+  if (length(params$features) == 1) {
+    mdl <- c("E", "V")
+  } else {
+    mdl <- c("EII", "VII", "EEI", "VEI", "EVI", "VVI", "EEE", "EVE", "VEE", "EEV", "VEV", "EVV", "VVV")
+  }
+}
+
 estimate_raw_clusters <- function(agent, params) {
   Mclust(as.matrix(agent$features)[agent$memory$valid, , drop = FALSE],
-         modelNames = c("EII", "VII", "EEI", "VEI", "EVI", "VVI", "EEE", "EVE", "VEE", "EEV", "VEV", "EVV", "VVV"))
+         modelNames = get_model_names(agent, params))
 }
 
 get_full_word_clusters <- function(mclust.obj, agent, params) {
@@ -388,13 +396,13 @@ map_classes_to_incidence_matrix <- function(classification, incidenceMatrix) {
   return(aggregatedClasses)
 }
 
-reestimate_GMM <- function(rawGMM, incidenceMatrix) {
+reestimate_GMM <- function(rawGMM, incidenceMatrix, agent, params) {
   aggregatedClasses <- map_classes_to_incidence_matrix(rawGMM$classification, incidenceMatrix)
   G <- apply(incidenceMatrix, 1, sum) %>% sapply(list)
   GMM <- MclustDA(data = rawGMM$data[!is.na(aggregatedClasses) ,],
                   class = aggregatedClasses %>% na.exclude,
                   G = G,
-                  modelNames = c("EII", "VII", "EEI", "VEI", "EVI", "VVI", "EEE", "EVE", "VEE", "EEV", "VEV", "EVV", "VVV"))
+                  modelNames = get_model_names(agent, params))
   # MclustDA bug: when only one class, G is ignored and set to 1.
   return(GMM)
 }
@@ -419,7 +427,7 @@ estimate_GMM <- function(agent, params) {
     write_log(paste("excludedTokenIdx", excludedTokenIdx), agent, params)
   }
   tryCatch({
-  GMM <- reestimate_GMM(rawGMM, reducedWordClustersIncidenceMatrix)
+  GMM <- reestimate_GMM(rawGMM, reducedWordClustersIncidenceMatrix, agent, params)
   }, error = function(c) {
     write_log(paste(conditionMessage(c), conditionCall(c), sep = "\n"), agent, params)
     dump_obj(rawGMM, "rawGMM", agent, params)
