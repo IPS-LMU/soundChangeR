@@ -1,0 +1,46 @@
+perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo, params) {
+
+  prodNr <- 1
+  percNr <- 1
+
+  while (prodNr == percNr) {
+    if (is.null(params[["interactionPartners"]]) || params[["interactionPartners"]] == "random") {
+      prodNr <- sample(groupsInfo$agentID, 1, prob = params[["speakerProb"]])
+      percNr <- sample(groupsInfo$agentID, 1, prob = params[["listenerProb"]])
+
+    } else if (params[["interactionPartners"]] == "withinGroups") {
+      randomGroup <- sample(unique(groupsInfo$group), 1)
+      prodNr <- sample(groupsInfo$agentID[groupsInfo$group == randomGroup], 1,
+                       prob = params[["speakerProb"]][groupsInfo$group == randomGroup])
+      percNr <- sample(groupsInfo$agentID[groupsInfo$group == randomGroup], 1,
+                       prob = params[["listenerProb"]][groupsInfo$group == randomGroup])
+
+    } else if (params[["interactionPartners"]] == "betweenGroups") {
+      randomGroups <- sample(unique(groupsInfo$group), 2)
+      randomPercGroup <- randomGroups[1]
+      randomProdGroup <- randomGroups[2]
+      prodNr <- sample(groupsInfo$agentID[groupsInfo$group == randomProdGroup], 1,
+                       prob = params[["speakerProb"]][groupsInfo$group == randomProdGroup])
+      percNr <- sample(groupsInfo$agentID[groupsInfo$group == randomPercGroup], 1,
+                       prob = params[["listenerProb"]][groupsInfo$group == randomPercGroup])
+
+    } else if (params[["interactionPartners"]] == "selfTalk") {
+      prodNr <- sample(groupsInfo$agentID, 1, prob = params[["speakerProb"]])
+      percNr <- 0
+    }
+  }
+
+  if (params[["interactionPartners"]] == "selfTalk") {
+    percNr <- prodNr
+  }
+
+  producer <- pop[[prodNr]]
+  perceiver <- pop[[percNr]]
+
+  pt <- produce_token(producer, params)
+
+  perceive_token(perceiver, pt, interactionsLog, nrSim, params, isNotOwnToken = TRUE)
+  if(params[["rememberOwnTokens"]]) {
+    perceive_token(producer, pt, interactionsLog, nrSim, params, isNotOwnToken = FALSE)
+  }
+}
