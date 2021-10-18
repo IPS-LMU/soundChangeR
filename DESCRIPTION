@@ -1,12 +1,35 @@
 Package: soundChangeR
 Title: Agent-Based Model of Sound Change
 Version: 0.0.0.9000
-Authors@R: 
-    person("Johanna", "Cronenberg", , "johanna.cronenberg@web.de", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+Authors@R: c(
+    person("Johanna", "Cronenberg", , "johanna.cronenberg@phonetik.uni-muenchen.de", role = c("aut", "cre")),
+    person("Michele", "Gubian", , "m.gubian@phonetik.uni-muenchen.de", role = c("aut", "cre")),
+    person("Jonathan", "Harrington", , "jmh@phonetik.uni-muenchen.de", role = c("ctb")),
+    person("Florian", "Schiel", , "schiel@phonetik.uni-muenchen.de", role = c("ctb"))
+    )
 Description: This package provides an implementation of an agent-based model (ABM) of sound change. It supports research conducted at the Institute of Phonetics and Speech Processing (IPS) at the University of Munich. 
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
+Imports: 
+    abind,
+    cluster,
+    data.table,
+    dplyr,
+    dtt,
+    emuR,
+    FNN,
+    Hmisc,
+    magrittr,
+    MASS,
+    matrixcalc,
+    mclust,
+    mvtnorm,
+    NMF,
+    parallel,
+    purrr,
+    rlist,
+    smotefamily,
+    tools
