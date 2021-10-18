@@ -1,3 +1,3 @@
-collapsed_incidence_matrix_ <- function(fullClusters) {
-  matrix(TRUE, nrow = 1, ncol = ncol(fullClusters))
+collapsed_incidence_matrix <- function(fullClusters) {
+  base::matrix(TRUE, nrow = 1, ncol = base::ncol(fullClusters))
 }

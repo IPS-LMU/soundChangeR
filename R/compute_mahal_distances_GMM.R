@@ -1,11 +1,12 @@
 compute_mahal_distances_GMM <- function(GMM, features) {
+  
   if (GMM$d == 1) {
-    map2(GMM$parameters$mean,
-         GMM$parameters$variance$sigmasq,
-         ~ mahalanobis(features, .x, .y, tol = 1e-20)) %>% unlist
+    purrr::map2(GMM$parameters$mean,
+                GMM$parameters$variance$sigmasq,
+                ~ stats::mahalanobis(features, .x, .y, tol = 1e-20)) %>% base::unlist()
   } else {
-    map2(lapply(1:GMM$G, function(g) {GMM$parameters$mean[,g] %>% t}),
-         lapply(1:GMM$G, function(g) {GMM$parameters$variance$sigma[,,g] %>% water_filling}),
-         ~ mahalanobis(features, .x, .y)) %>% unlist
+    purrr::map2(base::lapply(1:GMM$G, function(g) {GMM$parameters$mean[,g] %>% base::t()}),
+                base::lapply(1:GMM$G, function(g) {GMM$parameters$variance$sigma[,,g] %>% water_filling()}),
+                ~ stats::mahalanobis(features, .x, .y)) %>% base::unlist()
   }
 }

@@ -1,4 +1,4 @@
 assign_words_to_labels <- function(wordClusters) {
-  data.table(word = wordClusters %>% rownames,
-             label = wordClusters %>% apply(1, which.max) %>% factor)
+  data.table::data.table(word = wordClusters %>% base::rownames,
+                         label = wordClusters %>% base::apply(1, base::which.max) %>% base::factor)
 }

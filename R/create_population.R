@@ -1,53 +1,53 @@
 create_population <- function(input.df, params) {
 
-  if (!("createPopulationMethod" %in% names(params)) || is.null(params[["createPopulationMethod"]]) ) {
+  if (!("createPopulationMethod" %in% base::names(params)) || base::is.null(params[["createPopulationMethod"]])) {
     method <- "speaker_is_agent"
   } else {
     method <- params[["createPopulationMethod"]]
   }
 
-  setDT(input.df)
-  sortedSpeakers <- input.df$speaker %>% unique %>% sort
+  data.table::setDT(input.df)
+  sortedSpeakers <- input.df$speaker %>% base::unique() %>% base::sort()
 
   if (method == "speaker_is_agent") {
-    nrOfAgents <- length(sortedSpeakers)
+    nrOfAgents <- base::length(sortedSpeakers)
   } else if (method == "bootstrap") {
-    if (is.null(names(params[["bootstrapPopulationSize"]]))) {
+    if (base::is.null(base::names(params[["bootstrapPopulationSize"]]))) {
       nrOfAgents <- params[["bootstrapPopulationSize"]]
     } else {
-      nrOfAgents <- sum(params[["bootstrapPopulationSize"]])
-      agentGroups <- cut(seq_len(nrOfAgents),
-                         breaks = c(0,cumsum(params[["bootstrapPopulationSize"]])),
-                         labels = names(params[["bootstrapPopulationSize"]])
+      nrOfAgents <- base::sum(params[["bootstrapPopulationSize"]])
+      agentGroups <- base::cut(base::seq_len(nrOfAgents),
+                               breaks = base::c(0, base::cumsum(params[["bootstrapPopulationSize"]])),
+                               labels = base::names(params[["bootstrapPopulationSize"]])
       )
-      speakerGroups <- input.df[, speaker, by = group] %>% unique
+      speakerGroups <- input.df[, speaker, by = group] %>% base::unique()
     }
   } else {
     stop(paste("create_population: unrecognised createPopulationMethod:", method))
   }
 
-  initialMemorySize <- input.df[, .N, by = speaker][, max(N)]
+  initialMemorySize <- input.df[, .N, by = speaker][, base::max(N)]
   if (params[["initialMemoryResampling"]]) {
     initialMemorySize <- initialMemorySize * params[["initialMemoryResamplingFactor"]]
   }
 
-  memoryBuffer <- ceiling(params[["nrOfInteractions"]]/nrOfAgents + 10 * sqrt(params[["nrOfInteractions"]]/nrOfAgents))
+  memoryBuffer <- base::ceiling(params[["nrOfInteractions"]]/nrOfAgents + 10 * base::sqrt(params[["nrOfInteractions"]]/nrOfAgents))
   if(params[["rememberOwnTokens"]]) {
     memoryBuffer <- memoryBuffer * 2
   }
 
   maxMemorySize <- initialMemorySize + memoryBuffer
 
-  population <- list()
+  population <- base::list()
 
-  for (id in seq_len(nrOfAgents)) {
+  for (id in base::seq_len(nrOfAgents)) {
     if (method == "speaker_is_agent") {
       selectedSpeaker <- sortedSpeakers[id]
     } else if (method == "bootstrap") {
-      if (is.null(names(params[["bootstrapPopulationSize"]]))) {
-        selectedSpeaker <- sample(sortedSpeakers, 1)
+      if (base::is.null(base::names(params[["bootstrapPopulationSize"]]))) {
+        selectedSpeaker <- base::sample(sortedSpeakers, 1)
       } else {
-        selectedSpeaker <- speakerGroups[group == agentGroups[id], sample(speaker, 1)]
+        selectedSpeaker <- speakerGroups[group == agentGroups[id], base::sample(speaker, 1)]
       }
     }
     population[[id]] <- create_agent(id, input.df, selectedSpeaker, maxMemorySize, params)

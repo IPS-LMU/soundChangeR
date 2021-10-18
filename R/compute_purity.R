@@ -1,6 +1,7 @@
-compute_purity <- function(clustersMat, summaryFunc = min) {
-  whichMax <- clustersMat %>% apply(1, which.max)
-  sapply(seq_len(ncol(clustersMat)), function(j) {
-    sum(clustersMat[whichMax == j, j]) / sum(clustersMat[, j])
-  }) %>% summaryFunc
+compute_purity <- function(clustersMat, summaryFunc = base::min) {
+  
+  whichMax <- clustersMat %>% base::apply(1, base::which.max)
+  base::sapply(base::seq_len(base::ncol(clustersMat)), function(j) {
+    base::sum(clustersMat[whichMax == j, j]) / base::sum(clustersMat[, j])
+  }) %>% summaryFunc()
 }

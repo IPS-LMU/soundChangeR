@@ -4,20 +4,20 @@ apply_resampling <- function(agent, finalN, params) {
   if (initialN >= finalN)
     return()
 
-  extraN <- min(finalN, nrow(agent$memory)) - initialN
+  extraN <- base::min(finalN, nrow(agent$memory)) - initialN
 
-  tokens <- replicate(extraN, produce_token(agent, params), simplify = FALSE)
+  tokens <- base::replicate(extraN, produce_token(agent, params), simplify = FALSE)
   if (params[["removeOriginalExemplarsAfterResampling"]]) {
     agent$memory[, valid := FALSE]
   }
 
-  invisible(
-    lapply(seq_along(tokens), function(i) {
+  base::invisible(
+    base::lapply(base::seq_along(tokens), function(i) {
       rowToWrite <- row_to_write(agent, tokens[[i]], params)
-      write_memory(agent, tokens[[i]], rowToWrite, tokens[[i]]$label) # tokens[[i]]$memory$label
+      write_memory(agent, tokens[[i]], rowToWrite, tokens[[i]]$label)
     })
   )
-  if (grepl("^GMM(s)?", params[["perceptionModels"]])) {
+  if (base::grepl("^GMM(s)?", params[["perceptionModels"]])) {
     estimate_GMM(agent, params)
   }
 }
