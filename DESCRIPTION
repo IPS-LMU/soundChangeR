@@ -1,0 +1,12 @@
+Package: soundChangeR
+Title: Agent-Based Model of Sound Change
+Version: 0.0.0.9000
+Authors@R: 
+    person("Johanna", "Cronenberg", , "johanna.cronenberg@web.de", role = c("aut", "cre"),
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: This package provides an implementation of an agent-based model (ABM) of sound change. It supports research conducted at the Institute of Phonetics and Speech Processing (IPS) at the University of Munich. 
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
