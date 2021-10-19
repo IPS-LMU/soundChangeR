@@ -1,4 +1,5 @@
 set_feature_names <- function(input.df, cols) {
-  stopifnot(all(cols %in% colnames(input.df)))
-  input.df %>% setnames(cols, paste0("P", seq_along(cols)))
+  
+  base::stopifnot(base::all(cols %in% base::colnames(input.df)))
+  input.df %>% data.table::setnames(cols, base::paste0("P", base::seq_along(cols)))
 }

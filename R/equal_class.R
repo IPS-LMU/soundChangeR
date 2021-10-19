@@ -1,14 +1,14 @@
 equal_class <- function(orig, derived) {
 
-  tab <- t(table(orig, derived))
-  namesOfOrig <- colnames(tab)
-  namesOfDerived <- rownames(tab)
-  bintab <- matrix(FALSE, nrow = nrow(tab), ncol = ncol(tab))
-  for (j in 1:ncol(tab)) {
+  tab <- base::t(base::table(orig, derived))
+  namesOfOrig <- base::colnames(tab)
+  namesOfDerived <- base::rownames(tab)
+  bintab <- base::matrix(FALSE, nrow = base::nrow(tab), ncol = base::ncol(tab))
+  for (j in 1:base::ncol(tab)) {
     bintab[,j] <- tab[,j] != 0
   }
-  for (j in 1:nrow(bintab)) {
-    lab.equivalent <- paste(namesOfOrig[bintab[j, ]], collapse="+")
+  for (j in 1:base::nrow(bintab)) {
+    lab.equivalent <- base::paste(namesOfOrig[bintab[j, ]], collapse = "+")
     derived[derived == namesOfDerived[j]] <- lab.equivalent
   }
   return(derived)

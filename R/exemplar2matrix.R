@@ -1,3 +1,3 @@
 exemplar2matrix <- function(exemplars, ...) {
-  do.call(rbind, exemplars)
+  base::do.call(base::rbind, exemplars)
 }

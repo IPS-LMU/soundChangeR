@@ -1,5 +1,6 @@
 estimate_reduced_clusters_incidence_matrix <- function(fullClusters, purityRepetitions, purityThreshold) {
-  if (ncol(fullClusters) == 1) {
+  
+  if (base::ncol(fullClusters) == 1) {
     return(collapsed_incidence_matrix(fullClusters))
   }
   purityMat <- compute_purity_matrix(fullClusters, purityRepetitions)
@@ -8,6 +9,6 @@ estimate_reduced_clusters_incidence_matrix <- function(fullClusters, purityRepet
     return(collapsed_incidence_matrix(fullClusters))
   }
   while({incidenceMatrix <- reduced_clusters_incidence_matrix(fullClusters, nClusters);
-  get_reduced_clusters(fullClusters, incidenceMatrix) %>% compute_purity %>% is.na}) {}
+  get_reduced_clusters(fullClusters, incidenceMatrix) %>% compute_purity() %>% base::is.na()}) {}
   return(incidenceMatrix)
 }

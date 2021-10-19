@@ -1,8 +1,8 @@
 set_completed <- function(simulationName_, rootLogDir) {
 
-  regFile <- file.path(rootLogDir, SIM_REG_FILENAME)
-  reg <- list.load(regFile)
-  i <- reg %>% list.findi(simulationName == simulationName_)
+  regFile <- base::file.path(rootLogDir, SIM_REG_FILENAME)
+  reg <- rlist::list.load(regFile)
+  i <- reg %>% rlist::list.findi(simulationName == simulationName_)
   reg[[i]]["completed"] <- TRUE
-  list.save(reg, regFile)
+  rlist::list.save(reg, regFile)
 }

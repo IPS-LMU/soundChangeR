@@ -1,43 +1,42 @@
 knearest_fallback <- function(points, extendedIndices, targetIndices, K) {
 
-  if (any(c(targetIndices, extendedIndices) < 0)) {
+  if (base::any(base::c(targetIndices, extendedIndices) < 0)) {
     stop("knearest_fallback: negative index notation not supported for targetIndices and extendedIndices")
   }
-  if (nrow(points) == 0) {
+  if (base::nrow(points) == 0) {
     return (NULL)
   }
   if (K <= 0) {
-    stop(paste("knearest_fallback: invalid number of nearest neighbours requested: K =", K))
+    stop(base::paste("knearest_fallback: invalid number of nearest neighbours requested: K =", K))
   }
 
-  if (!all(extendedIndices %in% seq_len(nrow(points)))) {
-
+  if (!base::all(extendedIndices %in% base::seq_len(base::nrow(points)))) {
     stop("knearest_fallback: extendedIndices out of bound")
   }
-  if (length(targetIndices) <= 0) {
+  if (base::length(targetIndices) <= 0) {
     stop("knearest_fallback: empty targetIndices")
   }
-  if (is.null(extendedIndices) | length(extendedIndices) == 0) {
+  if (base::is.null(extendedIndices) | base::length(extendedIndices) == 0) {
     return(targetIndices)
   }
-  if (!all(targetIndices %in% extendedIndices)) {
+  if (!base::all(targetIndices %in% extendedIndices)) {
     stop("knearest_fallback: targetIndices out of bound")
   }
-  if (K + 1 > length(extendedIndices)) {
+  if (K + 1 > base::length(extendedIndices)) {
     return(extendedIndices)
   }
 
-  nFallback <- K + 1 - length(targetIndices)
+  nFallback <- K + 1 - base::length(targetIndices)
 
   if (nFallback <= 0) {
     return(targetIndices)
   }
 
-  fallbackIndices <- knnx.index(points[extendedIndices, , drop=FALSE], points[targetIndices, , drop=FALSE], K + 1) %>%
-    as.vector %>%
+  fallbackIndices <- FNN::knnx.index(points[extendedIndices, , drop = FALSE], points[targetIndices, , drop = FALSE], K + 1) %>%
+    base::as.vector() %>%
     extendedIndices[.] %>%
-    setdiff(targetIndices) %>%
-    sample(nFallback)
+    base::setdiff(targetIndices) %>%
+    base::sample(nFallback)
 
-  return(c(targetIndices, fallbackIndices))
+  return(base::c(targetIndices, fallbackIndices))
 }

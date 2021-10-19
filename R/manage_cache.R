@@ -3,11 +3,11 @@ is_cache_valid <- function(agent, cacheName) {
 }
 
 update_cache <- function(agent, cacheName, method, ...) {
-  agent$cache[name == cacheName, `:=`(value = list(method(agent, ...)), valid = TRUE)]
+  agent$cache[name == cacheName, `:=`(value = base::list(method(agent, ...)), valid = TRUE)]
 }
 
 set_cache_value <- function(agent, cacheName, cacheValue) {
-  agent$cache[name == cacheName, `:=`(value = list(cacheValue), valid = TRUE)]
+  agent$cache[name == cacheName, `:=`(value = base::list(cacheValue), valid = TRUE)]
 }
 
 get_cache_value <- function(agent, cacheName) {

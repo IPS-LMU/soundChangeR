@@ -1,7 +1,8 @@
 map_classes_to_incidence_matrix <- function(classification, incidenceMatrix) {
-  incidenceVector <- apply(incidenceMatrix, 2, which) %>%
-    sapply(function(x) {if(length(x) == 0) NA else x})
+  
+  incidenceVector <- base::apply(incidenceMatrix, 2, base::which()) %>%
+    base::sapply(function(x) {if(base::length(x) == 0) NA else x})
   aggregatedClasses <- incidenceVector[classification]
-  names(aggregatedClasses) <- NULL
+  base::names(aggregatedClasses) <- NULL
   return(aggregatedClasses)
 }

@@ -4,28 +4,28 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo, 
   percNr <- 1
 
   while (prodNr == percNr) {
-    if (is.null(params[["interactionPartners"]]) || params[["interactionPartners"]] == "random") {
-      prodNr <- sample(groupsInfo$agentID, 1, prob = params[["speakerProb"]])
-      percNr <- sample(groupsInfo$agentID, 1, prob = params[["listenerProb"]])
+    if (base::is.null(params[["interactionPartners"]]) || params[["interactionPartners"]] == "random") {
+      prodNr <- base::sample(groupsInfo$agentID, 1, prob = params[["speakerProb"]])
+      percNr <- base::sample(groupsInfo$agentID, 1, prob = params[["listenerProb"]])
 
     } else if (params[["interactionPartners"]] == "withinGroups") {
-      randomGroup <- sample(unique(groupsInfo$group), 1)
-      prodNr <- sample(groupsInfo$agentID[groupsInfo$group == randomGroup], 1,
-                       prob = params[["speakerProb"]][groupsInfo$group == randomGroup])
-      percNr <- sample(groupsInfo$agentID[groupsInfo$group == randomGroup], 1,
-                       prob = params[["listenerProb"]][groupsInfo$group == randomGroup])
+      randomGroup <- base::sample(base::unique(groupsInfo$group), 1)
+      prodNr <- base::sample(groupsInfo$agentID[groupsInfo$group == randomGroup], 1,
+                             prob = params[["speakerProb"]][groupsInfo$group == randomGroup])
+      percNr <- base::sample(groupsInfo$agentID[groupsInfo$group == randomGroup], 1,
+                             prob = params[["listenerProb"]][groupsInfo$group == randomGroup])
 
     } else if (params[["interactionPartners"]] == "betweenGroups") {
-      randomGroups <- sample(unique(groupsInfo$group), 2)
+      randomGroups <- base::sample(base::unique(groupsInfo$group), 2)
       randomPercGroup <- randomGroups[1]
       randomProdGroup <- randomGroups[2]
-      prodNr <- sample(groupsInfo$agentID[groupsInfo$group == randomProdGroup], 1,
-                       prob = params[["speakerProb"]][groupsInfo$group == randomProdGroup])
-      percNr <- sample(groupsInfo$agentID[groupsInfo$group == randomPercGroup], 1,
-                       prob = params[["listenerProb"]][groupsInfo$group == randomPercGroup])
+      prodNr <- base::sample(groupsInfo$agentID[groupsInfo$group == randomProdGroup], 1,
+                             prob = params[["speakerProb"]][groupsInfo$group == randomProdGroup])
+      percNr <- base::sample(groupsInfo$agentID[groupsInfo$group == randomPercGroup], 1,
+                             prob = params[["listenerProb"]][groupsInfo$group == randomPercGroup])
 
     } else if (params[["interactionPartners"]] == "selfTalk") {
-      prodNr <- sample(groupsInfo$agentID, 1, prob = params[["speakerProb"]])
+      prodNr <- base::sample(groupsInfo$agentID, 1, prob = params[["speakerProb"]])
       percNr <- 0
     }
   }

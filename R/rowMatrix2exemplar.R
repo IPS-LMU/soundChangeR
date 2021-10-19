@@ -1,3 +1,4 @@
 rowMatrix2exemplar <- function(features, ...) {
-  list(as.numeric(features))
+  
+  base::list(base::as.numeric(features))
 }

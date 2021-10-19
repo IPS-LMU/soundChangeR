@@ -1,3 +1,3 @@
 generate_simulation_name <- function(prefix = "ABM") {
-  paste0(prefix, format(Sys.time(), "%Y%m%d%H%M%S"))
+  base::paste0(prefix, base::format(base::Sys.time(), "%Y%m%d%H%M%S"))
 }
