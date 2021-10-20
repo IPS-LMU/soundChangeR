@@ -1,4 +1,5 @@
 compute_purity_matrix <- function(fullClusters, reps) {
+
   purity <- base::matrix(0, nrow = base::ncol(fullClusters)-1, ncol = reps)
   for (r in 2:base::ncol(fullClusters)) {
     for (rr in 1:reps) {

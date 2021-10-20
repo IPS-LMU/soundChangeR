@@ -35,6 +35,7 @@ check_params <- function(params, input.df) {
     params[["perceptionOVNN"]] <- params[["perceptionOVNN"]] + 1
   }
 
+  methodReg <- get_method_register()
   if (!"featureExtractionMethod" %in% base::names(params)) {
     params[["featureExtractionMethod"]] <- "identity"
   }

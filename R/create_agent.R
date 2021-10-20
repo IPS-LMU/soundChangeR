@@ -6,6 +6,8 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$group <- input.df[speaker == selectedSpeaker, group][1]
   agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
   agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% base::unique()
+  
+  methodReg <- get_method_register()
   cacheNames <- base::c("nFeatures", "qda", "GMM", "nAccepted", "nForgotten", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!base::is.na(.)])
   agent$cache <- data.table::data.table(name = cacheNames, value = list(), valid = FALSE)
   set_cache_value(agent, "nAccepted", 0)

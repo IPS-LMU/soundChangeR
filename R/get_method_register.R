@@ -1,5 +1,5 @@
-.onLoad <- function(libname, pkgname) {
-  options(methodReg = data.table::rbindlist(base::list(
+get_method_register <- function() {
+  methodReg <- data.table::rbindlist(base::list(
     data.table::data.table(
       method = "identity",
       compute_features = exemplar2matrix,
@@ -13,10 +13,6 @@
       )),
       cacheEntries = base::list(NA_character_)
     )
-  )) %>% data.table::setkey(method),
-  SIM_REG_FILENAME = "simulations_register.rds",
-  PARAMS_FILENAME = "params.yaml"
-  )
+  )) %>% data.table::setkey(method)
+  return(methodReg)
 }
-
-

@@ -67,7 +67,7 @@ listenerProb: NULL
 
 runMode: single
 multipleABMRuns: 4
-nrOfSnapshots: 50
+nrOfSnapshots: 5
 interactionsPerSnapshot: 500
 
 ##### Other options

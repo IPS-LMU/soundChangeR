@@ -1,6 +1,6 @@
 filter_simulations <- function(rootLogDir, ..., condList = NULL) {
 
-  regFile <- base::file.path(rootLogDir, SIM_REG_FILENAME)
+  regFile <- base::file.path(rootLogDir, "simulations_register.rds")
   reg <- rlist::list.load(regFile)
   if (!base::is.null(condList)) {
     matching <- base::sapply(reg, function(r) {

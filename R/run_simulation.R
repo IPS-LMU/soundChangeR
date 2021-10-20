@@ -1,6 +1,13 @@
 run_simulation <- function(paramsFile = "data/params.yaml") {
-  
-  params <- list.load(paramsFile)
+  #' Title
+  #'
+  #' @param paramsFile 
+  #'
+  #' @return
+  #' @export
+  #'
+  #' @examples
+  params <- rlist::list.load(paramsFile)
   
   base::dir.create(params[["rootLogDir"]], showWarnings = FALSE, recursive = TRUE)
   create_simulation_register(params[["rootLogDir"]])
