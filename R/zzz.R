@@ -13,7 +13,10 @@
       )),
       cacheEntries = base::list(NA_character_)
     )
-  )) %>% data.table::setkey(method))
+  )) %>% data.table::setkey(method),
+  SIM_REG_FILENAME = "simulations_register.rds",
+  PARAMS_FILENAME = "params.yaml"
+  )
 }
 
 

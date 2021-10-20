@@ -42,10 +42,6 @@ check_params <- function(params, input.df) {
     runSimulation <- FALSE
   }
 
-  if (params[["splitAndMerge"]] && !base::any(base::c("t.test", "bic") %in% params[["splitMergeMethod"]])) {
-    params[["splitMergeMethod"]] <- "bic"
-  }
-
   if (params[["proportionGroupTokens"]] != 0) {
     groupData <- input.df %>% 
       dplyr::group_by(group) %>% 
@@ -61,12 +57,9 @@ check_params <- function(params, input.df) {
     }
   }
 
-  if (!params[["splitAndMerge"]] && params[["computeGMMsInterval"]] != params[["computeFeaturesInterval"]]) {
+  if (params[["computeGMMsInterval"]] != params[["computeFeaturesInterval"]]) {
     params[["computeGMMsInterval"]] <- params[["computeFeaturesInterval"]]
   }
-  if (params[["splitAndMerge"]] && params[["splitAndMergeInterval"]] != params[["computeFeaturesInterval"]]) {
-    params[["splitAndMergeInterval"]] <- params[["computeFeaturesInterval"]]
-  }
   
-  return(base::list(params, runSimulation))
+  return(base::list(params = params, runSimulation = runSimulation))
 }
