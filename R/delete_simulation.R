@@ -1,3 +1,11 @@
+#' Delete simulation only from simulation register
+#'
+#' @param simulationName_ name of the simulation
+#' @param rootLogDir logging directory
+#'
+#' @export
+#'
+#' @examples delete_simulation("ABM20211022152431", "./logDir")
 delete_simulation <- function(simulationName_, rootLogDir) {
 
   regFile <- base::file.path(rootLogDir, "simulations_register.rds")

@@ -16,5 +16,5 @@ write_memory <- function(agent, producedToken, rowToWrite, label_) {
   )]
   agent$memory[agent$memory$word == producedToken$word & agent$memory$valid == TRUE,
                nrOfTimesHeard := updatedNrOfTimesHeard]
-  write_features(agent, exemplar2features(producedToken$exemplar, agent, params), rowToWrite)
+  # write_features(agent, exemplar2features(producedToken$exemplar, agent, params), rowToWrite)
 }

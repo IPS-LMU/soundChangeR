@@ -1,12 +1,15 @@
 run_simulation <- function(paramsFile = "data/params.yaml") {
-  #' Title
+  #' Start the simulation
   #'
-  #' @param paramsFile 
+  #' @param paramsFile path to the params.yaml file, default is "data/params.yaml"
   #'
-  #' @return
   #' @export
+  #' @importFrom magrittr %>%
+  #' @importFrom data.table :=
+  #' @importFrom data.table %like%
+  #' @import mclust
   #'
-  #' @examples
+  #' @examples run_simulation()
   params <- rlist::list.load(paramsFile)
   
   base::dir.create(params[["rootLogDir"]], showWarnings = FALSE, recursive = TRUE)

@@ -1,3 +1,13 @@
+#' Find simulations based on their parameters
+#'
+#' @param rootLogDir logging directory
+#' @param ... 
+#' @param condList list of parameter names and values
+#'
+#' @return names of simulations that fit the given parameters
+#' @export
+#'
+#' @examples filter_simulations("./logDir", condList = "forgettingRate = 1")
 filter_simulations <- function(rootLogDir, ..., condList = NULL) {
 
   regFile <- base::file.path(rootLogDir, "simulations_register.rds")

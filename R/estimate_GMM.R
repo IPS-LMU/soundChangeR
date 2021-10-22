@@ -6,7 +6,6 @@ estimate_GMM <- function(agent, params) {
   reducedWordClustersIncidenceMatrix <- estimate_reduced_clusters_incidence_matrix(
     fullWordClusters, params[["purityRepetitions"]], params[["purityThreshold"]])
   reducedWordClusters <- get_reduced_clusters(fullWordClusters, reducedWordClustersIncidenceMatrix)
-  
   excludedClassIdx <- reducedWordClusters %>% base::apply(2, base::sum) %>% `<`(rawGMM$d) %>% base::which()
   if (base::length(excludedClassIdx) > 0) {
     write_log(base::paste("excludedClassIdx", excludedClassIdx), agent, params)

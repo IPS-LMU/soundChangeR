@@ -9,16 +9,16 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   
   methodReg <- get_method_register()
   cacheNames <- base::c("nFeatures", "qda", "GMM", "nAccepted", "nForgotten", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!base::is.na(.)])
-  agent$cache <- data.table::data.table(name = cacheNames, value = list(), valid = FALSE)
+  agent$cache <- data.table::data.table(name = cacheNames, value = base::list(), valid = FALSE)
   set_cache_value(agent, "nAccepted", 0)
   set_cache_value(agent, "nForgotten", 0)
 
-  agent$memory <- data.table::data.table(word = character(),
-                                         label = character(),
-                                         valid = logical(),
-                                         nrOfTimesHeard = integer(),
-                                         producerID = integer(),
-                                         timeStamp = integer()
+  agent$memory <- data.table::data.table(word = base::character(),
+                                         label = base::character(),
+                                         valid = base::logical(),
+                                         nrOfTimesHeard = base::integer(),
+                                         producerID = base::integer(),
+                                         timeStamp = base::integer()
   ) %>%
     .[1:maxMemorySize] %>%
     .[, valid := FALSE] %>%

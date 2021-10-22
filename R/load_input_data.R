@@ -1,3 +1,10 @@
+#' Load input data as data.table
+#'
+#' @param params list of params
+#'
+#' @export
+#'
+#' @examples load_input_data(rlist::list.load("./data/params.yaml"))
 load_input_data <- function(params) {
   
   input.df <- base::suppressWarnings(data.table::fread(params[["inputDataFile"]], stringsAsFactors = F))

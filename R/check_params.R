@@ -1,3 +1,12 @@
+#' Check parameters for validity. Is automatically run during simulation.
+#'
+#' @param params list of parameters
+#' @param input.df input data frame
+#'
+#' @return list of checked parameters and boolean on whether or not to run the simulation
+#' @export
+#'
+#' @examples check_params(params, input.df)
 check_params <- function(params, input.df) {
 
   runSimulation <- TRUE
