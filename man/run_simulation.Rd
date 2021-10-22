@@ -2,16 +2,16 @@
 % Please edit documentation in R/run_simulation.R
 \name{run_simulation}
 \alias{run_simulation}
-\title{Title}
+\title{Start the simulation}
 \usage{
 run_simulation(paramsFile = "data/params.yaml")
 }
 \arguments{
-\item{paramsFile}{}
-}
-\value{
-
+\item{paramsFile}{path to the params.yaml file, default is "data/params.yaml"}
 }
 \description{
-Title
+Start the simulation
+}
+\examples{
+run_simulation()
 }
