@@ -34,7 +34,7 @@ run_simulation <- function(paramsFile = "data/params.yaml") {
       pop <- create_population(input.df = input.df, params = params)
       save_population(pop, extraCols = base::list(snapshot = 0), logDir = params[["logDir"]])
       if (params[["nrOfInteractions"]] > 0) {
-        perform_interactions(pop, logDir, params)
+        perform_interactions(pop, params[["logDir"]], params)
       }
     } else if (params[["runMode"]] == "multiple") {
       numCores <- parallel::detectCores() - 1
@@ -53,7 +53,7 @@ run_simulation <- function(paramsFile = "data/params.yaml") {
         pop <- create_population(input.df = input.df, params = params)
         save_population(pop, extraCols = base::list(snapshot = 0), logDir = params[["logDir"]])
         if (params[["nrOfInteractions"]] > 0) {
-          perform_interactions(pop, logDir, params)
+          perform_interactions(pop, params[["logDir"]], params)
         }
       })
       parallel::stopCluster(cl)
