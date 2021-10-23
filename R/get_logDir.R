@@ -1,4 +1,4 @@
-get_logDir <- function(agent, params) {
+get_logDir <- function(params) {
   
   logDir <- if(base::is.null(params[["logDir"]])) {
     base::file.path(params[["rootLogDir"]], params[["simulationName"]])

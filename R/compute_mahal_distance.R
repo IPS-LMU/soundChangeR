@@ -14,8 +14,8 @@ compute_mahal_distance <- function(agent, features, label, method = NULL) {
       compute_mahal_distances_GMM(GMM$models[[label]], features) %>% base::min()
     }, error = function(c) {
       write_log(base::paste("compute_mahal_distances_GMM", "label", label, conditionMessage(c), 
-                            base::paste(conditionCall(c), collapse = " "), sep = "\n"), agent, params)
-      dump_obj(GMM, "GMM", agent, params)
+                            base::paste(conditionCall(c), collapse = " "), sep = "\n"), params)
+      dump_obj(GMM, "GMM", params)
       stop(c)
     })
   }
