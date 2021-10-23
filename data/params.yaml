@@ -20,13 +20,6 @@ bootstrapPopulationSize: 50
 initialMemoryResampling: FALSE
 initialMemoryResamplingFactor: 2.0
 removeOriginalExemplarsAfterResampling: FALSE
-proportionGroupTokens: 0.0
-rememberOwnTokens: FALSE
-
-##### Feature Extraction
-
-featureExtractionMethod: identity
-computeFeaturesInterval: 1000
 
 ##### Production
 
@@ -48,7 +41,7 @@ perceptionOOVNN: 5
 
 ##### GMM-based phonology
 
-computeGMMsInterval: 10
+computeGMMsInterval: 100
 purityRepetitions: 5
 purityThreshold: 0.75
 
@@ -65,10 +58,10 @@ listenerProb: NULL
 
 ##### Runs
 
-runMode: single
-multipleABMRuns: 4
+runMode: multiple
+multipleABMRuns: 3
 nrOfSnapshots: 5
-interactionsPerSnapshot: 500
+interactionsPerSnapshot: 100
 
 ##### Other options
 

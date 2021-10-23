@@ -26,9 +26,6 @@ create_population <- function(input.df, params) {
   }
 
   memoryBuffer <- base::ceiling(params[["nrOfInteractions"]]/nrOfAgents + 10 * base::sqrt(params[["nrOfInteractions"]]/nrOfAgents))
-  if(params[["rememberOwnTokens"]]) {
-    memoryBuffer <- memoryBuffer * 2
-  }
 
   maxMemorySize <- initialMemorySize + memoryBuffer
 

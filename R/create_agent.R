@@ -25,18 +25,7 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
     .[, exemplar := base::list(base::list(FALSE))]
 
   nInput <- input.df[speaker == selectedSpeaker, .N]
-  nInputFromGroup <- base::ceiling(nInput * params[["proportionGroupTokens"]])
-  nInputFromOwn <- nInput - nInputFromGroup
-
-  groupData <- input.df[group == agent$group & speaker != selectedSpeaker,]
-  ownData <- input.df[speaker == selectedSpeaker,]
-  if (base::nrow(groupData) < nInputFromGroup) {
-    stop("Cannot sample ", nInputFromGroup, " tokens from ", base::nrow(groupData), " tokens of group ", agent$group, ".\n Please decrease proportionGroupTokens in params.R.")
-  }
-  samples <- data.table::rbindlist(base::list(
-    groupData[base::sample(.N, nInputFromGroup),],
-    ownData[base::sample(.N, nInputFromOwn),]
-  ))
+  samples <- input.df[speaker == selectedSpeaker]
 
   agent$memory %>%
     .[1:nInput, base::c("word", "label", "exemplar") := samples[, .(word, label, exemplar)]] %>%

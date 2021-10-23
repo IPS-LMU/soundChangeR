@@ -6,9 +6,5 @@ perform_single_interaction <- function(pop, interactionsLog, nrSim, groupsInfo, 
   perceiver <- pop[[interactionPartners[["percNr"]]]]
 
   pt <- produce_token(producer, params)
-  perceive_token(perceiver, pt, interactionsLog, nrSim, params, isNotOwnToken = TRUE)
-  
-  if(params[["rememberOwnTokens"]]) {
-    perceive_token(producer, pt, interactionsLog, nrSim, params, isNotOwnToken = FALSE)
-  }
+  perceive_token(perceiver, pt, interactionsLog, nrSim, params)
 }

@@ -1,4 +1,4 @@
-perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params, isNotOwnToken) {
+perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params) {
 
   if (base::is.null(producedToken)) {
     return()
@@ -37,18 +37,16 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
 
     set_cache_value(agent, "nAccepted", get_cache_value(agent, "nAccepted") + 1)
 
-    if (base::any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
+    if (base::any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr"))) {
       invalidate_cache(agent, "qda")
     }
   }
 
-  if (isNotOwnToken) {
-    write_interactions_log(interactionsLog, producedToken, agent, perceiverLabel, memorise, strategy, nrSim)
-  }
+  write_interactions_log(interactionsLog, producedToken, agent, perceiverLabel, memorise, strategy, nrSim)
 
   if (get_cache_value(agent, "nAccepted") %% params[["computeGMMsInterval"]] == 0) {
     update_features(agent, compute_features(agent, params))
-    if (base::any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
+    if (base::any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr"))) {
       invalidate_cache(agent, "qda")
     }
   }
