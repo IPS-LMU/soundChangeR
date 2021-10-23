@@ -14,9 +14,9 @@ produce_token <- function(agent, params) {
   }
   nrOfTimesHeard <- agent$memory$nrOfTimesHeard[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
 
-  if (base::grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
+  if (params[["productionBasis"]] == "word") {
     basisIdx <- base::which(agent$memory$word == producedWord & agent$memory$valid == TRUE)
-  } else if (grepl("^(target)?([lL]abel|[pP]honeme)$", params[["productionBasis"]])) {
+  } else if (params[["productionBasis"]] == "label") {
     basisIdx <- base::which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
   }
   basisTokens <- base::as.matrix(agent$features)[basisIdx, , drop = FALSE]
@@ -26,7 +26,7 @@ produce_token <- function(agent, params) {
       nExtraTokens <- params[["productionMinTokens"]] - base::length(basisIdx)
       if (nExtraTokens > 0) {
         extendedIdx <- NULL
-        if (base::grepl("label|phoneme", params[["productionResamplingFallback"]], ignore.case = TRUE)) {
+        if (params[["productionResamplingFallback"]] == "label") {
           extendedIdx <- base::which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
         }
         extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["productionSMOTENN"]], nExtraTokens)

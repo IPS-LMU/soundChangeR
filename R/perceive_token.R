@@ -46,14 +46,14 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
     write_interactions_log(interactionsLog, producedToken, agent, perceiverLabel, memorise, strategy, nrSim)
   }
 
-  if (get_cache_value(agent, "nAccepted") %% params[["computeFeaturesInterval"]] == 0) {
+  if (get_cache_value(agent, "nAccepted") %% params[["computeGMMsInterval"]] == 0) {
     update_features(agent, compute_features(agent, params))
     if (base::any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr")) && isNotOwnToken) {
       invalidate_cache(agent, "qda")
     }
   }
 
-  if (base::grepl("^GMM(s)?", params[["perceptionModels"]]) && get_cache_value(agent, "nAccepted") %% params[["computeGMMsInterval"]] == 0) {
+  if (params[["perceptionModels"]] == "GMM" && get_cache_value(agent, "nAccepted") %% params[["computeGMMsInterval"]] == 0) {
     estimate_GMM(agent, params)
   }
 }

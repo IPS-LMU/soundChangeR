@@ -17,7 +17,7 @@ apply_resampling <- function(agent, finalN, params) {
       write_memory(agent, params, tokens[[i]], rowToWrite, tokens[[i]]$label)
     })
   )
-  if (base::grepl("^GMM(s)?", params[["perceptionModels"]])) {
+  if (params[["perceptionModels"]] == "GMM") {
     estimate_GMM(agent, params)
   }
 }
