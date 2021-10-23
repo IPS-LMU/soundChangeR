@@ -14,7 +14,7 @@ apply_resampling <- function(agent, finalN, params) {
   base::invisible(
     base::lapply(base::seq_along(tokens), function(i) {
       rowToWrite <- row_to_write(agent, tokens[[i]], params)
-      write_memory(agent, tokens[[i]], rowToWrite, tokens[[i]]$label)
+      write_memory(agent, params, tokens[[i]], rowToWrite, tokens[[i]]$label)
     })
   )
   if (base::grepl("^GMM(s)?", params[["perceptionModels"]])) {

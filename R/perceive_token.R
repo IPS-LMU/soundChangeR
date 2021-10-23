@@ -32,8 +32,8 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params,
   if (memorise) {
     rowToWrite <- row_to_write(agent, producedToken, params)
 
-    write_memory(agent, producedToken, rowToWrite, perceiverLabel)
-    write_features(agent, features, rowToWrite)
+    write_memory(agent, params, producedToken, rowToWrite, perceiverLabel)
+    # write_features(agent, features, rowToWrite)
 
     set_cache_value(agent, "nAccepted", get_cache_value(agent, "nAccepted") + 1)
 
