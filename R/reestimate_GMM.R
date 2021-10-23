@@ -5,6 +5,7 @@ reestimate_GMM <- function(rawGMM, incidenceMatrix, agent, params) {
   GMM <- mclust::MclustDA(data = rawGMM$data[!base::is.na(aggregatedClasses) ,],
                           class = aggregatedClasses %>% stats::na.exclude(),
                           G = G,
-                          modelNames = get_model_names(agent, params))
+                          modelNames = get_model_names(agent, params),
+                          verbose = FALSE)
   return(GMM)
 }
