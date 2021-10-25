@@ -13,3 +13,4 @@ Thumbs.db
 .Rproj.user/
 *.Rproj
 .Rproj.user
+inst/doc
