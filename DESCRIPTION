@@ -3,7 +3,7 @@ Title: Agent-Based Model of Sound Change
 Version: 0.0.0.9000
 Authors@R: c(
     person("Johanna", "Cronenberg", , "johanna.cronenberg@phonetik.uni-muenchen.de", role = c("aut", "cre")),
-    person("Michele", "Gubian", , "m.gubian@phonetik.uni-muenchen.de", role = c("cre")),
+    person("Michele", "Gubian", , "m.gubian@phonetik.uni-muenchen.de", role = c("aut")),
     person("Jonathan", "Harrington", , "jmh@phonetik.uni-muenchen.de", role = c("ctb")),
     person("Florian", "Schiel", , "schiel@phonetik.uni-muenchen.de", role = c("ctb"))
     )
