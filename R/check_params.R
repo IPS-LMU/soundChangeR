@@ -164,10 +164,6 @@ check_params <- function(params, input.df) {
     runSimulation <- FALSE
   }
   
-  if (!"memoryRemovalStrategy" %in% base::names(params) || params[["memoryRemovalStrategy"]] != "random") {
-    params[["memoryRemovalStrategy"]] <- "random"
-  }
-  
   if (!"interactionPartners" %in% base::names(params)) {
     write_log("Please specify parameter interactionPartners correctly (either
               'betweenGroups' or 'withinGroups' or 'random').", params)
