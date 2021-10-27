@@ -7,13 +7,13 @@ features:
 - DCT2
 group: age
 label: phoneme
-initial: initial
+initial: phoneme
 word: word
 speaker: spk
 subsetSpeakers: NULL
 subsetLabels: NULL
 
-##### Initial setup (before interactions)
+##### Setup
 
 createPopulationMethod: speaker_is_agent
 bootstrapPopulationSize: 50
@@ -26,12 +26,12 @@ removeOriginalExemplarsAfterResampling: FALSE
 productionBasis: word
 productionResampling: SMOTE
 productionResamplingFallback: label
-productionMinTokens: 20
+productionMinTokens: 10
 productionSMOTENN: 5
 
 ##### Perception
 
-perceptionModels: GMM
+perceptionModels: singleGaussian
 memoryIntakeStrategy: 
 - mahalanobisDistance
 - maxPosteriorProb
@@ -48,7 +48,6 @@ purityThreshold: 0.75
 ##### Forgetting
 
 forgettingRate: 1
-memoryRemovalStrategy: random
 
 ##### Interactions
 
@@ -58,10 +57,10 @@ listenerProb: NULL
 
 ##### Runs
 
-runMode: multiple
-multipleABMRuns: 3
-nrOfSnapshots: 5
-interactionsPerSnapshot: 100
+runMode: single
+multipleABMRuns: 5
+nrOfSnapshots: 1
+interactionsPerSnapshot: 0
 
 ##### Other options
 
