@@ -128,11 +128,11 @@ check_params <- function(params, input.df) {
     runSimulation <- FALSE
   }
   
-  if (!"perceptionOVNN" %in% base::names(params) || params[["perceptionOVNN"]] <= 0) {
-    params[["perceptionOVNN"]] <- 5
+  if (!"perceptionOOVNN" %in% base::names(params) || params[["perceptionOOVNN"]] <= 0) {
+    params[["perceptionOOVNN"]] <- 5
   }
-  if (params[["perceptionOVNN"]] %% 2 == 1) {
-    params[["perceptionOVNN"]] <- params[["perceptionOVNN"]] + 1
+  if (params[["perceptionOOVNN"]] %% 2 == 1) {
+    params[["perceptionOOVNN"]] <- params[["perceptionOOVNN"]] + 1
   }
   
   if (!"computeGMMsInterval" %in% base::names(params) || params[["computeGMMsInterval"]] <= 0) {
