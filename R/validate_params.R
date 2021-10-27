@@ -5,9 +5,7 @@
 #'
 #' @return list of checked parameters and boolean on whether or not to run the simulation
 #' @export
-#'
-#' @examples check_params(params, input.df)
-check_params <- function(params, input.df) {
+validate_params <- function(params, input.df) {
 
   runSimulation <- TRUE
   
@@ -207,7 +205,7 @@ check_params <- function(params, input.df) {
   }
   
   params[["nrOfInteractions"]] <- params[["nrOfSnapshots"]] * params[["interactionsPerSnapshot"]]
-  params[["packageVersion"]] <- as.character(packageVersion("soundChangeR"))
+  params[["packageVersion"]] <- as.character(utils::packageVersion("soundChangeR"))
 
   return(base::list(params = params, runSimulation = runSimulation))
 }
