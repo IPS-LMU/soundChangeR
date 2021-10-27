@@ -22,7 +22,6 @@ run_simulation <- function(paramsFile = "data/params.yaml") {
   input.df <- load_input_data(params)
   base::saveRDS(input.df, base::file.path(logDir, "input.rds"))
   
-  params[["commitHash"]] <- system("git log -n1 --format=format:\"%H\"", intern = TRUE)
   check <- check_params(params, input.df)
   params <- check[["params"]]
   

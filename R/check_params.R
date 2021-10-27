@@ -211,6 +211,7 @@ check_params <- function(params, input.df) {
   }
   
   params[["nrOfInteractions"]] <- params[["nrOfSnapshots"]] * params[["interactionsPerSnapshot"]]
+  params[["packageVersion"]] <- as.character(packageVersion("soundChangeR"))
 
   return(base::list(params = params, runSimulation = runSimulation))
 }
