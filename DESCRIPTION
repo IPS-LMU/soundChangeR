@@ -19,7 +19,6 @@ Imports:
     data.table,
     dplyr,
     dtt,
-    emuR,
     FNN,
     Hmisc,
     magrittr,
