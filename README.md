@@ -8,7 +8,7 @@ The ABM is now available as an R package called **soundChangeR**. In order to in
 
 ```
 install.packages("devtools")
-devtools::install_github("https://github.com/IPS-LMU/soundChangeR/tree/main")
+devtools::install_github("https://github.com/IPS-LMU/soundChangeR/tree/main", build_vignettes = T)
 ```
 
 There is a vignette to this R package with detailed explanations of all parameters to this model:
