@@ -5,8 +5,6 @@
 #' @param snaps number of snapshots, i.e. params$nrOfSnapshots
 #'
 #' @export
-#'
-#' @examples load_cache("ABM20211022152431", 1, 100)
 load_cache <- function(logDir, runs, snaps) {
 
   load_logs(logName = "cache", logDir, runs, snaps)

@@ -14,6 +14,3 @@ purge_simulation(simulationName, rootLogDir)
 \description{
 Purge single simulation from logging directory and simulation register
 }
-\examples{
-purge_simulation("ABM20211022152431", "./logDir")
-}

@@ -14,6 +14,3 @@ get_params(rootLogDir, simulationName)
 \description{
 Load parameter list saved in a simulation directory
 }
-\examples{
-get_params("./logDir", "ABM20211022152431")
-}

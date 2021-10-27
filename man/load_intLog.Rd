@@ -16,6 +16,3 @@ load_intLog(logDir, runs, snaps)
 \description{
 Load interactions log as data.table
 }
-\examples{
-load_intLog("ABM20211022152431", 1, 100)
-}

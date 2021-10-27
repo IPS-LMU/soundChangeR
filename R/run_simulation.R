@@ -1,4 +1,4 @@
-run_simulation <- function(paramsFile = "data/params.yaml") {
+run_simulation <- function(paramsFile = "inst/extdata/params.yaml") {
   #' Start the simulation
   #'
   #' @param paramsFile path to the params.yaml file, default is "data/params.yaml"
@@ -8,8 +8,6 @@ run_simulation <- function(paramsFile = "data/params.yaml") {
   #' @importFrom data.table :=
   #' @importFrom data.table %like%
   #' @import mclust
-  #'
-  #' @examples run_simulation()
   params <- rlist::list.load(paramsFile)
   
   base::dir.create(params[["rootLogDir"]], showWarnings = FALSE, recursive = TRUE)
@@ -22,7 +20,7 @@ run_simulation <- function(paramsFile = "data/params.yaml") {
   input.df <- load_input_data(params)
   base::saveRDS(input.df, base::file.path(logDir, "input.rds"))
   
-  check <- check_params(params, input.df)
+  check <- validate_params(params, input.df)
   params <- check[["params"]]
   
   register_simulation(params)

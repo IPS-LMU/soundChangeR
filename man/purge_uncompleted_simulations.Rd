@@ -12,6 +12,3 @@ purge_uncompleted_simulations(rootLogDir)
 \description{
 Purge uncompleted simulations from logging directory and simulations register
 }
-\examples{
-purge_uncompleted_simulations("./logDir")
-}

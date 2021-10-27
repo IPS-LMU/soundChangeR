@@ -6,8 +6,6 @@
 #'
 #' @return names of simulations that fit the given parameters
 #' @export
-#'
-#' @examples filter_simulations("./logDir", condList = "forgettingRate = 1")
 filter_simulations <- function(rootLogDir, ..., condList = NULL) {
 
   regFile <- base::file.path(rootLogDir, "simulations_register.rds")

@@ -16,6 +16,3 @@ load_pop(logDir, runs, snaps)
 \description{
 Load population as data table
 }
-\examples{
-load_pop("ABM20211022152431", 1, 100)
-}

@@ -14,6 +14,3 @@ delete_simulation(simulationName_, rootLogDir)
 \description{
 Delete simulation only from simulation register
 }
-\examples{
-delete_simulation("ABM20211022152431", "./logDir")
-}

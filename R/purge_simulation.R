@@ -4,8 +4,6 @@
 #' @param rootLogDir logging directory
 #'
 #' @export
-#'
-#' @examples purge_simulation("ABM20211022152431", "./logDir")
 purge_simulation <- function(simulationName, rootLogDir) {
 
   delete_simulation(simulationName, rootLogDir)

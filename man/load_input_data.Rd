@@ -12,6 +12,3 @@ load_input_data(params)
 \description{
 Load input data as data.table
 }
-\examples{
-load_input_data(rlist::list.load("./data/params.yaml"))
-}

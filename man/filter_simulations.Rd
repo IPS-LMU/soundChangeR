@@ -19,6 +19,3 @@ names of simulations that fit the given parameters
 \description{
 Find simulations based on their parameters
 }
-\examples{
-filter_simulations("./logDir", condList = "forgettingRate = 1")
-}

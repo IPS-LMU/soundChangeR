@@ -5,8 +5,6 @@
 #' @param snaps number of snapshots, i.e. params$nrOfSnapshots
 #'
 #' @export
-#'
-#' @examples load_pop("ABM20211022152431", 1, 100)
 load_pop <- function(logDir, runs, snaps) {
 
   load_logs(logName = "pop", logDir, runs, snaps)

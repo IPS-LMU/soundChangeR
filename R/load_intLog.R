@@ -5,8 +5,6 @@
 #' @param snaps number of snapshots, i.e. params$nrOfSnapshots
 #'
 #' @export
-#'
-#' @examples load_intLog("ABM20211022152431", 1, 100)
 load_intLog <- function(logDir, runs, snaps) {
 
   load_logs(logName = "intLog", logDir, runs, snaps)

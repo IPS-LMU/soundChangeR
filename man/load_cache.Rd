@@ -16,6 +16,3 @@ load_cache(logDir, runs, snaps)
 \description{
 Load cache as data.table
 }
-\examples{
-load_cache("ABM20211022152431", 1, 100)
-}
