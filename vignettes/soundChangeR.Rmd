@@ -1,5 +1,7 @@
 ---
-title: "soundChangeR"
+title: "Simulating Sound Changes with soundChangeR"
+author: "Johanna Cronenberg"
+date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{soundChangeR}
@@ -15,5 +17,120 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(soundChangeR)
+# library(soundChangeR)
 ```
+
+`soundChangeR` is an agent-based implementation of the interactive-phonetic (IP) model of sound change (Harrington et al. 2018). The central entities in this model are agents and exemplars. Agents are artificial representations of real speakers, i.e. the agents are endowed with a memory filled with acoustic data from actual speakers. The agents also follow a set of rules in order to produce, perceive, and forget exemplars. Exemplars consist of acoustic parameters that capture essential characteristics of the speech sounds under investigation. Every exemplar is also associated to a fixed lexical class, i.e. the word in which the exemplar was produced. The phonological level of this model links the acoustic exemplars and the word classes. Sound change may or may not emerge from interactions between the agents as well as the mechnisms of their production-perception feedback loop which will be explained in the following sections.
+
+# Interactions
+
+During a simulation with `soundChangeR`, the agents exchange exemplars for a given amount of interactions. An interaction always consists of an agent-speaker who produces a new token of a word and an agent-listener who decides whether or not to memorise the token. Agents can interact with each other either freely and randomly or they do so only within or only across predefined groups.
+
+## Production
+
+The agent-speaker first chooses a word class, then builds a Gaussian model over all memorised exemplars associated with that word, and samples a new token from it. This process is word-based in order to ensure that possible coarticulation effects can be carried over into the new token.
+
+## Perception
+
+The agent-listener receives the token together with its associated word class (because it is assumed that word recognition works perfectly) and has to decide whether or not to memorise the token. The agent-listener can employ several strategies in order to make this decision. This decision is strongly linked to the phonemic level which can either be pre-determined by the user and remain fixed or regularly updated by each agent by means of unsupervised learning algorithms. 
+
+The latter consists of a two-step process: First, Gaussian Mixture Models (GMM) are used to create acoustic clusters of exemplars. This step relies exclusively on information about the location of exemplars in the acoustic space (and no information about word classes etc.). Second, non-negative matrix factorisation (NMF) is used to identify sets of acoustic clusters that contain exemplars of the same distinct word classes. This step neglects any information on the location of exemplars and clusters in the acoustic space, and instead uses information on the association between exemplars and word classes. The resulting sets of acoustic clusters are called sub-phonemes.
+
+## Memory Management
+
+There are two scenarios in terms of memory size to be avoided: When there are too few exemplars per word and agent, Gaussian distributions (as computed in production and perception) are unstable or cannot be computed; when there are too many exemplars in the agents' memories, the influence of new exemplars is minimised and change is effectively inhibited.
+
+To solve the first issue, the user can choose to apply SMOTE, both at initialisation and during production. SMOTE is a standard resampling algorithm that has no harmful effects on the acoustic distributions. The second issue can be avoided by having the agent-listeners forget exemplars, i.e. remove an exemplar from memory that belongs to the same word class as the memorised token.
+
+# Parameters of the Model
+
+
+
+## Input data
+
+```{yml}
+inputDataFile: ./data/data.csv
+features: 
+- DCT0
+- DCT1
+- DCT2
+group: age
+label: phoneme
+initial: phoneme
+word: word
+speaker: spk
+subsetSpeakers: NULL
+subsetLabels: NULL
+```
+
+## Setup
+
+```{yml}
+createPopulationMethod: speaker_is_agent
+bootstrapPopulationSize: 50
+initialMemoryResampling: FALSE
+initialMemoryResamplingFactor: 2.0
+removeOriginalExemplarsAfterResampling: FALSE
+```
+
+## Production
+
+```{yml}
+productionBasis: word
+productionResampling: SMOTE
+productionResamplingFallback: label
+productionMinTokens: 10
+productionSMOTENN: 5
+```
+
+## Perception
+
+```{yml}
+perceptionModels: singleGaussian
+memoryIntakeStrategy: 
+- mahalanobisDistance
+- maxPosteriorProb
+mahalanobisProbThreshold: .95
+posteriorProbThr: 1/3
+perceptionOOVNN: 5
+```
+
+## GMM-based phonology
+
+```{yml}
+computeGMMsInterval: 100
+purityRepetitions: 5
+purityThreshold: 0.75
+```
+
+## Forgetting
+
+```{yml}
+forgettingRate: 1
+```
+
+## Interactions
+
+```{yml}
+interactionPartners: betweenGroups
+speakerProb: NULL
+listenerProb: NULL
+```
+
+## Runs
+
+```{yml}
+runMode: single
+multipleABMRuns: 5
+nrOfSnapshots: 100
+interactionsPerSnapshot: 1000
+```
+
+## Other options
+
+```{yml}
+rootLogDir: ./logDir
+notes: u-fronting demo
+```
+
+
