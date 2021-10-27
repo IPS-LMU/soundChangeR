@@ -1,6 +1,3 @@
-#' @importFrom tibble tibble
-NULL
-
 #' Vowels of 22 Standard Southern British English speakers
 #'
 #' A dataset containing acoustic data (DCT coefficients) for three vowels /i, u, ju/ 
@@ -18,10 +15,3 @@ NULL
 #' }
 #' @source Jonathan Harrington (email: jmh@@phonetik.uni-muenchen.de)
 "u_fronting"
-
-#' Parameter list
-#'
-#' A list of parameters to the agent-based model, written in YAML.
-#'
-#' @format A YAML list.
-"params"
