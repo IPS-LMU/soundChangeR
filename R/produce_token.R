@@ -9,7 +9,7 @@ produce_token <- function(agent, params) {
   producedInitial <- agent$initial$initial[agent$initial$word == producedWord]
 
   if (base::length(producedInitial) == 0) {
-    base::cat("initial for word", producedWord, "unknown to agent", agent$agentID, agent$speaker, "\n")
+    write_log(paste("initial for word", producedWord, "unknown to agent", agent$agentID, agent$speaker), params)
     producedInitial <- agent$initial$initial %>% base::unique() %>% base::sample(1)
   }
   nrOfTimesHeard <- agent$memory$nrOfTimesHeard[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
