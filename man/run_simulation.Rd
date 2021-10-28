@@ -4,10 +4,10 @@
 \alias{run_simulation}
 \title{Start the simulation}
 \usage{
-run_simulation(paramsFile = "inst/extdata/params.yaml")
+run_simulation(paramsFile)
 }
 \arguments{
-\item{paramsFile}{path to the params.yaml file, default is "data/params.yaml"}
+\item{paramsFile}{path to the params.yaml file}
 }
 \description{
 Start the simulation

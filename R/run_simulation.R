@@ -1,7 +1,7 @@
-run_simulation <- function(paramsFile = "inst/extdata/params.yaml") {
+run_simulation <- function(paramsFile) {
   #' Start the simulation
   #'
-  #' @param paramsFile path to the params.yaml file, default is "data/params.yaml"
+  #' @param paramsFile path to the params.yaml file
   #'
   #' @export
   #' @importFrom magrittr %>%
