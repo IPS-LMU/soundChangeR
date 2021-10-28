@@ -1,3 +1,6 @@
+#' @importFrom tibble tibble
+NULL
+
 #' Vowels of 22 Standard Southern British English speakers
 #'
 #' A dataset containing acoustic data (DCT coefficients) for three vowels /i, u, ju/ 
