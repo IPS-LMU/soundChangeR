@@ -85,7 +85,7 @@ run_simulation_args <- function(inputDataFile = NULL,
   logDir <- base::file.path(params[["rootLogDir"]], params[["simulationName"]])
   base::dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
 
-  if (!base::file.exists(params$inputDataFile)) {
+  if (base::is.null(params$inputDataFile) || !base::file.exists(params$inputDataFile)) {
     stop("Your input data file does not exist. 
          Please make sure you are entering a correct relative or 
          absolute path to an existing data file with extension .csv or .txt.")
