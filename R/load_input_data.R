@@ -6,9 +6,9 @@
 load_input_data <- function(params) {
   
   input.df <- base::suppressWarnings(data.table::fread(params[["inputDataFile"]], stringsAsFactors = F))
-  if (length(base::setdiff(c(params$features, params$group, params$label, 
-                             params$initial, params$word, params$speaker), 
-                           colnames(input.df))) != 0) {
+  cols <- base::list(params$features, params$group, params$label, params$initial, params$word, params$speaker)
+  if (base::any(base::vapply(cols, base::is.null, TRUE)) ||
+      base::length(base::setdiff(base::unlist(cols), base::colnames(input.df))) != 0) {
     stop("Some of the columns you have chosen as features, group, label, initial, word, and/or speaker do not exist in the inputDataFile.")
   }
   input.df %>% data.table::setnames(base::c(params[["word"]], params[["speaker"]], params[["group"]]), 
