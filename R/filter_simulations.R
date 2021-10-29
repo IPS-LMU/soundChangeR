@@ -1,8 +1,8 @@
 #' Find simulations based on their parameters
 #'
 #' @param rootLogDir logging directory
-#' @param ... 
-#' @param condList list of parameter names and values
+#' @param ... any number of arguments, where the argument name must be from the list of model parameters, connected to a value with a logical operator, e.g. parameter == value
+#' @param condList list of parameter names and values, e.g. parameter = value; default is NULL.
 #'
 #' @return names of simulations that fit the given parameters
 #' @export

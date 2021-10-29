@@ -9,9 +9,9 @@ filter_simulations(rootLogDir, ..., condList = NULL)
 \arguments{
 \item{rootLogDir}{logging directory}
 
-\item{...}{}
+\item{...}{any number of arguments, where the argument name must be from the list of model parameters, connected to a value with a logical operator, e.g. parameter == value}
 
-\item{condList}{list of parameter names and values}
+\item{condList}{list of parameter names and values, e.g. parameter = value; default is NULL.}
 }
 \value{
 names of simulations that fit the given parameters
