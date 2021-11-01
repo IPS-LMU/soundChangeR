@@ -85,7 +85,7 @@ run_simulation_args <- function(inputDataFile = NULL,
   logDir <- base::file.path(params[["rootLogDir"]], params[["simulationName"]])
   base::dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
 
-  if (base::is.null(params$inputDataFile) || !base::file.exists(params$inputDataFile)) {
+  if (base::is.null(params[["inputDataFile"]]) || !base::file.exists(params[["inputDataFile"]])) {
     stop("Your input data file does not exist. Please make sure you are entering a correct relative or absolute path to an existing data file with extension .csv or .txt.")
   }
   input.df <- load_input_data(params)
@@ -97,14 +97,14 @@ run_simulation_args <- function(inputDataFile = NULL,
   register_simulation(params)
 
   if (check[["runSimulation"]]) {
-    if (params[["runMode"]] == "single") {
+    if (params[["runSingleSimulation"]]) {
       params[["logDir"]] <- base::file.path(logDir, "1")
       pop <- create_population(input.df = input.df, params = params)
       save_population(pop, extraCols = base::list(snapshot = 0), logDir = params[["logDir"]])
       if (params[["nrOfInteractions"]] > 0) {
         perform_interactions(pop, params[["logDir"]], params)
       }
-    } else if (params[["runMode"]] == "multiple") {
+    } else {
       numCores <- parallel::detectCores() - 1
       if (base::Sys.info()[["sysname"]] == "Windows") {
         cl <- parallel::makeCluster(numCores, type = "PSOCK")
