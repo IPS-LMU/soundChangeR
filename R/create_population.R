@@ -3,9 +3,9 @@ create_population <- function(input.df, params) {
   data.table::setDT(input.df)
   sortedSpeakers <- input.df$speaker %>% base::unique() %>% base::sort()
 
-  if (params[["createPopulationMethod"]] == "speaker_is_agent") {
+  if (!params[["createBootstrappedPopulation"]]) {
     nrOfAgents <- base::length(sortedSpeakers)
-  } else if (params[["createPopulationMethod"]] == "bootstrap") {
+  } else {
     if (base::is.null(base::names(params[["bootstrapPopulationSize"]]))) {
       nrOfAgents <- params[["bootstrapPopulationSize"]]
     } else {
@@ -16,8 +16,6 @@ create_population <- function(input.df, params) {
       )
       speakerGroups <- input.df[, speaker, by = group] %>% base::unique()
     }
-  } else {
-    stop(paste("create_population: unrecognised createPopulationMethod:", params[["createPopulationMethod"]]))
   }
 
   initialMemorySize <- input.df[, .N, by = speaker][, base::max(N)]
@@ -32,9 +30,9 @@ create_population <- function(input.df, params) {
   population <- base::list()
 
   for (id in base::seq_len(nrOfAgents)) {
-    if (params[["createPopulationMethod"]] == "speaker_is_agent") {
+    if (!params[["createBootstrappedPopulation"]]) {
       selectedSpeaker <- sortedSpeakers[id]
-    } else if (params[["createPopulationMethod"]] == "bootstrap") {
+    } else {
       if (base::is.null(base::names(params[["bootstrapPopulationSize"]]))) {
         selectedSpeaker <- base::sample(sortedSpeakers, 1)
       } else {

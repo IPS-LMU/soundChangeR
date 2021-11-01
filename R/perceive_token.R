@@ -51,7 +51,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params)
     }
   }
 
-  if (params[["perceptionModels"]] == "GMM" && get_cache_value(agent, "nAccepted") %% params[["computeGMMsInterval"]] == 0) {
+  if (params[["useFlexiblePhonology"]] && get_cache_value(agent, "nAccepted") %% params[["computeGMMsInterval"]] == 0) {
     estimate_GMM(agent, params)
   }
 }

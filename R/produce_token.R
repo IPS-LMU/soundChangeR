@@ -21,19 +21,15 @@ produce_token <- function(agent, params) {
   }
   basisTokens <- base::as.matrix(agent$features)[basisIdx, , drop = FALSE]
 
-  if (!base::is.null(params[["productionResampling"]])) {
-    if (base::grepl("SMOTE", params[["productionResampling"]], ignore.case = TRUE)) {
-      nExtraTokens <- params[["productionMinTokens"]] - base::length(basisIdx)
-      if (nExtraTokens > 0) {
-        extendedIdx <- NULL
-        if (params[["productionResamplingFallback"]] == "label") {
-          extendedIdx <- base::which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
-        }
-        extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["productionSMOTENN"]], nExtraTokens)
-        basisTokens <- base::rbind(basisTokens, extraTokens)
+  if (params[["productionResampling"]]) {
+    nExtraTokens <- params[["productionMinTokens"]] - base::length(basisIdx)
+    if (nExtraTokens > 0) {
+      extendedIdx <- NULL
+      if (params[["productionResamplingFallback"]] == "label") {
+        extendedIdx <- base::which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
       }
-    } else {
-      stop(base::paste("produce_token: unrecognised productionResampling method:", params[["productionResampling"]]))
+      extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["productionSMOTENN"]], nExtraTokens)
+      basisTokens <- base::rbind(basisTokens, extraTokens)
     }
   }
   gaussParams <- estimate_gaussian(basisTokens)

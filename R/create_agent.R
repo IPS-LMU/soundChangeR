@@ -35,7 +35,7 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$features <- data.table::data.table(P1 = base::double()) %>% .[1:maxMemorySize]
   update_features(agent, compute_features(agent, params))
 
-  if (params[["perceptionModels"]] == "GMM") {
+  if (params[["useFlexiblePhonology"]]) {
     estimate_GMM(agent, params)
   }
   return(agent)

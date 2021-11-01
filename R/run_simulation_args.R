@@ -1,42 +1,42 @@
 #' Run simulations, using arguments of function as params
 #'
-#' @param inputDataFile 
-#' @param features 
-#' @param group 
-#' @param label 
-#' @param initial 
-#' @param word 
-#' @param speaker 
-#' @param subsetSpeakers 
-#' @param subsetLabels 
-#' @param createPopulationMethod 
-#' @param bootstrapPopulationSize 
-#' @param initialMemoryResampling 
-#' @param initialMemoryResamplingFactor 
-#' @param removeOriginalExemplarsAfterResampling 
-#' @param productionBasis 
-#' @param productionResampling 
-#' @param productionResamplingFallback 
-#' @param productionMinTokens 
-#' @param productionSMOTENN 
-#' @param perceptionModels 
-#' @param memoryIntakeStrategy 
-#' @param mahalanobisProbThreshold 
-#' @param posteriorProbThr 
-#' @param perceptionOOVNN 
-#' @param computeGMMsInterval 
-#' @param purityRepetitions 
-#' @param purityThreshold 
-#' @param forgettingRate 
-#' @param interactionPartners 
-#' @param speakerProb 
-#' @param listenerProb 
-#' @param runMode 
-#' @param multipleABMRuns 
-#' @param nrOfSnapshots 
-#' @param interactionsPerSnapshot 
-#' @param rootLogDir 
-#' @param notes 
+#' @param inputDataFile string; path to data file
+#' @param features string or vector of strings; column name(s) for acoustic features
+#' @param group string; column name for agent group
+#' @param label string; column name for canonical phonological labels
+#' @param initial DELETE
+#' @param word string; column name for word labels
+#' @param speaker string; column name for speaker code
+#' @param subsetSpeakers vector of strings; speakers to be included in simulation
+#' @param subsetLabels string or vector of strings; canonical phonological label(s) to be included in the simulation
+#' @param createBootstrappedPopulation boolean; whether to create an agant population using bootstrap or have every speaker represented by one agent
+#' @param bootstrapPopulationSize full positive number or named vector of full positive numbers; amount of agents (per group) in bootstrap scenario
+#' @param initialMemoryResampling boolean; whether or not to increase number of tokens per word and agent before simulation start
+#' @param initialMemoryResamplingFactor full positive number; factor by which to increase the agents' memories before the simulation if initialMemoryResampling is TRUE
+#' @param removeOriginalExemplarsAfterResampling boolean; whether or not to remove original exemplars if initialMemoryResampling is TRUE
+#' @param productionBasis "word" or "label"; which categories to use as sampling basis in production
+#' @param productionResampling boolean; whether or not to use SMOTE in production to make computation of Gaussians more stable
+#' @param productionResamplingFallback "label" or NULL;
+#' @param productionMinTokens full positive number; minimum of tokens to be used to compute a Gaussian to sample from in production as well as minimum number of tokens per word class and agent
+#' @param productionSMOTENN full positive number; number of nearest neighbours to use for SMOTE
+#' @param useFlexiblePhonology boolean; whether to use GMM and NMF to autonomously compute and update phonological classes or use fixed phonological labels (as given by argument "label")
+#' @param memoryIntakeStrategy "mahalanobisDistance" and/or "maxPosteriorProb" or "posteriorProbThr"; decision criteria for memorisation
+#' @param mahalanobisProbThreshold number between 0 and 1; probability threshold if memoryIntakeStrategy contains "mahalanobisDistance"
+#' @param posteriorProbThr number between 0 and 1; probability threshold if memoryIntakeStrategy contains "posteriorProbThr"
+#' @param perceptionOOVNN full positive number; amount of nearest neighbours to use to assign a phonological label to token of unknown word class
+#' @param computeGMMsInterval full positive number; after how many accepted new tokens to re-compute GMM and NMF if perceptionModels is "GMM"
+#' @param purityRepetitions positive full number; how often to recompute the purity calculation to make sure it is robust if perceptionModels is "GMM"
+#' @param purityThreshold number between 0 and 1; how pure a phonological class has to be at the least if perceptionModels is "GMM"
+#' @param forgettingRate number between 0 and 1; if a number generated from a uniform distribution is smaller than this threshold, the agent listener removes a token from memory
+#' @param interactionPartners "random" or "betweenGroups" or "withinGroups"; whether interacting agents should come from same or different groups or be randomly chosen
+#' @param speakerProb NULL or vector of numbers; one number per agent to indicate how likely the agent is to become agent speaker
+#' @param listenerProb NULL or vector of numbers; one number per agent to indicate how likely the agent is to become agent listener
+#' @param runSingleSimulation boolean; whether to run a single simulation or multiple runs of the same simulation
+#' @param multipleABMRuns full positive number; number of runs if runMode is "multiple"
+#' @param nrOfSnapshots full positive number; number of snapshots, i.e. how often the state of the population shall be saved
+#' @param interactionsPerSnapshot full positive number; number of interactions per snapshot
+#' @param rootLogDir string; path to logging directory (will be created if it does not exist yet)
+#' @param notes string; optional notes on the simulation
 #'
 #' @export
 run_simulation_args <- function(inputDataFile = NULL,
@@ -48,17 +48,17 @@ run_simulation_args <- function(inputDataFile = NULL,
                                 speaker = NULL,
                                 subsetSpeakers = NULL,
                                 subsetLabels = NULL,
-                                createPopulationMethod = "speaker_is_agent",
+                                createBootstrappedPopulation = FALSE,
                                 bootstrapPopulationSize = 50,
                                 initialMemoryResampling = FALSE,
                                 initialMemoryResamplingFactor = 2.0,
                                 removeOriginalExemplarsAfterResampling = FALSE,
                                 productionBasis = "word",
-                                productionResampling = "SMOTE",
+                                productionResampling = TRUE,
                                 productionResamplingFallback = "label",
                                 productionMinTokens = 10,
                                 productionSMOTENN = 5,
-                                perceptionModels = "singleGaussian",
+                                useFlexiblePhonology = FALSE,
                                 memoryIntakeStrategy = c("mahalanobisDistance", "maxPosteriorProb"),
                                 mahalanobisProbThreshold = .95,
                                 posteriorProbThr = 1/3,
@@ -70,7 +70,7 @@ run_simulation_args <- function(inputDataFile = NULL,
                                 interactionPartners = "betweenGroups",
                                 speakerProb = NULL,
                                 listenerProb = NULL,
-                                runMode = "single",
+                                runSingleSimulation = TRUE,
                                 multipleABMRuns = 3,
                                 nrOfSnapshots = 1,
                                 interactionsPerSnapshot = 10,

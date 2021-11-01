@@ -27,14 +27,14 @@ run_simulation <- function(paramsFile) {
   register_simulation(params)
   
   if (check[["runSimulation"]]) {
-    if (params[["runMode"]] == "single") {
+    if (params[["runSingleSimulation"]]) {
       params[["logDir"]] <- base::file.path(logDir, "1")
       pop <- create_population(input.df = input.df, params = params)
       save_population(pop, extraCols = base::list(snapshot = 0), logDir = params[["logDir"]])
       if (params[["nrOfInteractions"]] > 0) {
         perform_interactions(pop, params[["logDir"]], params)
       }
-    } else if (params[["runMode"]] == "multiple") {
+    } else {
       numCores <- parallel::detectCores() - 1
       if (base::Sys.info()[["sysname"]] == "Windows") {
         cl <- parallel::makeCluster(numCores, type = "PSOCK")

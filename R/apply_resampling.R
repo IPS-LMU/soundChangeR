@@ -17,7 +17,7 @@ apply_resampling <- function(agent, finalN, params) {
       write_memory(agent, params, tokens[[i]], rowToWrite, tokens[[i]]$label)
     })
   )
-  if (params[["perceptionModels"]] == "GMM") {
+  if (params[["useFlexiblePhonology"]]) {
     estimate_GMM(agent, params)
   }
 }

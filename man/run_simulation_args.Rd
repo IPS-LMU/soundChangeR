@@ -14,17 +14,17 @@ run_simulation_args(
   speaker = NULL,
   subsetSpeakers = NULL,
   subsetLabels = NULL,
-  createPopulationMethod = "speaker_is_agent",
+  createBootstrappedPopulation = FALSE,
   bootstrapPopulationSize = 50,
   initialMemoryResampling = FALSE,
   initialMemoryResamplingFactor = 2,
   removeOriginalExemplarsAfterResampling = FALSE,
   productionBasis = "word",
-  productionResampling = "SMOTE",
+  productionResampling = TRUE,
   productionResamplingFallback = "label",
   productionMinTokens = 10,
   productionSMOTENN = 5,
-  perceptionModels = "singleGaussian",
+  useFlexiblePhonology = FALSE,
   memoryIntakeStrategy = c("mahalanobisDistance", "maxPosteriorProb"),
   mahalanobisProbThreshold = 0.95,
   posteriorProbThr = 1/3,
@@ -36,7 +36,7 @@ run_simulation_args(
   interactionPartners = "betweenGroups",
   speakerProb = NULL,
   listenerProb = NULL,
-  runMode = "single",
+  runSingleSimulation = TRUE,
   multipleABMRuns = 3,
   nrOfSnapshots = 1,
   interactionsPerSnapshot = 10,
@@ -45,79 +45,79 @@ run_simulation_args(
 )
 }
 \arguments{
-\item{inputDataFile}{}
+\item{inputDataFile}{string; path to data file}
 
-\item{features}{}
+\item{features}{string or vector of strings; column name(s) for acoustic features}
 
-\item{group}{}
+\item{group}{string; column name for agent group}
 
-\item{label}{}
+\item{label}{string; column name for canonical phonological labels}
 
-\item{initial}{}
+\item{initial}{DELETE}
 
-\item{word}{}
+\item{word}{string; column name for word labels}
 
-\item{speaker}{}
+\item{speaker}{string; column name for speaker code}
 
-\item{subsetSpeakers}{}
+\item{subsetSpeakers}{vector of strings; speakers to be included in simulation}
 
-\item{subsetLabels}{}
+\item{subsetLabels}{string or vector of strings; canonical phonological label(s) to be included in the simulation}
 
-\item{createPopulationMethod}{}
+\item{createBootstrappedPopulation}{boolean; whether to create an agant population using bootstrap or have every speaker represented by one agent}
 
-\item{bootstrapPopulationSize}{}
+\item{bootstrapPopulationSize}{full positive number or named vector of full positive numbers; amount of agents (per group) in bootstrap scenario}
 
-\item{initialMemoryResampling}{}
+\item{initialMemoryResampling}{boolean; whether or not to increase number of tokens per word and agent before simulation start}
 
-\item{initialMemoryResamplingFactor}{}
+\item{initialMemoryResamplingFactor}{full positive number; factor by which to increase the agents' memories before the simulation if initialMemoryResampling is TRUE}
 
-\item{removeOriginalExemplarsAfterResampling}{}
+\item{removeOriginalExemplarsAfterResampling}{boolean; whether or not to remove original exemplars if initialMemoryResampling is TRUE}
 
-\item{productionBasis}{}
+\item{productionBasis}{"word" or "label"; which categories to use as sampling basis in production}
 
-\item{productionResampling}{}
+\item{productionResampling}{boolean; whether or not to use SMOTE in production to make computation of Gaussians more stable}
 
-\item{productionResamplingFallback}{}
+\item{productionResamplingFallback}{"label" or NULL;}
 
-\item{productionMinTokens}{}
+\item{productionMinTokens}{full positive number; minimum of tokens to be used to compute a Gaussian to sample from in production as well as minimum number of tokens per word class and agent}
 
-\item{productionSMOTENN}{}
+\item{productionSMOTENN}{full positive number; number of nearest neighbours to use for SMOTE}
 
-\item{perceptionModels}{}
+\item{useFlexiblePhonology}{boolean; whether to use GMM and NMF to autonomously compute and update phonological classes or use fixed phonological labels (as given by argument "label")}
 
-\item{memoryIntakeStrategy}{}
+\item{memoryIntakeStrategy}{"mahalanobisDistance" and/or "maxPosteriorProb" or "posteriorProbThr"; decision criteria for memorisation}
 
-\item{mahalanobisProbThreshold}{}
+\item{mahalanobisProbThreshold}{number between 0 and 1; probability threshold if memoryIntakeStrategy contains "mahalanobisDistance"}
 
-\item{posteriorProbThr}{}
+\item{posteriorProbThr}{number between 0 and 1; probability threshold if memoryIntakeStrategy contains "posteriorProbThr"}
 
-\item{perceptionOOVNN}{}
+\item{perceptionOOVNN}{full positive number; amount of nearest neighbours to use to assign a phonological label to token of unknown word class}
 
-\item{computeGMMsInterval}{}
+\item{computeGMMsInterval}{full positive number; after how many accepted new tokens to re-compute GMM and NMF if perceptionModels is "GMM"}
 
-\item{purityRepetitions}{}
+\item{purityRepetitions}{positive full number; how often to recompute the purity calculation to make sure it is robust if perceptionModels is "GMM"}
 
-\item{purityThreshold}{}
+\item{purityThreshold}{number between 0 and 1; how pure a phonological class has to be at the least if perceptionModels is "GMM"}
 
-\item{forgettingRate}{}
+\item{forgettingRate}{number between 0 and 1; if a number generated from a uniform distribution is smaller than this threshold, the agent listener removes a token from memory}
 
-\item{interactionPartners}{}
+\item{interactionPartners}{"random" or "betweenGroups" or "withinGroups"; whether interacting agents should come from same or different groups or be randomly chosen}
 
-\item{speakerProb}{}
+\item{speakerProb}{NULL or vector of numbers; one number per agent to indicate how likely the agent is to become agent speaker}
 
-\item{listenerProb}{}
+\item{listenerProb}{NULL or vector of numbers; one number per agent to indicate how likely the agent is to become agent listener}
 
-\item{runMode}{}
+\item{runSingleSimulation}{boolean; whether to run a single simulation or multiple runs of the same simulation}
 
-\item{multipleABMRuns}{}
+\item{multipleABMRuns}{full positive number; number of runs if runMode is "multiple"}
 
-\item{nrOfSnapshots}{}
+\item{nrOfSnapshots}{full positive number; number of snapshots, i.e. how often the state of the population shall be saved}
 
-\item{interactionsPerSnapshot}{}
+\item{interactionsPerSnapshot}{full positive number; number of interactions per snapshot}
 
-\item{rootLogDir}{}
+\item{rootLogDir}{string; path to logging directory (will be created if it does not exist yet)}
 
-\item{notes}{}
+\item{notes}{string; optional notes on the simulation}
 }
 \description{
 Run simulations, using arguments of function as params

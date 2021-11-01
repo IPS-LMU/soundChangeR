@@ -1,13 +1,13 @@
-compute_mahal_distance <- function(agent, features, label, method = NULL) {
+compute_mahal_distance <- function(agent, features, label, params) {
   
-  if (base::is.null(method) | method == "singleGaussian") {
+  if (!params[["useFlexiblePhonology"]]) {
     stats::mahalanobis(features,
                        base::apply(base::as.matrix(agent$features)[agent$memory$valid == TRUE & 
                                                                      agent$memory$label == label, , drop = FALSE], 2, base::mean),
                        stats::cov(base::as.matrix(agent$features)[agent$memory$valid == TRUE &
                                                                     agent$memory$label == label, , drop = FALSE]), tol = 1e-30)
 
-  } else if (base::grepl("^GMM(s)?", method)) {
+  } else {
     GMM <- get_cache_value(agent, "GMM")
 
     tryCatch({

@@ -9,11 +9,11 @@ validate_params <- function(params, input.df) {
 
   runSimulation <- TRUE
   
-  if (!"createPopulationMethod" %in% base::names(params) || base::is.null(params[["createPopulationMethod"]])) {
-    params[["createPopulationMethod"]] <- "speaker_is_agent"
+  if (!"createBootstrappedPopulation" %in% base::names(params) || base::is.null(params[["createPopulationMethod"]])) {
+    params[["createBootstrappedPopulation"]] <- FALSE
   }
-  if (params[["createPopulationMethod"]] == "bootstrap" && 
-      (params[["bootstrapPopulationSize"]] <= 0 || !"bootstrapPopulationSize" %in% base::names(params))) {
+  if (params[["createBootstrappedPopulation"]] && 
+      (base::sum(params[["bootstrapPopulationSize"]] <= 0) || !"bootstrapPopulationSize" %in% base::names(params))) {
     write_log("Please specify parameter bootstrapPopulationSize correctly (number or named vector of numbers higher than zero).", params)
     runSimulation <- FALSE
   }
@@ -58,11 +58,7 @@ validate_params <- function(params, input.df) {
   }
   
   if (!"productionResampling" %in% base::names(params)) {
-    params[["productionResampling"]] <- "SMOTE"
-  }
-  if (!(base::grepl("SMOTE", params[["productionResampling"]], ignore.case = TRUE) || base::is.null(params[["productionResampling"]]))) {
-    write_log("Please specify parameter productionResampling correctly (either 'SMOTE' or NULL).", params)
-    runSimulation <- FALSE
+    params[["productionResampling"]] <- TRUE
   }
   
   if (!"productionResamplingFallback" %in% base::names(params)) {
@@ -82,11 +78,8 @@ validate_params <- function(params, input.df) {
     runSimulation <- FALSE
   }
   
-  if (!"perceptionModels" %in% base::names(params) || base::is.null(params[["perceptionModels"]])) {
-    params[["perceptionModels"]] <- "singleGaussian"
-  }
-  if (base::grepl("^GMM(s)?", params[["perceptionModels"]], ignore.case = TRUE)) {
-    params[["perceptionModels"]] <- "GMM"
+  if (!"useFlexiblePhonology" %in% base::names(params) || base::is.null(params[["useFlexiblePhonology"]])) {
+    params[["useFlexiblePhonology"]] <- FALSE
   }
   
   if (!"memoryIntakeStrategy" %in% base::names(params) || base::is.null(params[["memoryIntakeStrategy"]])) {
@@ -99,9 +92,9 @@ validate_params <- function(params, input.df) {
     runSimulation <- FALSE
   }
   if (base::any(base::c("maxPosteriorProb", "posteriorProbThr") %in% params[["memoryIntakeStrategy"]])) {
-    if (params[["perceptionModels"]] == "singleGaussian") {
+    if (!params[["useFlexiblePhonology"]]) {
       params[["posteriorProbMethod"]] <- "qda"
-    } else if (params[["perceptionModels"]] == "GMM") {
+    } else if (params[["useFlexiblePhonology"]]) {
       params[["posteriorProbMethod"]] <- "GMM"
     }
   }
@@ -138,18 +131,18 @@ validate_params <- function(params, input.df) {
     runSimulation <- FALSE
   }
   
-  if (params[["perceptionModels"]] == "GMM" && !"purityRepetitions" %in% base::names(params)) {
+  if (params[["useFlexiblePhonology"]] && !"purityRepetitions" %in% base::names(params)) {
     params[["purityRepetitions"]] <- 5
   }
-  if (params[["perceptionModels"]] == "GMM" && params[["purityRepetitions"]] <= 0) {
+  if (params[["useFlexiblePhonology"]] && params[["purityRepetitions"]] <= 0) {
     write_log("Please specify parameter purityRepetitions correctly (number higher than zero).", params)
     runSimulation <- FALSE
   }
   
-  if (params[["perceptionModels"]] == "GMM" && !"purityThreshold" %in% base::names(params)) {
+  if (params[["useFlexiblePhonology"]] && !"purityThreshold" %in% base::names(params)) {
     params[["purityThreshold"]] <- 0.75
   }
-  if (params[["perceptionModels"]] == "GMM" && (params[["purityThreshold"]] <= 0 || params[["purityThreshold"]] > 1)) {
+  if (params[["useFlexiblePhonology"]] && (params[["purityThreshold"]] <= 0 || params[["purityThreshold"]] > 1)) {
     write_log("Please specify parameter purityThreshold correctly (number between zero and one).", params)
     runSimulation <- FALSE
   }
@@ -181,16 +174,12 @@ validate_params <- function(params, input.df) {
     params[["listenerProb"]] <- NULL
   }
   
-  if (!"runMode" %in% base::names(params)) {
-    write_log("Please specify parameter runMode correctly (either 'single' or 'multiple').", params)
-    runSimulation <- FALSE
-  }
-  if (!base::any(base::c("single", "multiple") %in% params[["runMode"]])) {
-    write_log("Please specify parameter runMode correctly (either 'single' or 'multiple').", params)
+  if (!"runSingleSimulation" %in% base::names(params)) {
+    write_log("Please specify parameter runSingleSimulation correctly (either TRUE or FALSE).", params)
     runSimulation <- FALSE
   }
   
-  if (params[["runMode"]] == "multiple" && (!"multipleABMRuns" %in% base::names(params) || params[["multipleABMRuns"]] <= 0)) {
+  if (!params[["runSingleSimulation"]] && (!"multipleABMRuns" %in% base::names(params) || params[["multipleABMRuns"]] <= 0)) {
     params[["multipleABMRuns"]] <- 1
   }
   
