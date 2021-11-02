@@ -1,7 +1,6 @@
 register_simulation <- function(params) {
 
-  params[["initial"]] <- base::as.character(params[["initial"]])
-  params[["label"]] <- base::as.character(params[["label"]])
+  params[["phoneme"]] <- base::as.character(params[["phoneme"]])
   rlist::list.save(params, base::file.path(params[["rootLogDir"]], params[["simulationName"]], "params.yaml"))
   params[["completed"]] <- FALSE
   regFile <- base::file.path(params[["rootLogDir"]], "simulations_register.rds")

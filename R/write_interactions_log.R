@@ -4,7 +4,7 @@ write_interactions_log <- function(interactionsLog, producedToken, perceiver, pe
   interactionsLog[rowToWrite, `:=`(
     word = producedToken$word,
     producerID = producedToken$producerID,
-    producerLabel = producedToken$label,
+    producerPhoneme = producedToken$phoneme,
     producerNrOfTimesHeard = producedToken$nrOfTimesHeard,
     perceiverID = perceiver$agentID,
     perceiverLabel = perceiverLabel_,

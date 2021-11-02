@@ -5,7 +5,6 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$agentID <- id
   agent$group <- input.df[speaker == selectedSpeaker, group][1]
   agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
-  agent$initial <- input.df[speaker == selectedSpeaker, .(word, initial)] %>% base::unique()
   
   methodReg <- get_method_register()
   cacheNames <- base::c("nFeatures", "qda", "GMM", "nAccepted", "nForgotten", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!base::is.na(.)])
@@ -14,7 +13,7 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   set_cache_value(agent, "nForgotten", 0)
 
   agent$memory <- data.table::data.table(word = base::character(),
-                                         label = base::character(),
+                                         phoneme = base::character(),
                                          valid = base::logical(),
                                          nrOfTimesHeard = base::integer(),
                                          producerID = base::integer(),
@@ -28,7 +27,7 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   samples <- input.df[speaker == selectedSpeaker]
 
   agent$memory %>%
-    .[1:nInput, base::c("word", "label", "exemplar") := samples[, .(word, label, exemplar)]] %>%
+    .[1:nInput, base::c("word", "phoneme", "exemplar") := samples[, .(word, phoneme, exemplar)]] %>%
     .[1:nInput, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
     .[1:nInput, timeStamp := base::sample(.N), by = word]
 

@@ -27,6 +27,6 @@ estimate_GMM <- function(agent, params) {
   })
   set_cache_value(agent, "GMM", GMM)
   
-  wordLabels <- assign_words_to_labels(reducedWordClusters)
-  agent$memory[wordLabels, on = "word", label := i.label]
+  wordLabels <- assign_words_to_phonemes(reducedWordClusters)
+  agent$memory[wordLabels, on = "word", phoneme := i.phoneme]
 }

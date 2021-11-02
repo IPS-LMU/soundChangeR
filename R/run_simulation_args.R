@@ -3,12 +3,11 @@
 #' @param inputDataFile string; path to data file
 #' @param features string or vector of strings; column name(s) for acoustic features
 #' @param group string; column name for agent group
-#' @param label string; column name for canonical phonological labels
-#' @param initial DELETE
+#' @param phoneme string; column name for canonical phonological labels
 #' @param word string; column name for word labels
 #' @param speaker string; column name for speaker code
 #' @param subsetSpeakers vector of strings; speakers to be included in simulation
-#' @param subsetLabels string or vector of strings; canonical phonological label(s) to be included in the simulation
+#' @param subsetPhonemes string or vector of strings; canonical phonological label(s) to be included in the simulation
 #' @param createBootstrappedPopulation boolean; whether to create an agant population using bootstrap or have every speaker represented by one agent
 #' @param bootstrapPopulationSize full positive number or named vector of full positive numbers; amount of agents (per group) in bootstrap scenario
 #' @param initialMemoryResampling boolean; whether or not to increase number of tokens per word and agent before simulation start
@@ -20,7 +19,7 @@
 #' @param productionMinTokens full positive number; minimum of tokens to be used to compute a Gaussian to sample from in production as well as minimum number of tokens per word class and agent
 #' @param productionSMOTENN full positive number; number of nearest neighbours to use for SMOTE
 #' @param useFlexiblePhonology boolean; whether to use GMM and NMF to autonomously compute and update phonological classes or use fixed phonological labels (as given by argument "label")
-#' @param memoryIntakeStrategy "mahalanobisDistance" and/or "maxPosteriorProb" or "posteriorProbThr"; decision criteria for memorisation
+#' @param memoryIntakeStrategy "acceptAll" or "mahalanobisDistance" and/or "maxPosteriorProb" or "posteriorProbThr"; decision criteria for memorisation
 #' @param mahalanobisProbThreshold number between 0 and 1; probability threshold if memoryIntakeStrategy contains "mahalanobisDistance"
 #' @param posteriorProbThr number between 0 and 1; probability threshold if memoryIntakeStrategy contains "posteriorProbThr"
 #' @param perceptionOOVNN full positive number; amount of nearest neighbours to use to assign a phonological label to token of unknown word class
@@ -42,12 +41,11 @@
 run_simulation_args <- function(inputDataFile = NULL,
                                 features = NULL,
                                 group = NULL,
-                                label = NULL,
-                                initial = NULL,
+                                phoneme = NULL,
                                 word = NULL,
                                 speaker = NULL,
                                 subsetSpeakers = NULL,
-                                subsetLabels = NULL,
+                                subsetPhonemes = NULL,
                                 createBootstrappedPopulation = FALSE,
                                 bootstrapPopulationSize = 50,
                                 initialMemoryResampling = FALSE,
@@ -55,7 +53,7 @@ run_simulation_args <- function(inputDataFile = NULL,
                                 removeOriginalExemplarsAfterResampling = FALSE,
                                 productionBasis = "word",
                                 productionResampling = TRUE,
-                                productionResamplingFallback = "label",
+                                productionResamplingFallback = "phoneme",
                                 productionMinTokens = 10,
                                 productionSMOTENN = 5,
                                 useFlexiblePhonology = FALSE,

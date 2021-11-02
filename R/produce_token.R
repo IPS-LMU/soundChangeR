@@ -5,19 +5,18 @@ produce_token <- function(agent, params) {
     return (NULL)
   }
 
-  producedLabel <- agent$memory$label[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
-  producedInitial <- agent$initial$initial[agent$initial$word == producedWord]
+  producedPhoneme <- agent$memory$phoneme[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
 
-  if (base::length(producedInitial) == 0) {
-    write_log(paste("initial for word", producedWord, "unknown to agent", agent$agentID, agent$speaker), params)
-    producedInitial <- agent$initial$initial %>% base::unique() %>% base::sample(1)
-  }
+  # if (base::length(producedInitial) == 0) {
+  #   write_log(paste("initial for word", producedWord, "unknown to agent", agent$agentID, agent$speaker), params)
+  #   producedInitial <- agent$initial$initial %>% base::unique() %>% base::sample(1)
+  # }
   nrOfTimesHeard <- agent$memory$nrOfTimesHeard[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
 
   if (params[["productionBasis"]] == "word") {
     basisIdx <- base::which(agent$memory$word == producedWord & agent$memory$valid == TRUE)
-  } else if (params[["productionBasis"]] == "label") {
-    basisIdx <- base::which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
+  } else if (params[["productionBasis"]] == "phoneme") {
+    basisIdx <- base::which(agent$memory$phoneme == producedPhoneme & agent$memory$valid == TRUE)
   }
   basisTokens <- base::as.matrix(agent$features)[basisIdx, , drop = FALSE]
 
@@ -25,8 +24,8 @@ produce_token <- function(agent, params) {
     nExtraTokens <- params[["productionMinTokens"]] - base::length(basisIdx)
     if (nExtraTokens > 0) {
       extendedIdx <- NULL
-      if (params[["productionResamplingFallback"]] == "label") {
-        extendedIdx <- base::which(agent$memory$label == producedLabel & agent$memory$valid == TRUE)
+      if (params[["productionResamplingFallback"]] == "phoneme") {
+        extendedIdx <- base::which(agent$memory$phoneme == producedPhoneme & agent$memory$valid == TRUE)
       }
       extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["productionSMOTENN"]], nExtraTokens)
       basisTokens <- base::rbind(basisTokens, extraTokens)
@@ -36,8 +35,7 @@ produce_token <- function(agent, params) {
 
   features <- mvtnorm::rmvnorm(1, gaussParams$mean, gaussParams$cov)
   producedToken <- data.table::data.table(word = producedWord,
-                                          label = producedLabel,
-                                          initial = producedInitial,
+                                          phoneme = producedPhoneme,
                                           exemplar = features2exemplar(features, agent, params),
                                           nrOfTimesHeard = nrOfTimesHeard,
                                           producerID = agent$agentID)

@@ -51,9 +51,9 @@ validate_params <- function(params, input.df) {
   if (base::grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
     params[["productionBasis"]] <- "word"
   } else if (base::grepl("^(target)?([lL]abel|[pP]honeme)$", params[["productionBasis"]])) {
-    params[["productionBasis"]] <- "label"
+    params[["productionBasis"]] <- "phoneme"
   } else {
-    write_log("Please specify parameter productionBasis correctly (either 'word' or 'label').", params)
+    write_log("Please specify parameter productionBasis correctly (either 'word' or 'phoneme').", params)
     runSimulation <- FALSE
   }
   
@@ -62,10 +62,10 @@ validate_params <- function(params, input.df) {
   }
   
   if (!"productionResamplingFallback" %in% base::names(params)) {
-    params[["productionResamplingFallback"]] <- "label"
+    params[["productionResamplingFallback"]] <- "phoneme"
   }
   if (base::grepl("label|phoneme", params[["productionResamplingFallback"]], ignore.case = TRUE)) {
-    params[["productionResamplingFallback"]] <- "label"
+    params[["productionResamplingFallback"]] <- "phoneme"
   }
   
   if (!"productionMinTokens" %in% base::names(params) || params[["productionMinTokens"]] <= 0) {
@@ -83,12 +83,13 @@ validate_params <- function(params, input.df) {
   }
   
   if (!"memoryIntakeStrategy" %in% base::names(params) || base::is.null(params[["memoryIntakeStrategy"]])) {
-    write_log("", params)
+    write_log("Please specify parameter memoryIntakeStrategy correctly (string or vector with one/several of 
+              'maxPosteriorProb', 'mahalanobisDistance', 'posteriorProbThr', 'acceptAll').", params)
     runSimulation <- FALSE
   }
-  if (!base::any(base::c("maxPosteriorProb", "posteriorProbThr", "mahalanobisDistance") %in% params[["memoryIntakeStrategy"]])) {
+  if (!base::any(base::c("maxPosteriorProb", "posteriorProbThr", "mahalanobisDistance", "acceptAll") %in% params[["memoryIntakeStrategy"]])) {
     write_log("Please specify parameter memoryIntakeStrategy correctly (string or vector with one/several of 
-              'maxPosteriorProb', 'mahalanobisDistance', 'posteriorProbThr').", params)
+              'maxPosteriorProb', 'mahalanobisDistance', 'posteriorProbThr', 'acceptAll').", params)
     runSimulation <- FALSE
   }
   if (base::any(base::c("maxPosteriorProb", "posteriorProbThr") %in% params[["memoryIntakeStrategy"]])) {

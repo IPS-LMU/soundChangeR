@@ -1,3 +1,3 @@
-accept_all <- function(exemplar, features, label, agent, params) {
+accept_all <- function(exemplar, features, phoneme, agent, params) {
   return(TRUE)
 }

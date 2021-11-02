@@ -4,12 +4,12 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params)
     return()
   }
 
-  perceiverLabel <- base::unique(agent$memory$label[agent$memory$word == producedToken$word & agent$memory$valid == TRUE])
+  perceiverPhoneme <- base::unique(agent$memory$phoneme[agent$memory$word == producedToken$word & agent$memory$valid == TRUE])
 
   features <- exemplar2features(producedToken$exemplar, agent, params)
 
   if (base::length(perceiverLabel) == 0) {
-    perceiverLabel <- base::names(base::which.max(base::table(agent$memory$label[agent$memory$valid == TRUE][
+    perceiverPhoneme <- base::names(base::which.max(base::table(agent$memory$phoneme[agent$memory$valid == TRUE][
       FNN::knnx.index(agent$features[agent$memory$valid == TRUE,], features, params[["perceptionOOVNN"]])
     ])))
   }
