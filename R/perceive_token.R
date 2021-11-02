@@ -8,7 +8,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params)
 
   features <- exemplar2features(producedToken$exemplar, agent, params)
 
-  if (base::length(perceiverLabel) == 0) {
+  if (base::length(perceiverPhoneme) == 0) {
     perceiverPhoneme <- base::names(base::which.max(base::table(agent$memory$phoneme[agent$memory$valid == TRUE][
       FNN::knnx.index(agent$features[agent$memory$valid == TRUE,], features, params[["perceptionOOVNN"]])
     ])))
@@ -16,7 +16,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params)
 
   memorise <- TRUE
   for (strategy in params[["memoryIntakeStrategy"]]) {
-    memorise <- memory_intake_strategy(strategy, producedToken$exemplar, features, perceiverLabel, agent, params)
+    memorise <- memory_intake_strategy(strategy, producedToken$exemplar, features, perceiverPhoneme, agent, params)
     if (!memorise) break
   }
 
@@ -32,7 +32,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params)
   if (memorise) {
     rowToWrite <- row_to_write(agent, producedToken, params)
 
-    write_memory(agent, params, producedToken, rowToWrite, perceiverLabel)
+    write_memory(agent, params, producedToken, rowToWrite, perceiverPhoneme)
     # write_features(agent, features, rowToWrite)
 
     set_cache_value(agent, "nAccepted", get_cache_value(agent, "nAccepted") + 1)
@@ -42,7 +42,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params)
     }
   }
 
-  write_interactions_log(interactionsLog, producedToken, agent, perceiverLabel, memorise, strategy, nrSim)
+  write_interactions_log(interactionsLog, producedToken, agent, perceiverPhoneme, memorise, strategy, nrSim)
 
   if (get_cache_value(agent, "nAccepted") %% params[["computeGMMsInterval"]] == 0) {
     update_features(agent, compute_features(agent, params))

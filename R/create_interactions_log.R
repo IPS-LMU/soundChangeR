@@ -5,7 +5,7 @@ create_interactions_log <- function(nrOfInteractions) {
                                             producerLabel = NA_character_,
                                             producerNrOfTimesHeard = NA_integer_, 
                                             perceiverID = NA_integer_,
-                                            perceiverLabel = NA_character_, 
+                                            perceiverPhoneme = NA_character_, 
                                             perceiverNrOfTimesHeard = NA_integer_,
                                             accepted = NA, 
                                             rejectionCriterion = NA_character_, 
