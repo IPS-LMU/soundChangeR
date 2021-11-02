@@ -8,12 +8,11 @@ run_simulation_args(
   inputDataFile = NULL,
   features = NULL,
   group = NULL,
-  label = NULL,
-  initial = NULL,
+  phoneme = NULL,
   word = NULL,
   speaker = NULL,
   subsetSpeakers = NULL,
-  subsetLabels = NULL,
+  subsetPhonemes = NULL,
   createBootstrappedPopulation = FALSE,
   bootstrapPopulationSize = 50,
   initialMemoryResampling = FALSE,
@@ -21,7 +20,7 @@ run_simulation_args(
   removeOriginalExemplarsAfterResampling = FALSE,
   productionBasis = "word",
   productionResampling = TRUE,
-  productionResamplingFallback = "label",
+  productionResamplingFallback = "phoneme",
   productionMinTokens = 10,
   productionSMOTENN = 5,
   useFlexiblePhonology = FALSE,
@@ -51,9 +50,7 @@ run_simulation_args(
 
 \item{group}{string; column name for agent group}
 
-\item{label}{string; column name for canonical phonological labels}
-
-\item{initial}{DELETE}
+\item{phoneme}{string; column name for canonical phonological labels}
 
 \item{word}{string; column name for word labels}
 
@@ -61,7 +58,7 @@ run_simulation_args(
 
 \item{subsetSpeakers}{vector of strings; speakers to be included in simulation}
 
-\item{subsetLabels}{string or vector of strings; canonical phonological label(s) to be included in the simulation}
+\item{subsetPhonemes}{string or vector of strings; canonical phonological label(s) to be included in the simulation}
 
 \item{createBootstrappedPopulation}{boolean; whether to create an agant population using bootstrap or have every speaker represented by one agent}
 
@@ -85,7 +82,7 @@ run_simulation_args(
 
 \item{useFlexiblePhonology}{boolean; whether to use GMM and NMF to autonomously compute and update phonological classes or use fixed phonological labels (as given by argument "label")}
 
-\item{memoryIntakeStrategy}{"mahalanobisDistance" and/or "maxPosteriorProb" or "posteriorProbThr"; decision criteria for memorisation}
+\item{memoryIntakeStrategy}{"acceptAll" or "mahalanobisDistance" and/or "maxPosteriorProb" or "posteriorProbThr"; decision criteria for memorisation}
 
 \item{mahalanobisProbThreshold}{number between 0 and 1; probability threshold if memoryIntakeStrategy contains "mahalanobisDistance"}
 

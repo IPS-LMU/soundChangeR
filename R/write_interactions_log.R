@@ -1,4 +1,4 @@
-write_interactions_log <- function(interactionsLog, producedToken, perceiver, perceiverLabel_, memorise, strategy,  nrSim) {
+write_interactions_log <- function(interactionsLog, producedToken, perceiver, perceiverPhoneme_, memorise, strategy,  nrSim) {
 
   rowToWrite <- base::which(interactionsLog$valid == FALSE)[1]
   interactionsLog[rowToWrite, `:=`(
@@ -7,7 +7,7 @@ write_interactions_log <- function(interactionsLog, producedToken, perceiver, pe
     producerPhoneme = producedToken$phoneme,
     producerNrOfTimesHeard = producedToken$nrOfTimesHeard,
     perceiverID = perceiver$agentID,
-    perceiverLabel = perceiverLabel_,
+    perceiverPhoneme = perceiverPhoneme_,
     perceiverNrOfTimesHeard = {
       if (memorise) {
         perceiver$memory$nrOfTimesHeard[perceiver$memory$word == producedToken$word & perceiver$memory$valid == TRUE][1]
