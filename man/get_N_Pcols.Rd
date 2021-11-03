@@ -2,16 +2,16 @@
 % Please edit documentation in R/get_N_Pcols.R
 \name{get_N_Pcols}
 \alias{get_N_Pcols}
-\title{Title}
+\title{Compute number of columns with acoustic features}
 \usage{
-get_N_Pcols(memory)
+get_N_Pcols(input.df)
 }
 \arguments{
-\item{memory}{agent memory}
+\item{input.df}{input data frame as loaded by load_input_data()}
 }
 \value{
-
+number of columns
 }
 \description{
-Title
+Compute number of columns with acoustic features
 }

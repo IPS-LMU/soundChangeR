@@ -2,16 +2,16 @@
 % Please edit documentation in R/get_Pcols.R
 \name{get_Pcols}
 \alias{get_Pcols}
-\title{Title}
+\title{Get columns with acoustic features}
 \usage{
-get_Pcols(memory)
+get_Pcols(input.df)
 }
 \arguments{
-\item{memory}{agent memory}
+\item{input.df}{input data frame as loaded by load_input_data()}
 }
 \value{
-
+names of acoustic feature column(s)
 }
 \description{
-Title
+Get columns with acoustic features
 }
