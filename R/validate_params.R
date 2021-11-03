@@ -110,13 +110,13 @@ validate_params <- function(params, input.df) {
     runSimulation <- FALSE
   }
 
-  if ("posteriorProbThr" %in% params[["memoryIntakeStrategy"]] && !"posteriorProbThr" %in% base::names(params)) {
-    write_log("Please specify parameter posteriorProbThr correctly (number between zero and one).", params)
+  if ("posteriorProbThr" %in% params[["memoryIntakeStrategy"]] && !"posteriorProbThreshold" %in% base::names(params)) {
+    write_log("Please specify parameter posteriorProbThreshold correctly (number between zero and one).", params)
     runSimulation <- FALSE
   }
   if ("posteriorProbThr" %in% params[["memoryIntakeStrategy"]] && 
-      (params[["posteriorProbThr"]] <= 0 || params[["posteriorProbThr"]] > 1)) {
-    write_log("Please specify parameter posteriorProbThr correctly (number between zero and one).", params)
+      (params[["posteriorProbThreshold"]] <= 0 || params[["posteriorProbThreshold"]] > 1)) {
+    write_log("Please specify parameter posteriorProbThreshold correctly (number between zero and one).", params)
     runSimulation <- FALSE
   }
   
