@@ -2,7 +2,7 @@ create_interactions_log <- function(nrOfInteractions) {
 
   interactionsLog <- data.table::data.table(word = NA_character_, 
                                             producerID = NA_integer_, 
-                                            producerLabel = NA_character_,
+                                            producerPhoneme = NA_character_,
                                             producerNrOfTimesHeard = NA_integer_, 
                                             perceiverID = NA_integer_,
                                             perceiverPhoneme = NA_character_, 
