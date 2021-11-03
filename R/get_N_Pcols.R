@@ -1,3 +1,9 @@
+#' Title
+#'
+#' @param memory agent memory
+#'
+#' @return
+#' @export
 get_N_Pcols <-  function(memory) {
   
   Pcols <- get_Pcols(memory)

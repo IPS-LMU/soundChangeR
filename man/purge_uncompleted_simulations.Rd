@@ -7,7 +7,7 @@
 purge_uncompleted_simulations(rootLogDir)
 }
 \arguments{
-\item{rootLogDir}{logging directory, i.e. where all the "ABM..." folders are stored}
+\item{rootLogDir}{root logging directory, as set by argument rootLogDir in run_simulation()}
 }
 \description{
 Purge uncompleted simulations from logging directory and simulations register

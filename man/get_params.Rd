@@ -7,7 +7,7 @@
 get_params(rootLogDir, simulationName)
 }
 \arguments{
-\item{rootLogDir}{logging directory}
+\item{rootLogDir}{root logging directory, as set by argument rootLogDir in run_simulation()}
 
 \item{simulationName}{name of the simulation}
 }

@@ -7,11 +7,11 @@
 load_cache(logDir, runs, snaps)
 }
 \arguments{
-\item{logDir}{logging directory}
+\item{logDir}{path to simulation}
 
-\item{runs}{number of independent parallel runs, i.e. params$multipleABMRuns or 1 in case of single run}
+\item{runs}{run(s) to be loaded, i.e. number or vector of numbers}
 
-\item{snaps}{number of snapshots, i.e. params$nrOfSnapshots}
+\item{snaps}{snapshot(s) to be loaded, i.e. number or vector of numbers}
 }
 \description{
 Load cache as data.table

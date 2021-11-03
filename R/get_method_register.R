@@ -1,4 +1,5 @@
 get_method_register <- function() {
+	
   methodReg <- data.table::rbindlist(base::list(
     data.table::data.table(
       method = "identity",

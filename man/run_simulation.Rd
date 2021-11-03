@@ -2,13 +2,120 @@
 % Please edit documentation in R/run_simulation.R
 \name{run_simulation}
 \alias{run_simulation}
-\title{Start the simulation}
+\title{Run simulation}
 \usage{
-run_simulation(paramsFile)
+run_simulation(
+  inputDataFile = NULL,
+  speaker = NULL,
+  group = NULL,
+  word = NULL,
+  phoneme = NULL,
+  features = NULL,
+  subsetSpeakers = NULL,
+  subsetPhonemes = NULL,
+  createBootstrappedPopulation = FALSE,
+  bootstrapPopulationSize = 50,
+  initialMemoryResampling = FALSE,
+  initialMemoryResamplingFactor = 2,
+  removeOriginalExemplarsAfterResampling = FALSE,
+  productionBasis = "word",
+  productionResampling = TRUE,
+  productionResamplingFallback = "phoneme",
+  productionMinTokens = 10,
+  productionSMOTENN = 5,
+  memoryIntakeStrategy = c("mahalanobisDistance", "maxPosteriorProb"),
+  mahalanobisProbThreshold = 0.95,
+  posteriorProbThreshold = 1/3,
+  perceptionOOVNN = 5,
+  forgettingRate = 1,
+  useFlexiblePhonology = FALSE,
+  computeGMMsInterval = 100,
+  purityRepetitions = 5,
+  purityThreshold = 0.75,
+  interactionPartners = "betweenGroups",
+  speakerProb = NULL,
+  listenerProb = NULL,
+  runSingleSimulation = TRUE,
+  multipleABMRuns = 3,
+  nrOfSnapshots = 1,
+  interactionsPerSnapshot = 10,
+  rootLogDir = "./logDir",
+  notes = ""
+)
 }
 \arguments{
-\item{paramsFile}{path to the params.yaml file}
+\item{inputDataFile}{string; path to data file}
+
+\item{speaker}{string; column name for speaker code}
+
+\item{group}{string; column name for agent group}
+
+\item{word}{string; column name for word labels}
+
+\item{phoneme}{string; column name for canonical phonological labels (does not have to be specified if useFlexiblePhonology is TRUE)}
+
+\item{features}{string or vector of strings; column name(s) for acoustic features}
+
+\item{subsetSpeakers}{vector of strings; speakers to be included in simulation}
+
+\item{subsetPhonemes}{string or vector of strings; canonical phonological label(s) to be included in the simulation}
+
+\item{createBootstrappedPopulation}{boolean; whether to create an agent population using bootstrap or have every speaker represented by one agent}
+
+\item{bootstrapPopulationSize}{full positive number or named vector of full positive numbers; amount of agents (per group) in bootstrap scenario}
+
+\item{initialMemoryResampling}{boolean; whether or not to increase number of tokens per word and agent before simulation start}
+
+\item{initialMemoryResamplingFactor}{full positive number; factor by which to increase the agents' memories before the simulation if initialMemoryResampling is TRUE}
+
+\item{removeOriginalExemplarsAfterResampling}{boolean; whether or not to remove original exemplars if initialMemoryResampling is TRUE}
+
+\item{productionBasis}{"word" or "phoneme"; which categories to use as sampling basis in production}
+
+\item{productionResampling}{boolean; whether or not to use SMOTE in production to make computation of Gaussians more stable}
+
+\item{productionResamplingFallback}{"phoneme" or NULL;}
+
+\item{productionMinTokens}{full positive number; minimum of tokens to be used to compute a Gaussian to sample from in production as well as number of tokens per word class and agent not to be undercut through forgetting}
+
+\item{productionSMOTENN}{full positive number; number of nearest neighbours to use for SMOTE}
+
+\item{memoryIntakeStrategy}{"acceptAll" or "mahalanobisDistance" and/or "maxPosteriorProb" or "posteriorProbThr"; decision criteria for memorisation}
+
+\item{mahalanobisProbThreshold}{number between 0 and 1; probability threshold if memoryIntakeStrategy contains "mahalanobisDistance"}
+
+\item{posteriorProbThreshold}{number between 0 and 1; probability threshold if memoryIntakeStrategy contains "posteriorProbThr"}
+
+\item{perceptionOOVNN}{full positive number; amount of nearest neighbours to use to assign a phonological label to token of unknown word class}
+
+\item{forgettingRate}{number between 0 and 1; if a number generated from a uniform distribution is smaller than this threshold, the agent listener removes a token from memory}
+
+\item{useFlexiblePhonology}{boolean; whether to use GMM and NMF to autonomously compute and update phonological classes or use fixed phonological labels (as given by argument "phoneme")}
+
+\item{computeGMMsInterval}{full positive number; after how many accepted new tokens to re-compute GMM and NMF if useFlexiblePhonology is TRUE}
+
+\item{purityRepetitions}{positive full number; how often to recompute the purity calculation to make sure it is robust if useFlexiblePhonology is TRUE}
+
+\item{purityThreshold}{number between 0 and 1; how pure a phonological class has to be at the least if useFlexiblePhonology is TRUE}
+
+\item{interactionPartners}{"random" or "betweenGroups" or "withinGroups"; whether interacting agents should come from same or different groups or be randomly chosen}
+
+\item{speakerProb}{NULL or vector of numbers; one number per agent to indicate how likely the agent is to become agent speaker}
+
+\item{listenerProb}{NULL or vector of numbers; one number per agent to indicate how likely the agent is to become agent listener}
+
+\item{runSingleSimulation}{boolean; whether to run a single simulation or multiple runs of the same simulation}
+
+\item{multipleABMRuns}{full positive number; number of runs if runSingleSimulation is FALSE}
+
+\item{nrOfSnapshots}{full positive number; number of snapshots, i.e. how often the state of the population shall be saved}
+
+\item{interactionsPerSnapshot}{full positive number; number of interactions per snapshot}
+
+\item{rootLogDir}{string; path to logging directory (will be created if it does not exist yet)}
+
+\item{notes}{string; optional notes on the simulation}
 }
 \description{
-Start the simulation
+Run simulation
 }

@@ -7,7 +7,7 @@
 filter_simulations(rootLogDir, ..., condList = NULL)
 }
 \arguments{
-\item{rootLogDir}{logging directory}
+\item{rootLogDir}{root logging directory, as set by argument rootLogDir in run_simulation()}
 
 \item{...}{any number of arguments, where the argument name must be from the list of model parameters, connected to a value with a logical operator, e.g. parameter == value}
 

@@ -4,12 +4,12 @@
 \alias{delete_simulation}
 \title{Delete simulation only from simulation register}
 \usage{
-delete_simulation(simulationName_, rootLogDir)
+delete_simulation(rootLogDir, simName)
 }
 \arguments{
-\item{simulationName_}{name of the simulation}
+\item{rootLogDir}{root logging directory, as set by argument rootLogDir in run_simulation()}
 
-\item{rootLogDir}{logging directory}
+\item{simName}{name of the simulation}
 }
 \description{
 Delete simulation only from simulation register
