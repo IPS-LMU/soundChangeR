@@ -1,8 +1,8 @@
 #' Load interactions log as data.table
 #'
-#' @param logDir logging directory
-#' @param runs number of independent parallel runs, i.e. params$multipleABMRuns or 1 in case of single run
-#' @param snaps number of snapshots, i.e. params$nrOfSnapshots
+#' @param logDir path to simulation
+#' @param runs run(s) to be loaded, i.e. number or vector of numbers
+#' @param snaps snapshot(s) to be loaded, i.e. number or vector of numbers
 #'
 #' @export
 load_intLog <- function(logDir, runs, snaps) {

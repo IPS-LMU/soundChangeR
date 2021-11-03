@@ -1,13 +1,13 @@
 #' Delete simulation only from simulation register
 #'
-#' @param simulationName_ name of the simulation
-#' @param rootLogDir logging directory
+#' @param rootLogDir root logging directory, as set by argument rootLogDir in run_simulation()
+#' @param simName name of the simulation
 #'
 #' @export
-delete_simulation <- function(simulationName_, rootLogDir) {
+delete_simulation <- function(rootLogDir, simName) {
 
   regFile <- base::file.path(rootLogDir, "simulations_register.rds")
   rlist::list.load(regFile) %>%
-    rlist::list.exclude(simulationName == simulationName_) %>%
+    rlist::list.exclude(simulationName == simName) %>%
     rlist::list.save(regFile)
 }
