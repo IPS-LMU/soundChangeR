@@ -5,12 +5,13 @@
 \alias{u_fronting}
 \title{Vowels of 22 Standard Southern British English speakers}
 \format{
-A data frame with 2390 rows and 7 variables:
+A data frame with 2390 rows and 8 variables:
 \describe{
-\item{spk}{speaker code}
+\item{sl_rowIdx}{row index for identification}
+\item{speaker}{speaker code}
 \item{age}{age group of speaker}
 \item{word}{word class}
-\item{phoneme}{canonical phoneme associated with the vowel in given word}
+\item{label}{canonical phoneme associated with the vowel in given word}
 \item{DCT0}{first DCT coefficient computed from second formant trajectory}
 \item{DCT1}{second DCT coefficient computed from second formant trajectory}
 \item{DCT2}{third DCT coefficient computed from second formant trajectory}
