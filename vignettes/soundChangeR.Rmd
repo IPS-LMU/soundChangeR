@@ -2,7 +2,12 @@
 title: "Simulating Sound Changes with soundChangeR"
 author: "Johanna Cronenberg"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: 
+  rmarkdown::html_vignette:
+    number_sections: TRUE
+    toc: true
+    fig_width: 7
+    fig_height: 4
 vignette: >
   %\VignetteIndexEntry{soundChangeR}
   %\VignetteEngine{knitr::rmarkdown}
@@ -16,121 +21,323 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
-# library(soundChangeR)
+```{r, include=FALSE}
+library(ggplot2)
+library(gridExtra)
+library(dplyr, warn.conflicts = FALSE)
 ```
 
-`soundChangeR` is an agent-based implementation of the interactive-phonetic (IP) model of sound change (Harrington et al. 2018). The central entities in this model are agents and exemplars. Agents are artificial representations of real speakers, i.e. the agents are endowed with a memory filled with acoustic data from actual speakers. The agents also follow a set of rules in order to produce, perceive, and forget exemplars. Exemplars consist of acoustic parameters that capture essential characteristics of the speech sounds under investigation. Every exemplar is also associated to a fixed lexical class, i.e. the word in which the exemplar was produced. The phonological level of this model links the acoustic exemplars and the word classes. Sound change may or may not emerge from interactions between the agents as well as the mechnisms of their production-perception feedback loop which will be explained in the following sections.
+`soundChangeR` is an agent-based implementation of the interactive-phonetic (IP) model of sound change (Harrington et al. 2018). The central entities in this model are agents and exemplars. Agents are artificial representations of real speakers, i.e. the agents are endowed with a memory filled with acoustic data from actual speakers. The agents also follow a set of rules in order to produce, perceive, and forget exemplars. Exemplars consist of acoustic parameters that capture essential characteristics of the speech sounds under investigation. Every exemplar is also associated to a fixed lexical class, i.e. the word in which the exemplar was produced. The phonemic level of this model links the acoustic exemplars and the word classes. Sound change may or may not emerge from the interactions between the agents as well as the mechnisms of their production-perception feedback loop.
+
+We will explain the ABM's mechanisms by means of the exemplary dataset which is provided with the package:
+
+```{r}
+library(soundChangeR)
+u_fronting
+```
+
+The dataset `u_fronting` contains data from 22 speakers of Standard Southern British English (SSBE) producing the three vowels /i, u, ju/ in a total of 11 words. Each word was repeated usually 10 times per speaker. The vowels are parameterised by means of the first three DCT coefficients of the second formant trajectory. A help page for this dataset is available:
+
+```{r, eval=FALSE}
+?u_fronting
+```
 
 # Interactions
 
-During a simulation with `soundChangeR`, the agents exchange exemplars for a given amount of interactions. An interaction always consists of an agent-speaker who produces a new token of a word and an agent-listener who decides whether or not to memorise the token. Agents can interact with each other either freely and randomly or they do so only within or only across predefined groups.
+During a simulation with `soundChangeR`, the agents exchange tokens for a given amount of interactions. An interaction always consists of an agent speaker who produces a new token of a word and an agent listener who decides whether or not to memorise the token. Agents can interact with each other either freely or they do so only within or only across predefined groups (such as older vs. younger, region A vs. region B, etc.). 
+
+In `u_fronting`, the agent groups are based on the speakers' age:
+
+```{r}
+unique(u_fronting$age)
+```
+
+This is because empirical studies have found that younger speakers of SSBE are further advanced in the change of /u/ to the front of the vowel space than older speakers. So, whereas younger speakers have a /u, ju/ close to /i/, older speakers still produce a retracted /u, ju/ most of the time. However, when /u/ appears in adjacency to coronal consonants, even older speakers are more likely to produce a fronted /u/ due to the high F2-locus of coronal consontants. This can be shown by calculating the mean first DCT coefficient by vowel and age group in `u_fronting`:
+
+```{r, echo=FALSE}
+u_fronting %>% 
+  group_by(label, age) %>% 
+  summarise(mean_DCT0 = mean(DCT0), .groups = "drop")
+```
+
+DCT0 is linearly related to the mean of the F2 trajectory, i.e. the higher DCT0, the higher F2. Whereas there is hardly any difference in the mean DCT0 of /i/ between older and younger speakers, older speakers have much lower DCT0 values for /u, ju/ than younger ones.
 
 ## Production
 
-The agent-speaker first chooses a word class, then builds a Gaussian model over all memorised exemplars associated with that word, and samples a new token from it. This process is word-based in order to ensure that possible coarticulation effects can be carried over into the new token.
+The agent speaker randomly chooses a word class, then builds a Gaussian model over all memorised exemplars associated with that word, and samples a new token from it. This process is word-based in order to ensure that possible coarticulatory effects can be carried over into the new token.
+
+Say, `albr` is the agent speaker and has chosen to produce a token of the word *food*. Then `albr` gathers all exemplars of *food* (as shown by the `food` labels in the plots below) and estimates a Gaussian model over them in the three-dimensional DCT space (as exemplified by the ellipses). A new token of *food*, shown in orange, is then sampled from the Gaussian distribution:
+
+```{r, echo=FALSE}
+p1 <- u_fronting %>% 
+  filter(speaker == "albr" & word == "food") %>% 
+  ggplot() + 
+  aes(x = DCT0, y = DCT1, label = word) + 
+  geom_text() + 
+  stat_ellipse() + 
+  geom_text(data = data.frame(DCT0 = 1268.7, DCT1 = -6.6, word = "food"), 
+            color = "darkorange2", fontface = "bold") +
+  theme_light()
+p2 <- u_fronting %>% 
+  filter(speaker == "albr" & word == "food") %>% 
+  ggplot() + 
+  aes(x = DCT0, y = DCT2, label = word) + 
+  geom_text() + 
+  stat_ellipse() + 
+  geom_text(data = data.frame(DCT0 = 1268.7, DCT2 = -7.1, word = "food"), 
+            color = "darkorange2", fontface = "bold") +
+  theme_light()
+grid.arrange(p1, p2, nrow = 1)
+```
+
+The new token consists of the values for the three DCT coefficients as well as the label of the word class, *food*. 
 
 ## Perception
 
-The agent-listener receives the token together with its associated word class (because it is assumed that word recognition works perfectly) and has to decide whether or not to memorise the token. The agent-listener can employ several strategies in order to make this decision. This decision is strongly linked to the phonemic level which can either be pre-determined by the user and remain fixed or regularly updated by each agent by means of unsupervised learning algorithms. 
+The agent listener receives the token together with its associated word class. This means that it is assumed that word recognition works perfectly and that misunderstandings are neither a catalyst nor an obstacle for sound change. Instead, the agent listener has to decide whether or not to *memorise* the token. This decision is strongly linked to the phonemic level, i.e. the agent tests whether the perceived token is close enough to the intended phonemic class and/or probabilistically closer to the intended than to all other phonemic classes. The phonemic classes can either be pre-determined by the user and remain fixed or be regularly updated by each agent by means of unsupervised learning algorithms. 
 
-The latter consists of a two-step process: First, Gaussian Mixture Models (GMM) are used to create acoustic clusters of exemplars. This step relies exclusively on information about the location of exemplars in the acoustic space (and no information about word classes etc.). Second, non-negative matrix factorisation (NMF) is used to identify sets of acoustic clusters that contain exemplars of the same distinct word classes. This step neglects any information on the location of exemplars and clusters in the acoustic space, and instead uses information on the association between exemplars and word classes. The resulting sets of acoustic clusters are called sub-phonemes.
+Continuing with the example above, say, `elwi` is the agent listener who has to decide whether or not to memorise the perceived token of *food*. `elwi`'s acoustic space with the phonemic categories colour-coded is shown in the following plot. The perceived token of *food* is again in orange.
+
+```{r, echo=FALSE}
+p1 <- u_fronting %>% 
+  filter(speaker == "elwi") %>% 
+  mutate(phoneme = case_when(word %in% c("seep", "heed", "keyed", "feed") ~ 1,
+                             word %in% c("soup", "hewed", "queued", "feud") ~ 2,
+                             TRUE ~ 3),
+         phoneme = as.factor(phoneme)) %>%
+  ggplot() + 
+  aes(x = DCT0, y = DCT1, col = phoneme, label = word) + 
+  geom_text() + 
+  stat_ellipse() + 
+  geom_text(mapping = aes(x = DCT0, y = DCT1, label = word), 
+            data = data.frame(DCT0 = 1268.7, DCT1 = -6.6, word = "food"), 
+            color = "darkorange2", fontface = "bold") + 
+  theme_light() + theme(legend.position = "none")
+p2 <- u_fronting %>% 
+  filter(speaker == "elwi") %>% 
+  mutate(phoneme = case_when(word %in% c("seep", "heed", "keyed", "feed") ~ 1,
+                             word %in% c("soup", "hewed", "queued", "feud") ~ 2,
+                             TRUE ~ 3),
+         phoneme = as.factor(phoneme)) %>%
+  ggplot() + 
+  aes(x = DCT0, y = DCT2, col = phoneme, label = word) + 
+  geom_text() + 
+  stat_ellipse() + 
+  geom_text(mapping = aes(x = DCT0, y = DCT2, label = word), 
+            data = data.frame(DCT0 = 1268.7, DCT2 = -7.1, word = "food"), 
+            color = "darkorange2", fontface = "bold") + 
+  theme_light() + theme(legend.position = "none")
+grid.arrange(p1, p2, nrow = 1)
+```
+
+For `elwi`, *food* is associated with the blue phonemic class. `elwi` can either accept the token without any constraint, or use different probabilistic decisions (also see [memoryIntakeStrategy](#perception-1)). One of them tests whether the token of *food* is close enough to its intended phonemic class without taking any other phonemic classes into account. If, according to the mahalanobis distance, the token is too far from the blue phonemic class, `elwi` rejects the token. The other decision metric is the maximum posterior probability criterion which takes all phonemic classes into account. The new token of *food* must be probabilistically closer to the blue than to all other phonemic classes. If this is the case, `elwi` accepts and memorises the token. In the given example, both probabilistic decisions would lead to a rejection of the token.
+
+## Phonology
+
+There are two ways of linking the exemplars and word classes through a phonemic level. Either the phonemic classes are fixed and immutable throughout the simulation or they are agent-specific, regularly updated, and computed using unsupervised learning mechanisms (see [useFlexiblePhonology](#phonology-1)). The latter option consists of a two-step process: First, Gaussian Mixture Models (GMM) are used to create acoustic clusters of exemplars. This step relies exclusively on information about the location of exemplars in the acoustic space (and no information about word classes etc.). Second, non-negative matrix factorisation (NMF) is used to identify sets of acoustic clusters that contain exemplars of the same distinct word classes. This step neglects any information on the location of exemplars and clusters in the acoustic space, and instead uses information on the association between exemplars and word classes. The resulting sets of acoustic clusters are called sub-phonemes. If this option is used to derive phonemic knowledge, the memorisation criteria are computed with respect to these sub-phonemes.
+
+The effects of the GMMs and NMF can be observed in the following example for the speaker `albr` from the `u_fronting` dataset.
+
+```{r, echo=FALSE}
+
+```
+
 
 ## Memory Management
 
-There are two scenarios in terms of memory size to be avoided: When there are too few exemplars per word and agent, Gaussian distributions (as computed in production and perception) are unstable or cannot be computed; when there are too many exemplars in the agents' memories, the influence of new exemplars is minimised and change is effectively inhibited.
+There are two scenarios to be avoided in terms of memory size: When there are too few exemplars per word and agent, Gaussian distributions (as computed in production) are unstable or cannot be computed; when there are too many exemplars in the agents' memories, the influence of new exemplars is minimised and change is effectively inhibited. To solve the first issue, the user can choose to apply [SMOTE](http://rikunert.com/SMOTE_explained), both at initialisation and during production. SMOTE is a standard resampling algorithm that has no harmful effects on the acoustic distributions.
 
-To solve the first issue, the user can choose to apply SMOTE, both at initialisation and during production. SMOTE is a standard resampling algorithm that has no harmful effects on the acoustic distributions. The second issue can be avoided by having the agent-listeners forget exemplars, i.e. remove an exemplar from memory that belongs to the same word class as the memorised token.
+The second issue (i.e. too many exemplars) can be avoided by having the agent listeners forget exemplars, i.e. remove an exemplar from memory that belongs to the same word class as the memorised token. The only restriction on forgetting is that word classes cannot be diminished, so if the deletion of an exemplar would leave the word class with less exemplars than it was initialised with, forgetting is blocked.
+
+Let's assume that `elwi` has decided to memorise the perceived token of *food* in the example above. Depending on the model's settings, a random exemplar of *food* can be removed unless the result is that there are less than 10 exemplars of *food* left afterwards. This is because `elwi` was initialised with 10 exemplars of "food".
 
 # Parameters of the Model
 
+The following is a comprehensive list of all parameters of the model that are arguments of `run_simulation()`. Short explanations of the arguments are available on the function's help page:
 
+```{r, eval=FALSE}
+?run_simulation
+```
 
 ## Input data
 
-```{yml}
-inputDataFile: ./data/data.csv
-features: 
-- DCT0
-- DCT1
-- DCT2
-group: age
-label: phoneme
-initial: phoneme
-word: word
-speaker: spk
-subsetSpeakers: NULL
-subsetLabels: NULL
+```{r, eval=FALSE}
+inputDataFile = NULL
+speaker = NULL
+group = NULL
+word = NULL
+phoneme = NULL
+features = NULL
+```
+
+The first five arguments all take strings or a vector of strings. `inputDataFile` is the relative or absolute path to your data file, which can be a `.csv` or simple `.txt` file. When running the simulation, it will be loaded as a `data.table`. The argument `speaker` indicates the column in `inputDataFile` which contains the speaker codes. The argument `group` can be used if there are two or more agent groups, based on e.g. age or regional origin. If there are no groups, this argument can remain `NULL`, otherwise it is the name of the respective column in `inputDataFile`. The argument `word` indicates the column in `inputDataFile` which contains the lexical labels. If you are not using the flexible phonology algorithm (i.e. if `useFlexiblePhonology = FALSE`), the argument `phoneme` has to be specified and must point to the column in `inputDataFile` that contains the canonical phonemic labels. Otherwise, `phoneme` can remain `NULL`. For argument `features`, please indicate the name(s) of the column(s) that contain the acoustic parameter(s) (formant values, DCT coefficients, PC scores, etc.) of the sounds under investigation. The indicated column(s) must contain numbers. There can be more columns in `inputDataFile` than needed for the simulation (they will be ignored).
+
+An example for these arguments can be given using the data frame `u_fronting` again. This dataset is also used in the [demo](#demo) of this model for which the arguments above are set as follows:
+
+```{r, eval=FALSE}
+speaker = "speaker"
+group = "age"
+word = "word"
+phoneme = "label"
+features = c("DCT0", "DCT1", "DCT2")
+```
+
+The argument `inputDataFile` in this case points to the `.csv` file of `u_fronting` which is located at:
+
+```{r, eval=FALSE}
+system.file("extdata", "u_fronting.csv", package = "soundChangeR")
 ```
 
 ## Setup
 
-```{yml}
-createPopulationMethod: speaker_is_agent
-bootstrapPopulationSize: 50
-initialMemoryResampling: FALSE
-initialMemoryResamplingFactor: 2.0
-removeOriginalExemplarsAfterResampling: FALSE
+```{r, eval=FALSE}
+subsetSpeakers = NULL
+subsetPhonemes = NULL
+createBootstrappedPopulation = FALSE
+bootstrapPopulationSize = 50
+expandMemory = FALSE
+expandMemoryFactor = 2
+removeOriginalExemplars = FALSE
 ```
+
+If only a subset of speakers or a subset of canonical phonemes should be used in the simulation, the arguments `subsetSpeakers` and `subsetPhonemes` can be set with vectors of strings containing the speaker codes or phonemes, respectively, that are to be part of the simulation. 
+
+Usually, every human speaker is represented by one agent which is achieved by initialising the agent with the acoustic data of the speaker (`createBootstrappedPopulation = FALSE`). However, there is the possibility to break this paradigm by applying [bootstrapping](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)). If so, the argument `bootstrapPopulationSize` must specify how many agents (per agent group) the new population should be comprised of (a full positive number). For example, the `u-fronting` dataset consists of data from 11 older and 11 younger speakers. If the bootstrapped population should consist of a total of 50 agents (irregardless of their age groups), the arguments need to be:
+
+```{r, eval=FALSE}
+createBootstrappedPopulation = TRUE
+bootstrapPopulationSize = 50
+```
+
+If, instead, the bootstrapped population should consist of 25 older and 25 younger agents, the arguments are:
+
+```{r, eval=FALSE}
+createBootstrappedPopulation = TRUE
+bootstrapPopulationSize = c("older" = 25, "younger" = 25)
+```
+
+It is highly recommended to do [multiple runs](#runs) of simulations when the population is created by means of bootstrapping.
+
+Since we often deal with sparse data in the phonetic sciences, it makes sense to augment the amount of data (i.e. tokens per word per speaker) *before* the first interaction takes place by setting `expandMemory = TRUE`. In this case, `expandMemoryFactor` needs to be set to a full positive number to indicate the factor by which to multiply the number of tokens per word and speaker. The memory expansion uses the production technique indicated by the parameters in the next section, i.e. the agent is essentially talking to itself to create more tokens. Be aware that a large expansion factor, e.g. 10, will slow any change down, so many [more interactions](#runs) are needed. The argument `removeOriginalExemplars` only takes effect if `expandMemory = TRUE` and results in the deletion of all original exemplars from the agents' memories before the interactions begin.
 
 ## Production
 
-```{yml}
-productionBasis: word
-productionResampling: SMOTE
-productionResamplingFallback: label
-productionMinTokens: 10
-productionSMOTENN: 5
+```{r, eval=FALSE}
+useSMOTE = TRUE
+fallBackOnPhoneme = TRUE
+minTokens = 10
+SMOTENN = 5
 ```
+
+The agent speaker randomly chooses a word class from which to produce a new token. If the number of exemplars associated with the chosen word class is less than `minTokens`, [SMOTE](http://rikunert.com/SMOTE_explained) can be applied to temporarily create more tokens of the word by setting `useSMOTE = TRUE`. This makes the estimation of the (often multi-dimensional) Gaussian distribution from which a new token is sampled more stable. In this case, `SMOTENN` specifies the number of nearest neighbours to be considered when performing the random linear interpolation for SMOTE. 
+
+Before applying SMOTE, one can decide to additionally use exemplars of the same phonemic class with which the chosen word is associated. So if `fallBackOnPhoneme = TRUE`, the exemplars associated with the chosen word as well as exemplars of the same phonemic class are used to estimate the Gaussian distribution. Only if these exemplars are still less than `minTokens`, SMOTE is applied. If `fallBackOnPhoneme = FALSE`, SMOTE is used immediately. If `useSMOTE = FALSE`, the argument `fallBackOnPhoneme` takes no effect.
 
 ## Perception
 
-```{yml}
-perceptionModels: singleGaussian
-memoryIntakeStrategy: 
-- mahalanobisDistance
-- maxPosteriorProb
-mahalanobisProbThreshold: .95
-posteriorProbThr: 1/3
-perceptionOOVNN: 5
+```{r, eval=FALSE}
+memoryIntakeStrategy = c("mahalanobisDistance", "maxPosteriorProb")
+mahalanobisProbThreshold = .95
+posteriorProbThreshold = 1/3
+perceptionOOVNN = 5
+forgettingRate = 1
 ```
 
-## GMM-based phonology
+The agent listener has several options for deciding whether or not to memorise the perceived token. The argument `memoryIntakeStrategy` is therefore one of the most critical ones in this model and can take either a string or vector of strings as values (i.e. combining strategies is possible).
 
-```{yml}
-computeGMMsInterval: 100
-purityRepetitions: 5
-purityThreshold: 0.75
+- `"mahalanobisDistance"`: The distance between the token and the corresponding phonemic class in the agent listener's memory has to be smaller than the `mahalanobisProbThreshold` which takes a value between 0 and 1. This approach does not take into account any of the other phonemic categories.
+- `"maxPosteriorProb"`: Maximum posterior probability decision, i.e. the token is only memorised if its probability of belonging to the listener's corresponding phonemic category is higher than that of belonging to any of the other categories.
+- `"posteriorProbThr"`: The produced token is memorised if its posterior probability of belonging to the phonemic category is higher than the threshold indicated by the argument `posteriorProbThreshold`.
+- `acceptAll`: All perceived tokens are also memorised, i.e. there is no constraint on memorisation.
+
+The two possible combinations of values for `memoryIntakeStrategy` are:
+
+```{r, eval=FALSE}
+memoryIntakeStrategy = c("mahalanobisDistance", "maxPosteriorProb")
+memoryIntakeStrategy = c("mahalanobisDistance", "posteriorProbThr")
 ```
 
-## Forgetting
+If the perceived token is associated with a word that is unknown to an agent listener, a word label will be assigned to the token based on a majority vote among `perceptionOOVNN` nearest neighbours. This argument therefore has to be an uneven full positive number.
 
-```{yml}
-forgettingRate: 1
+If the perceived token has been memorised, the agent listener can forget an exemplar of the same word class if a value sampled from a uniform distribution is below `forgettingRate`. In effect, the agent listener will always remove an exemplar if `forgettingRate = 1` and never remove one if `forgettingRate = 0`.
+
+## Phonology
+
+```{r, eval=FALSE}
+useFlexiblePhonology = FALSE
+computeGMMsInterval = 100
+purityRepetitions = 5
+purityThreshold = 0.75
 ```
+
+
 
 ## Interactions
 
-```{yml}
-interactionPartners: betweenGroups
-speakerProb: NULL
-listenerProb: NULL
+```{r, eval=FALSE}
+interactionPartners = "betweenGroups"
+speakerProb = NULL
+listenerProb = NULL
 ```
+
+The argument `interactionPartners` can be set to specify from which groups the two interacting agents shall come.
+
+- `"random"`: It does not matter from which group an agent comes
+- `"withinGroups"`: Speaker and listener must come from the same group
+- `"betweenGroups"`: Speaker and listener must be members of different groups
+
+The arguments `speakerProb` and `listenerProb` can be used to introduce an imbalance regarding the probability with which one or more agents are chosen to be speakers or listeners in an interaction. Both arguments take a vector of numbers (one number per agent). The numbers do not need to sum up to one, as they will be normalised internally. If left `NULL`, all agents will get equal chances to be selected as speakers or listeners in an interaction.
 
 ## Runs
 
-```{yml}
-runMode: single
-multipleABMRuns: 5
-nrOfSnapshots: 100
-interactionsPerSnapshot: 1000
+```{r, eval=FALSE}
+runSingleSimulation = TRUE
+multipleABMRuns = 3
+nrOfSnapshots = 1
+interactionsPerSnapshot = 10
 ```
+
+The model offers two ways of performing simulations: either as single runs (`runSingleSimulation = TRUE`) or as multiple, parallel runs (`runSingleSimulation = FALSE`). Multiple runs of the same simulation can offer insights into the stability or robustness of the results. `multipleABMRuns` specifies how many parallel runs are computed.
+
+A simulation is a sequence of `nrOfSnapshots * interactionsPerSnapshot` interactions. At every `interactionsPerSnapshot` interactions, a snapshot of all agents' memories is saved.
 
 ## Other options
 
-```{yml}
-rootLogDir: ./logDir
-notes: u-fronting demo
+```{r, eval=FALSE}
+rootLogDir = "./logDir"
+notes = ""
 ```
 
+The argument `rootLogDir` specifies the relative or absolute path to the logging directory where the simulation results will be saved. If the directory does not exist, it is created when running the simulation. Notes regarding the simulation can optionally be given in `notes`. This is useful because the arguments given to `run_simulation()` will be saved for each simulation, so the argument `notes` can help to specify the intention or purpose of running a specific simulation.
 
+# Managing Simulations and Analysing Results
+
+## Data Structures
+
+
+```{r, eval=FALSE}
+purge_uncompleted_simulations()
+purge_simulation()
+filter_simulations()
+delete_simulation()
+```
+
+## Analysis of Results
+
+```{r, eval=FALSE}
+load_pop()
+load_intLog()
+load_cache()
+load_input_data()
+get_params()
+get_Pcols()
+get_N_Pcols()
+```
+
+## Demo
+
+There is a demo of this agent-based model available which uses the `u_fronting` dataset. The demo uses the default values for all arguments of `run_simulation()` apart from those that refer to the input data frame (see [this section](input-data)). The following function takes no arguments and starts the demo simulation:
+
+```{r, eval=FALSE}
+run_demo_simulation()
+```
