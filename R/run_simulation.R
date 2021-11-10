@@ -10,14 +10,13 @@
 #' @param subsetPhonemes string or vector of strings; canonical phonological label(s) to be included in the simulation
 #' @param createBootstrappedPopulation boolean; whether to create an agent population using bootstrap or have every speaker represented by one agent
 #' @param bootstrapPopulationSize full positive number or named vector of full positive numbers; amount of agents (per group) in bootstrap scenario
-#' @param initialMemoryResampling boolean; whether or not to increase number of tokens per word and agent before simulation start
-#' @param initialMemoryResamplingFactor full positive number; factor by which to increase the agents' memories before the simulation if initialMemoryResampling is TRUE
-#' @param removeOriginalExemplarsAfterResampling boolean; whether or not to remove original exemplars if initialMemoryResampling is TRUE
-#' @param productionBasis "word" or "phoneme"; which categories to use as sampling basis in production
-#' @param productionResampling boolean; whether or not to use SMOTE in production to make computation of Gaussians more stable
-#' @param productionResamplingFallback "phoneme" or NULL;
-#' @param productionMinTokens full positive number; minimum of tokens to be used to compute a Gaussian to sample from in production as well as number of tokens per word class and agent not to be undercut through forgetting
-#' @param productionSMOTENN full positive number; number of nearest neighbours to use for SMOTE
+#' @param expandMemory boolean; whether or not to increase number of tokens per word and agent before simulation start
+#' @param expandMemoryFactor full positive number; factor by which to increase the agents' memories before the simulation if expandMemory is TRUE
+#' @param removeOriginalExemplars boolean; whether or not to remove original exemplars after memory expansion if expandMemory is TRUE
+#' @param useSMOTE boolean; whether or not to use SMOTE in production to make computation of Gaussians more stable
+#' @param fallBackOnPhoneme boolean;
+#' @param minTokens full positive number; minimum of tokens to be used to compute a Gaussian to sample from in production as well as number of tokens per word class and agent not to be undercut through forgetting
+#' @param SMOTENN full positive number; number of nearest neighbours to use for SMOTE
 #' @param memoryIntakeStrategy "acceptAll" or "mahalanobisDistance" and/or "maxPosteriorProb" or "posteriorProbThr"; decision criteria for memorisation
 #' @param mahalanobisProbThreshold number between 0 and 1; probability threshold if memoryIntakeStrategy contains "mahalanobisDistance"
 #' @param posteriorProbThreshold number between 0 and 1; probability threshold if memoryIntakeStrategy contains "posteriorProbThr"
@@ -53,14 +52,13 @@ run_simulation <- function(inputDataFile = NULL,
                            subsetPhonemes = NULL,
                            createBootstrappedPopulation = FALSE,
                            bootstrapPopulationSize = 50,
-                           initialMemoryResampling = FALSE,
-                           initialMemoryResamplingFactor = 2.0,
-                           removeOriginalExemplarsAfterResampling = FALSE,
-                           productionBasis = "word",
-                           productionResampling = TRUE,
-                           productionResamplingFallback = "phoneme",
-                           productionMinTokens = 10,
-                           productionSMOTENN = 5,
+                           expandMemory = FALSE,
+                           expandMemoryFactor = 2.0,
+                           removeOriginalExemplars = FALSE,
+                           useSMOTE = TRUE,
+                           fallBackOnPhoneme = TRUE,
+                           minTokens = 10,
+                           SMOTENN = 5,
                            memoryIntakeStrategy = c("mahalanobisDistance", "maxPosteriorProb"),
                            mahalanobisProbThreshold = .95,
                            posteriorProbThreshold = 1/3,

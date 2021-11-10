@@ -19,8 +19,8 @@ create_population <- function(input.df, params) {
   }
 
   initialMemorySize <- input.df[, .N, by = speaker][, base::max(N)]
-  if (params[["initialMemoryResampling"]]) {
-    initialMemorySize <- initialMemorySize * params[["initialMemoryResamplingFactor"]]
+  if (params[["expandMemory"]]) {
+    initialMemorySize <- initialMemorySize * params[["expandMemoryFactor"]]
   }
 
   memoryBuffer <- base::ceiling(params[["nrOfInteractions"]]/nrOfAgents + 10 * base::sqrt(params[["nrOfInteractions"]]/nrOfAgents))
@@ -40,7 +40,7 @@ create_population <- function(input.df, params) {
       }
     }
     population[[id]] <- create_agent(id, input.df, selectedSpeaker, maxMemorySize, params)
-    if (params[["initialMemoryResampling"]]) {
+    if (params[["expandMemory"]]) {
       apply_resampling(population[[id]], initialMemorySize, params)
     }
   }

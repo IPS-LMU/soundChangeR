@@ -13,21 +13,17 @@ produce_token <- function(agent, params) {
   # }
   nrOfTimesHeard <- agent$memory$nrOfTimesHeard[agent$memory$word == producedWord & agent$memory$valid == TRUE][1]
 
-  if (params[["productionBasis"]] == "word") {
-    basisIdx <- base::which(agent$memory$word == producedWord & agent$memory$valid == TRUE)
-  } else if (params[["productionBasis"]] == "phoneme") {
-    basisIdx <- base::which(agent$memory$phoneme == producedPhoneme & agent$memory$valid == TRUE)
-  }
+  basisIdx <- base::which(agent$memory$word == producedWord & agent$memory$valid == TRUE)
   basisTokens <- base::as.matrix(agent$features)[basisIdx, , drop = FALSE]
 
-  if (params[["productionResampling"]]) {
-    nExtraTokens <- params[["productionMinTokens"]] - base::length(basisIdx)
+  if (params[["useSMOTE"]]) {
+    nExtraTokens <- params[["minTokens"]] - base::length(basisIdx)
     if (nExtraTokens > 0) {
       extendedIdx <- NULL
-      if (params[["productionResamplingFallback"]] == "phoneme") {
+      if (params[["fallBackOnPhoneme"]]) {
         extendedIdx <- base::which(agent$memory$phoneme == producedPhoneme & agent$memory$valid == TRUE)
       }
-      extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["productionSMOTENN"]], nExtraTokens)
+      extraTokens <- smote_resampling(agent$features, extendedIdx, basisIdx, params[["SMOTENN"]], nExtraTokens)
       basisTokens <- base::rbind(basisTokens, extraTokens)
     }
   }

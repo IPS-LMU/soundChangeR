@@ -23,7 +23,7 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params)
   if (stats::runif(1) < params[["forgettingRate"]]) {
     candidateRow <- base::sample(base::which(agent$memory$valid == TRUE), 1)
     candidateWord <- agent$memory$word[candidateRow]
-    if (base::sum(agent$memory$word == candidateWord & agent$memory$valid, na.rm = TRUE) >= params[["productionMinTokens"]]) {
+    if (base::sum(agent$memory$word == candidateWord & agent$memory$valid, na.rm = TRUE) >= params[["minTokens"]]) {
       data.table::set(agent$memory, candidateRow, "valid", FALSE)
       set_cache_value(agent, "nForgotten", get_cache_value(agent, "nForgotten") + 1)
     }

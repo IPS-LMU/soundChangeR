@@ -18,22 +18,22 @@ validate_params <- function(params, input.df) {
     runSimulation <- FALSE
   }
   
-  if (!"initialMemoryResampling" %in% base::names(params) || base::is.null(params[["initialMemoryResampling"]])) {
-    params[["initialMemoryResampling"]] <- FALSE
+  if (!"expandMemory" %in% base::names(params) || base::is.null(params[["expandMemory"]])) {
+    params[["expandMemory"]] <- FALSE
   }
   
-  if (params[["initialMemoryResampling"]]) {
-    if (!"initialMemoryResamplingFactor" %in% base::names(params) ||
-        !base::is.numeric(params[["initialMemoryResamplingFactor"]]) || 
-        params[["initialMemoryResamplingFactor"]] <= 0) {
-      write_log("Please specify parameter initialMemoryResamplingFactor correctly (number higher than zero).", params)
+  if (params[["expandMemory"]]) {
+    if (!"expandMemoryFactor" %in% base::names(params) ||
+        !base::is.numeric(params[["expandMemoryFactor"]]) || 
+        params[["expandMemoryFactor"]] <= 0) {
+      write_log("Please specify parameter expandMemoryFactor correctly (number higher than zero).", params)
       runSimulation <- FALSE
     }
   }
   
-  if (!"removeOriginalExemplarsAfterResampling" %in% base::names(params) || 
-      base::is.null(params[["removeOriginalExemplarsAfterResampling"]])) {
-    params[["removeOriginalExemplarsAfterResampling"]] <- FALSE
+  if (!"removeOriginalExemplars" %in% base::names(params) || 
+      base::is.null(params[["removeOriginalExemplars"]])) {
+    params[["removeOriginalExemplars"]] <- FALSE
   }
 
   methodReg <- get_method_register()
@@ -45,36 +45,20 @@ validate_params <- function(params, input.df) {
     runSimulation <- FALSE
   }
   
-  if (!"productionBasis" %in% base::names(params)) {
-    params[["productionBasis"]] <- "word"
+  if (!"useSMOTE" %in% base::names(params)) {
+    params[["useSMOTE"]] <- TRUE
   }
-  if (base::grepl("^(target)?[wW]ord$", params[["productionBasis"]])) {
-    params[["productionBasis"]] <- "word"
-  } else if (base::grepl("^(target)?([lL]abel|[pP]honeme)$", params[["productionBasis"]])) {
-    params[["productionBasis"]] <- "phoneme"
-  } else {
-    write_log("Please specify parameter productionBasis correctly (either 'word' or 'phoneme').", params)
+  
+  if (!"fallBackOnPhoneme" %in% base::names(params)) {
+    params[["fallBackOnPhoneme"]] <- TRUE
+  }
+  if (!"minTokens" %in% base::names(params) || params[["minTokens"]] <= 0) {
+    write_log("Please specify parameter minTokens correctly (number higher than zero).", params)
     runSimulation <- FALSE
   }
   
-  if (!"productionResampling" %in% base::names(params)) {
-    params[["productionResampling"]] <- TRUE
-  }
-  
-  if (!"productionResamplingFallback" %in% base::names(params)) {
-    params[["productionResamplingFallback"]] <- "phoneme"
-  }
-  if (base::grepl("label|phoneme", params[["productionResamplingFallback"]], ignore.case = TRUE)) {
-    params[["productionResamplingFallback"]] <- "phoneme"
-  }
-  
-  if (!"productionMinTokens" %in% base::names(params) || params[["productionMinTokens"]] <= 0) {
-    write_log("Please specify parameter productionMinTokens correctly (number higher than zero).", params)
-    runSimulation <- FALSE
-  }
-  
-  if (!"productionSMOTENN" %in% base::names(params) || params[["productionSMOTENN"]] <= 0) {
-    write_log("Please specify parameter productionSMOTENN correctly (number higher than zero).", params)
+  if (!"SMOTENN" %in% base::names(params) || params[["SMOTENN"]] <= 0) {
+    write_log("Please specify parameter SMOTENN correctly (number higher than zero).", params)
     runSimulation <- FALSE
   }
   

@@ -7,7 +7,7 @@ apply_resampling <- function(agent, finalN, params) {
   extraN <- base::min(finalN, nrow(agent$memory)) - initialN
 
   tokens <- base::replicate(extraN, produce_token(agent, params), simplify = FALSE)
-  if (params[["removeOriginalExemplarsAfterResampling"]]) {
+  if (params[["removeOriginalExemplars"]]) {
     agent$memory[, valid := FALSE]
   }
 
