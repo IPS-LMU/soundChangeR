@@ -15,14 +15,13 @@ run_simulation(
   subsetPhonemes = NULL,
   createBootstrappedPopulation = FALSE,
   bootstrapPopulationSize = 50,
-  initialMemoryResampling = FALSE,
-  initialMemoryResamplingFactor = 2,
-  removeOriginalExemplarsAfterResampling = FALSE,
-  productionBasis = "word",
-  productionResampling = TRUE,
-  productionResamplingFallback = "phoneme",
-  productionMinTokens = 10,
-  productionSMOTENN = 5,
+  expandMemory = FALSE,
+  expandMemoryFactor = 2,
+  removeOriginalExemplars = FALSE,
+  useSMOTE = TRUE,
+  fallBackOnPhoneme = TRUE,
+  minTokens = 10,
+  SMOTENN = 5,
   memoryIntakeStrategy = c("mahalanobisDistance", "maxPosteriorProb"),
   mahalanobisProbThreshold = 0.95,
   posteriorProbThreshold = 1/3,
@@ -64,21 +63,19 @@ run_simulation(
 
 \item{bootstrapPopulationSize}{full positive number or named vector of full positive numbers; amount of agents (per group) in bootstrap scenario}
 
-\item{initialMemoryResampling}{boolean; whether or not to increase number of tokens per word and agent before simulation start}
+\item{expandMemory}{boolean; whether or not to increase number of tokens per word and agent before simulation start}
 
-\item{initialMemoryResamplingFactor}{full positive number; factor by which to increase the agents' memories before the simulation if initialMemoryResampling is TRUE}
+\item{expandMemoryFactor}{full positive number; factor by which to increase the agents' memories before the simulation if expandMemory is TRUE}
 
-\item{removeOriginalExemplarsAfterResampling}{boolean; whether or not to remove original exemplars if initialMemoryResampling is TRUE}
+\item{removeOriginalExemplars}{boolean; whether or not to remove original exemplars after memory expansion if expandMemory is TRUE}
 
-\item{productionBasis}{"word" or "phoneme"; which categories to use as sampling basis in production}
+\item{useSMOTE}{boolean; whether or not to use SMOTE in production to make computation of Gaussians more stable}
 
-\item{productionResampling}{boolean; whether or not to use SMOTE in production to make computation of Gaussians more stable}
+\item{fallBackOnPhoneme}{boolean;}
 
-\item{productionResamplingFallback}{"phoneme" or NULL;}
+\item{minTokens}{full positive number; minimum of tokens to be used to compute a Gaussian to sample from in production as well as number of tokens per word class and agent not to be undercut through forgetting}
 
-\item{productionMinTokens}{full positive number; minimum of tokens to be used to compute a Gaussian to sample from in production as well as number of tokens per word class and agent not to be undercut through forgetting}
-
-\item{productionSMOTENN}{full positive number; number of nearest neighbours to use for SMOTE}
+\item{SMOTENN}{full positive number; number of nearest neighbours to use for SMOTE}
 
 \item{memoryIntakeStrategy}{"acceptAll" or "mahalanobisDistance" and/or "maxPosteriorProb" or "posteriorProbThr"; decision criteria for memorisation}
 
