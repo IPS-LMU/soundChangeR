@@ -310,29 +310,7 @@ notes = ""
 
 The argument `rootLogDir` specifies the relative or absolute path to the logging directory where the simulation results will be saved. If the directory does not exist, it is created when running the simulation. Notes regarding the simulation can optionally be given in `notes`. This is useful because the arguments given to `run_simulation()` will be saved for each simulation, so the argument `notes` can help to specify the intention or purpose of running a specific simulation.
 
-# Managing Simulations and Analysing Results
-
-## Data Structures
-
-
-```{r, eval=FALSE}
-purge_uncompleted_simulations()
-purge_simulation()
-filter_simulations()
-delete_simulation()
-```
-
-## Analysis of Results
-
-```{r, eval=FALSE}
-load_pop()
-load_intLog()
-load_cache()
-load_input_data()
-get_params()
-get_Pcols()
-get_N_Pcols()
-```
+# Analysing Results and Managing Simulations
 
 ## Demo
 
@@ -340,4 +318,136 @@ There is a demo of this agent-based model available which uses the `u_fronting` 
 
 ```{r, eval=FALSE}
 run_demo_simulation()
+```
+
+## Data Structures and Analysis of Results
+
+Running a simulation causes multiple new directories and files to be created throughout the process. First of all, the root logging directory (as set by [rootLogDir](other-options)) is created if it did not previously exist. In this directory, all simulations will be saved under a name that consists of "ABM" and the date and exact time when the simulation was started. An example of that is `ABM20211102135337`: a simulation that was started on November 11th, 2021, at 1:53pm and 37 seconds. The root logging directory also contains the simulations register which is saved as an `.rds` and updated automatically whenever a new simulation is saved in the same directory. The [next section](managing-simulations) is concerned with how to manipulate the simulations register manually.
+
+In a simulation directory, there are two files and as many numerically named directories as there are [runs](runs). The two files are called `input.rds` and `params.yaml`. The first is the input data file as specified by [inputDataFile](input-data), which, during the simulation, was loaded as a `data.table`. Its columns were renamed and the resulting data frame was saved as `input.rds`.
+
+`rds` is a compressed file type specific to R which is used to save and restore single R objects. The R function to load `.rds` files is `readRDS()`. This function can be used, for example, to load `input.rds`:
+
+```{r, eval=FALSE}
+input.df <- readRDS("path/to/input.rds")
+```
+
+The second file in a simulation directory is `params.yaml`. YAML is a simple text format which can be opened with any text editor. `params.yaml` contains a list of the arguments including their values given to `run_simulation()`, as well as some more parameters that were created in the process of validating the arguments of `run_simulation()`. The function `get_params()` can be used to load the `params.yaml` file of a simulation by giving it the root logging directory and the simulation's name, for instance:
+
+```{r, eval=FALSE}
+params <- get_params(rootLogDir = "./logDir",
+                     simName = "ABM20211102135337")
+```
+
+The result of that function is a list.
+
+`soundChangeR` also provides several wrappers for `readRDS()` in order to load the population, interactions log, cache, and input data file. The latter can be loaded using `load_input_data()` which takes the parameter list (as loaded by `get_params()`) as an argument.
+
+```{r, eval=FALSE}
+input.df <- load_input_data(params = params)
+```
+
+The difference between `load_input_data()` and `readRDS(input.rds)` as shown above is that the latter loads the saved input file, while the former loads the original [input data file](input-data), performs some conversions, and returns the loaded data as a `data.table`; in fact, `load_input_data()` is used during the simulation to load the input data file. The results of the two functions should be the same.
+
+Further wrappers of `readRDS()` include `load_pop()`, `load_intLog()`, and `load_cache()` all of which take three arguments: `logDir` (the path to the simulation directory), `runs` (the runs to be loaded), and `snaps` (the snapshots to be loaded). In the subdirectories of the simulation directory, e.g. `ABM20211102135337/1` or `ABM20211102135337/2`, the [snapshots](runs) of the agent population, the interactions log, and the cache are saved as `.rds` files. The files `pop.X.rds` (where `X` stands for a snapshot; `0 <= X <= nrOfSnapshots`) contain the agents' memories at the given time during the simulation as a data frame. These can be loaded using `load_pop()`, for example as follows:
+
+```{r, eval=FALSE}
+pop <- load_pop(logDir = "./logDir/ABM20211102135337",
+                runs = 1,
+                snaps = c(0, 100))
+```
+
+Using these arguments, the function loads `./logDir/ABM20211102135337/1/pop.0.rds` and `./logDir/ABM20211102135337/1/pop.100.rds` and binds them together into a `data.table`. Both `runs` and `snaps` can either take a single full positive number or a vector of full positive numbers. The population data frame consists of the following columns:
+
+- `run`: character column indicating the run
+- `P1` etc.: all numeric columns starting with `P` are the acoustic [features](input-data). The function `get_Pcols()` returns the names of the feature columns and `get_N_Pcols()` returns the amount of feature columns, given a data frame like the input data or population as an argument.
+- `word`: character column indicating the word class of the given exemplar
+- `phoneme`: character column indicating the phonemic class of the given exemplar
+- `valid`: logical column indicating whether the corresponding row in the data frame is valid. If `FALSE`, this indicates that the given exemplar has been removed from the agent's memory and is no longer of influence to the simulation.
+- `nrOfTimesHeard`: numeric column indicating how often the corresponding agent has memorised tokens of the word class in `word`
+- `producerID`: numeric column indicating the ID of the agent who produced the given exemplar
+- `timeStamp`: numeric column indicating how old the given exemplar is; time stamps are created and updated within word class, with more recent exemplars receiving higher time stamps.
+- `exemplar`: list of the feature columns
+- `agentID`: numeric column indicating the ID of the agent in whose memory the given exemplar is stored
+- `speaker`: character column indicating the agent's speaker code  
+- `group`: character column indicating the agent's group
+- `snapshot`: character column indicating the snapshot
+
+The interactions log is saved in files called `intLog.X.rds` (where `X` again stands for snapshot; `1 <= X <= nrOfSnapshots`) and can be loaded using `load_intLog()`, for example:
+
+```{r, eval=FALSE}
+intLog <- load_intLog(logDir = "./logDir/ABM20211102135337",
+                      runs = 1,
+                      snaps = c(1, 100))
+```
+
+In this case, the snapshots start at 1 (i.e. when the first [nrOfInteractions](runs) interactions have taken place), not at 0 (i.e. before the first interactions). The interactions log contains the following columns:
+
+- `run`: character column indicating the run
+- `snapshot`: character column indicating the snapshot
+- `word`: character column indicating the word class of the given exemplar
+- `producerID`: numeric column indicating the ID of the agent who produced the given exemplar
+- `producerPhoneme`: character column indicating the phonemic class of the given exemplar according to the agent speaker
+- `producerNrOfTimesHeard`: numeric column indicating how often the agent speaker has memorised tokens of the word class in `word`
+- `perceiverID`: numeric column indicating the ID of the agent who perceived the given exemplar
+- `perceiverPhoneme`: character column indicating the phonemic class of the given exemplar according to the agent listener
+- `perceiverNrOfTimesHeard`: numeric column indicating how often the agent listener has memorised tokens of the word class in `word`
+- `accepted`: logical column indicating whether the exemplar was memorised by the agent listener
+- `rejectionCriterion`: character column indicating which memorisation criterion was responsible for rejecting the exemplar (i.e. if `accepted` is `FALSE`); if two memorisation criteria were applied and both were failed, the first of them is given in this column 
+- `simulationNr`: same as `snapshot`
+- `valid`: logical column; always `TRUE`
+
+Finally, the cache is actually part of the agents' memories which is used for storing some agent-specific statistics and statistical models. The files are called `cache.X.rds` (where `X` again stands for snapshot; `0 <= X <= nrOfSnapshots`) and can be loaded into a `data.table` using `load_cache()`, e.g. as follows:
+
+```{r, eval=FALSE}
+cache <- load_cache(logDir = "./logDir/ABM20211102135337",
+                    runs = 1,
+                    snaps = c(0, 100))
+```
+
+The cache contains the following columns:
+
+- `run`: character column indicating the run
+- `snapshot`: character column indicating the snapshot
+- `Agent`: numeric column indicating the ID of the agent
+- `name`: character column with one of `nFeatures` (number of acoustic features), `qda` (quadrativ discriminatory analysis for [posterior probability](perception-1) memorisation criteria), `GMM` ([Gaussian Mixture Model](phonology) if `useFlexiblePhonology` is `TRUE`), `nAccepted` (overall number of tokens that the agent has accepted and memorised), `nForgotten` (over number of exemplars that the agent has removed from memory)
+- `value`: list of values corresponding to the cached object indicated by `name`
+- `valid`: logical column indicating whether the cached object is valid
+
+## Managing Simulations
+
+There are four functions in `soundChangeR` which help to manage simulations that are listed in `simulations_register.rds`. The first is `filter_simulations()` which goes through the registered simulation and returns the simulation names of all simulations that match the given filters. These filters must be arguments from `run_simulation()` and their desired values. Here are three examples:
+
+```{r, eval=FALSE}
+filter_simulations(rootLogDir = "./logDir", 
+                   forgettingRate == 1)
+filter_simulations(rootLogDir = "./logDir", 
+                   forgettingRate == 1 & runSingleSimulation == TRUE)
+filter_simulations(rootLogDir = "./logDir",
+                   condList = list(
+                     forgettingRate = 1,
+                     runSingleSimulation = TRUE
+                   ))
+```
+
+So `filter_simulations()` needs the root logging directory as the first argument, and then either a single filtering argument using logical operators, or a list of filtering arguments without logical operators.
+
+The second helper function is `delete_simulation()`. This function needs the root logging directory and a simulation name as arguments and removes the simulation from the simulations register (but does not delete the simulation results). In the following example, the simulation `./logDir/ABM20211102135337` is removed from the simulations register.
+
+```{r, eval=FALSE}
+delete_simulation(rootLogDir = "./logDir",
+                  simName = "ABM20211102135337")
+```
+
+The next two functions remove simulations from the register as well as permanently deleting the simulation's results. `purge_simulation()` takes the same arguments as `delete_simulation()`, e.g.:
+
+```{r, eval=FALSE}
+purge_simulation(rootLogDir = "./logDir",
+                  simName = "ABM20211102135337")
+```
+
+The function `purge_uncompleted_simulations()` only takes the root logging directory as an argument, then searches for incomplete simulations in the register and deletes those and their results, e.g.:
+
+```{r, eval=FALSE}
+purge_uncompleted_simulations(rootLogDir = "./logDir")
 ```
