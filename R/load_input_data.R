@@ -11,9 +11,8 @@ load_input_data <- function(params) {
       base::length(base::setdiff(base::unlist(cols), base::colnames(input.df))) != 0) {
     stop("Some of the columns you have chosen as features, group, phoneme, word, and/or speaker do not exist in the inputDataFile.")
   }
-  input.df %>% data.table::setnames(base::c(params[["word"]], params[["speaker"]], params[["group"]]), 
-                                    base::c("word", "speaker", "group"))
-  input.df$phoneme <- input.df[, params[["phoneme"]], with = FALSE]
+  input.df %>% data.table::setnames(base::c(params[["word"]], params[["speaker"]], params[["group"]], params[["phoneme"]]), 
+                                    base::c("word", "speaker", "group", "phoneme"))
   if (!base::is.null(params[["subsetSpeakers"]])) {
     input.df <- input.df[speaker %in% params[["subsetSpeakers"]]]
   }
