@@ -4,10 +4,10 @@
 \alias{get_Pcols}
 \title{Get columns with acoustic features}
 \usage{
-get_Pcols(input.df)
+get_Pcols(data)
 }
 \arguments{
-\item{input.df}{input data frame as loaded by load_input_data()}
+\item{data}{a data frame; usually either input data as loaded by load_input_data() or population as loaded by load_pop()}
 }
 \value{
 names of acoustic feature column(s)

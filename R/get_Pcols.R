@@ -1,10 +1,10 @@
 #' Get columns with acoustic features
 #'
-#' @param input.df input data frame as loaded by load_input_data()
+#' @param data a data frame; usually either input data as loaded by load_input_data() or population as loaded by load_pop()
 #'
 #' @return names of acoustic feature column(s)
 #' @export
-get_Pcols <- function(input.df) {
+get_Pcols <- function(data) {
   
-  base::grep("^P[0-9]+$", base::colnames(input.df), value = TRUE)
+  base::grep("^P[0-9]+$", base::colnames(data), value = TRUE)
 }

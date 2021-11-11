@@ -4,10 +4,10 @@
 \alias{get_N_Pcols}
 \title{Compute number of columns with acoustic features}
 \usage{
-get_N_Pcols(input.df)
+get_N_Pcols(data)
 }
 \arguments{
-\item{input.df}{input data frame as loaded by load_input_data()}
+\item{data}{a data frame; usually either input data as loaded by load_input_data() or population as loaded by load_pop()}
 }
 \value{
 number of columns

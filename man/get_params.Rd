@@ -4,12 +4,12 @@
 \alias{get_params}
 \title{Load parameter list saved in a simulation directory}
 \usage{
-get_params(rootLogDir, simulationName)
+get_params(rootLogDir, simName)
 }
 \arguments{
 \item{rootLogDir}{root logging directory, as set by argument rootLogDir in run_simulation()}
 
-\item{simulationName}{name of the simulation}
+\item{simName}{name of the simulation}
 }
 \description{
 Load parameter list saved in a simulation directory

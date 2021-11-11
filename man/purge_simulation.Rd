@@ -4,12 +4,12 @@
 \alias{purge_simulation}
 \title{Purge single simulation from logging directory and simulation register}
 \usage{
-purge_simulation(rootLogDir, simulationName)
+purge_simulation(rootLogDir, simName)
 }
 \arguments{
 \item{rootLogDir}{root logging directory, as set by argument rootLogDir in run_simulation()}
 
-\item{simulationName}{name of the simulation}
+\item{simName}{name of the simulation}
 }
 \description{
 Purge single simulation from logging directory and simulation register
