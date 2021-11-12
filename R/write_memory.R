@@ -4,15 +4,12 @@ write_memory <- function(agent, params, producedToken, rowToWrite, phoneme_) {
     agent$memory$word == producedToken$word & agent$memory$valid == TRUE
   ][1], na.rm = TRUE)
 
-  receivedTimeStamp <- 1 + base::max(0, agent$memory$timeStamp[agent$memory$word == producedToken$word], na.rm = TRUE)
-
   agent$memory[rowToWrite, `:=`(
     word = producedToken$word,
     exemplar = producedToken$exemplar,
     phoneme = phoneme_,
     valid = TRUE,
-    producerID = producedToken$producerID,
-    timeStamp = receivedTimeStamp
+    producerID = producedToken$producerID
   )]
   agent$memory[agent$memory$word == producedToken$word & agent$memory$valid == TRUE,
                nrOfTimesHeard := updatedNrOfTimesHeard]

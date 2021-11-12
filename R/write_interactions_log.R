@@ -17,7 +17,6 @@ write_interactions_log <- function(interactionsLog, producedToken, perceiver, pe
     },
     accepted = memorise,
     rejectionCriterion = base::ifelse(memorise, NA_character_, strategy),
-    simulationNr = nrSim,
     valid = TRUE
   )]
 }

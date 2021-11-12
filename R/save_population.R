@@ -4,7 +4,7 @@ save_population <- function(pop, extraCols = list(condition = "x"), logDir) {
   base::saveRDS(convert_pop_list_to_dt(pop, extraCols),
                 file = base::file.path(logDir, base::paste("pop", base::unlist(extraCols), "rds", sep = "."))
   )
-  base::saveRDS(data.table::rbindlist(base::lapply(pop, function(agent) {agent$cache}), use.names = TRUE, idcol = "Agent"),
+  base::saveRDS(data.table::rbindlist(base::lapply(pop, function(agent) {agent$cache}), use.names = TRUE, idcol = "agentID"),
                 file = base::file.path(logDir, base::paste("cache", base::unlist(extraCols), "rds", sep = "."))
   )
 }

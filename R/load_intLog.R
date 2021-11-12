@@ -7,5 +7,7 @@
 #' @export
 load_intLog <- function(logDir, runs, snaps) {
 
-  load_logs(logName = "intLog", logDir, runs, snaps)
+  load_logs(logName = "intLog", logDir, runs, snaps) %>% 
+    filter(valid == T) %>% 
+    select(-valid)
 }

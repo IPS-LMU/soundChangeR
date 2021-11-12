@@ -16,8 +16,7 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
                                          phoneme = base::character(),
                                          valid = base::logical(),
                                          nrOfTimesHeard = base::integer(),
-                                         producerID = base::integer(),
-                                         timeStamp = base::integer()
+                                         producerID = base::integer()
   ) %>%
     .[1:maxMemorySize] %>%
     .[, valid := FALSE] %>%
@@ -28,8 +27,7 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
 
   agent$memory %>%
     .[1:nInput, base::c("word", "phoneme", "exemplar") := samples[, .(word, phoneme, exemplar)]] %>%
-    .[1:nInput, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)] %>%
-    .[1:nInput, timeStamp := base::sample(.N), by = word]
+    .[1:nInput, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)]
 
   agent$features <- data.table::data.table(P1 = base::double()) %>% .[1:maxMemorySize]
   update_features(agent, compute_features(agent, params))
