@@ -27,7 +27,7 @@ library(gridExtra)
 library(dplyr, warn.conflicts = FALSE)
 ```
 
-`soundChangeR` is an agent-based implementation of the interactive-phonetic (IP) model of sound change (Harrington et al. 2018). The central entities in this model are agents and exemplars. Agents are artificial representations of real speakers, i.e. the agents are endowed with a memory filled with acoustic data from actual speakers. The agents also follow a set of rules in order to produce, perceive, and forget exemplars. Exemplars consist of acoustic parameters that capture essential characteristics of the speech sounds under investigation. Every exemplar is also associated to a fixed lexical class, i.e. the word in which the exemplar was produced. The phonemic level of this model links the acoustic exemplars and the word classes. Sound change may or may not emerge from the interactions between the agents as well as the mechnisms of their production-perception feedback loop.
+`soundChangeR` is an agent-based implementation of the interactive-phonetic (IP) model of sound change ([Harrington et al. 2018](https://www.phonetik.uni-muenchen.de/~jmh/papers/harringtontopics18.pdf)). The central entities in this model are agents and exemplars. Agents are artificial representations of real speakers, i.e. the agents are endowed with a memory filled with acoustic data from actual speakers. The agents also follow a set of rules in order to produce, perceive, and forget exemplars. Exemplars consist of acoustic parameters that capture essential characteristics of the speech sounds under investigation. Every exemplar is also associated to a fixed lexical class, i.e. the word in which the exemplar was produced. The phonemic level of this model links the acoustic exemplars and the word classes. Sound change may or may not emerge from the interactions between the agents as well as the mechnisms of their production-perception feedback loop.
 
 We will explain the ABM's mechanisms by means of the exemplary dataset which is provided with the package:
 
@@ -134,7 +134,7 @@ For `elwi`, *food* is associated with the blue phonemic class. `elwi` can either
 
 ## Phonology
 
-There are two ways of linking the exemplars and word classes through a phonemic level. Either the phonemic classes are fixed and immutable throughout the simulation or they are agent-specific, regularly updated, and computed using unsupervised learning mechanisms (see [useFlexiblePhonology](#phonology-1)). The latter option consists of a two-step process: First, Gaussian Mixture Models (GMM) are used to create acoustic clusters of exemplars. This step relies exclusively on information about the location of exemplars in the acoustic space (and no information about word classes etc.). Second, non-negative matrix factorisation (NMF) is used to identify sets of acoustic clusters that contain exemplars of the same distinct word classes. This step neglects any information on the location of exemplars and clusters in the acoustic space, and instead uses information on the association between exemplars and word classes. The resulting sets of acoustic clusters are called sub-phonemes. If this option is used to derive phonemic knowledge, the memorisation criteria are computed with respect to these sub-phonemes.
+There are two ways of linking the exemplars and word classes through a phonemic level. Either the phonemic classes are fixed and immutable throughout the simulation (like in the [demo simulation](#demo)) or they are agent-specific, regularly updated, and computed using unsupervised learning mechanisms (see [useFlexiblePhonology](#phonology-1)). The latter option consists of a two-step process: First, Gaussian Mixture Models (GMM) are used to create acoustic clusters of exemplars. This step relies exclusively on information about the location of exemplars in the acoustic space (and no information about word classes etc.). Second, non-negative matrix factorisation (NMF) is used to identify sets of acoustic clusters that contain exemplars of the same distinct word classes. This step neglects any information on the location of exemplars and clusters in the acoustic space, and instead uses information on the association between exemplars and word classes. The resulting sets of acoustic clusters are called sub-phonemes. If this option is used to derive phonemic knowledge, the memorisation criteria are computed with respect to these sub-phonemes.
 
 The effects of the GMMs and NMF can be observed in the following example for the speaker `albr` from the `u_fronting` dataset.
 
@@ -314,7 +314,7 @@ The argument `rootLogDir` specifies the relative or absolute path to the logging
 
 ## Demo
 
-There is a demo of this agent-based model available which uses the `u_fronting` dataset. The demo uses the default values for all arguments of `run_simulation()` apart from those that refer to the input data frame (see [this section](input-data)). The following function takes no arguments and starts the demo simulation:
+There is a demo of this agent-based model available which uses the `u_fronting` dataset. The demo uses the default values for all arguments of `run_simulation()` apart from those that refer to the input data frame (see [this section](#input-data)). The following function takes no arguments and starts the demo simulation:
 
 ```{r, eval=FALSE}
 run_demo_simulation()
@@ -322,9 +322,9 @@ run_demo_simulation()
 
 ## Data Structures and Analysis of Results
 
-Running a simulation causes multiple new directories and files to be created throughout the process. First of all, the root logging directory (as set by [rootLogDir](other-options)) is created if it did not previously exist. In this directory, all simulations will be saved under a name that consists of "ABM" and the date and exact time when the simulation was started. An example of that is `ABM20211102135337`: a simulation that was started on November 11th, 2021, at 1:53pm and 37 seconds. The root logging directory also contains the simulations register which is saved as an `.rds` and updated automatically whenever a new simulation is saved in the same directory. The [next section](managing-simulations) is concerned with how to manipulate the simulations register manually.
+Running a simulation causes multiple new directories and files to be created throughout the process. First of all, the root logging directory (as set by [rootLogDir](#other-options)) is created if it did not previously exist. In this directory, all simulations will be saved under a name that consists of "ABM" and the date and exact time when the simulation was started. An example of that is `ABM20211102135337`: a simulation that was started on November 11th, 2021, at 1:53pm and 37 seconds. The root logging directory also contains the simulations register which is saved as an `.rds` and updated automatically whenever a new simulation is saved in the same directory. The [next section](#managing-simulations) is concerned with how to manipulate the simulations register manually.
 
-In a simulation directory, there are two files and as many numerically named directories as there are [runs](runs). The two files are called `input.rds` and `params.yaml`. The first is the input data file as specified by [inputDataFile](input-data), which, during the simulation, was loaded as a `data.table`. Its columns were renamed and the resulting data frame was saved as `input.rds`.
+In a simulation directory, there are two files and as many numerically named directories as there are [runs](#runs). The two files are called `input.rds` and `params.yaml`. The first is the input data file as specified by [inputDataFile](#input-data), which, during the simulation, was loaded as a `data.table`. Its columns were renamed and the resulting data frame was saved as `input.rds`.
 
 `rds` is a compressed file type specific to R which is used to save and restore single R objects. The R function to load `.rds` files is `readRDS()`. This function can be used, for example, to load `input.rds`:
 
@@ -347,9 +347,9 @@ The result of that function is a list.
 input.df <- load_input_data(params = params)
 ```
 
-The difference between `load_input_data()` and `readRDS(input.rds)` as shown above is that the latter loads the saved input file, while the former loads the original [input data file](input-data), performs some conversions, and returns the loaded data as a `data.table`; in fact, `load_input_data()` is used during the simulation to load the input data file. The results of the two functions should be the same.
+The difference between `load_input_data()` and `readRDS(input.rds)` as shown above is that the latter loads the saved input file, while the former loads the original [input data file](#input-data), performs some conversions, and returns the loaded data as a `data.table`; in fact, `load_input_data()` is used during the simulation to load the input data file. The results of the two functions should be the same.
 
-Further wrappers of `readRDS()` include `load_pop()`, `load_intLog()`, and `load_cache()` all of which take three arguments: `logDir` (the path to the simulation directory), `runs` (the runs to be loaded), and `snaps` (the snapshots to be loaded). In the subdirectories of the simulation directory, e.g. `ABM20211102135337/1` or `ABM20211102135337/2`, the [snapshots](runs) of the agent population, the interactions log, and the cache are saved as `.rds` files. The files `pop.X.rds` (where `X` stands for a snapshot; `0 <= X <= nrOfSnapshots`) contain the agents' memories at the given time during the simulation as a data frame. These can be loaded using `load_pop()`, for example as follows:
+Further wrappers of `readRDS()` include `load_pop()`, `load_intLog()`, and `load_cache()` all of which take three arguments: `logDir` (the path to the simulation directory), `runs` (the runs to be loaded), and `snaps` (the snapshots to be loaded). In the subdirectories of the simulation directory, e.g. `ABM20211102135337/1` or `ABM20211102135337/2`, the [snapshots](#runs) of the agent population, the interactions log, and the cache are saved as `.rds` files. The files `pop.X.rds` (where `X` stands for a snapshot; `0 <= X <= nrOfSnapshots`) contain the agents' memories at the given time during the simulation as a data frame. These can be loaded using `load_pop()`, for example as follows:
 
 ```{r, eval=FALSE}
 pop <- load_pop(logDir = "./logDir/ABM20211102135337",
@@ -360,18 +360,23 @@ pop <- load_pop(logDir = "./logDir/ABM20211102135337",
 Using these arguments, the function loads `./logDir/ABM20211102135337/1/pop.0.rds` and `./logDir/ABM20211102135337/1/pop.100.rds` and binds them together into a `data.table`. Both `runs` and `snaps` can either take a single full positive number or a vector of full positive numbers. The population data frame consists of the following columns:
 
 - `run`: character column indicating the run
-- `P1` etc.: all numeric columns starting with `P` are the acoustic [features](input-data). The function `get_Pcols()` returns the names of the feature columns and `get_N_Pcols()` returns the amount of feature columns, given a data frame like the input data or population as an argument.
+- `P1` etc.: all numeric columns starting with `P` are the acoustic [features](#input-data)
 - `word`: character column indicating the word class of the given exemplar
 - `phoneme`: character column indicating the phonemic class of the given exemplar
-- `valid`: logical column indicating whether the corresponding row in the data frame is valid. If `FALSE`, this indicates that the given exemplar has been removed from the agent's memory and is no longer of influence to the simulation.
 - `nrOfTimesHeard`: numeric column indicating how often the corresponding agent has memorised tokens of the word class in `word`
 - `producerID`: numeric column indicating the ID of the agent who produced the given exemplar
-- `timeStamp`: numeric column indicating how old the given exemplar is; time stamps are created and updated within word class, with more recent exemplars receiving higher time stamps.
 - `exemplar`: list of the feature columns
 - `agentID`: numeric column indicating the ID of the agent in whose memory the given exemplar is stored
 - `speaker`: character column indicating the agent's speaker code  
 - `group`: character column indicating the agent's group
 - `snapshot`: character column indicating the snapshot
+
+Given a data frame like the population or input data as an argument, the function `get_Pcols()` returns the names of the feature columns and `get_N_Pcols()` returns the amount of feature columns.
+
+```{r, eval=FALSE}
+get_Pcols(data = pop)
+get_N_Pcols(data = input.df)
+```
 
 The interactions log is saved in files called `intLog.X.rds` (where `X` again stands for snapshot; `1 <= X <= nrOfSnapshots`) and can be loaded using `load_intLog()`, for example:
 
@@ -381,7 +386,7 @@ intLog <- load_intLog(logDir = "./logDir/ABM20211102135337",
                       snaps = c(1, 100))
 ```
 
-In this case, the snapshots start at 1 (i.e. when the first [nrOfInteractions](runs) interactions have taken place), not at 0 (i.e. before the first interactions). The interactions log contains the following columns:
+In this case, the snapshots start at 1 (i.e. when the first [nrOfInteractions](#runs) interactions have taken place), not at 0 (i.e. before the first interactions). The interactions log contains the following columns:
 
 - `run`: character column indicating the run
 - `snapshot`: character column indicating the snapshot
@@ -393,9 +398,7 @@ In this case, the snapshots start at 1 (i.e. when the first [nrOfInteractions](r
 - `perceiverPhoneme`: character column indicating the phonemic class of the given exemplar according to the agent listener
 - `perceiverNrOfTimesHeard`: numeric column indicating how often the agent listener has memorised tokens of the word class in `word`
 - `accepted`: logical column indicating whether the exemplar was memorised by the agent listener
-- `rejectionCriterion`: character column indicating which memorisation criterion was responsible for rejecting the exemplar (i.e. if `accepted` is `FALSE`); if two memorisation criteria were applied and both were failed, the first of them is given in this column 
-- `simulationNr`: same as `snapshot`
-- `valid`: logical column; always `TRUE`
+- `rejectionCriterion`: character column indicating which memorisation criterion was responsible for rejecting the exemplar (i.e. if `accepted` is `FALSE`); if two memorisation criteria were applied and both were failed, the first of them is given in this column
 
 Finally, the cache is actually part of the agents' memories which is used for storing some agent-specific statistics and statistical models. The files are called `cache.X.rds` (where `X` again stands for snapshot; `0 <= X <= nrOfSnapshots`) and can be loaded into a `data.table` using `load_cache()`, e.g. as follows:
 
@@ -409,10 +412,10 @@ The cache contains the following columns:
 
 - `run`: character column indicating the run
 - `snapshot`: character column indicating the snapshot
-- `Agent`: numeric column indicating the ID of the agent
-- `name`: character column with one of `nFeatures` (number of acoustic features), `qda` (quadrativ discriminatory analysis for [posterior probability](perception-1) memorisation criteria), `GMM` ([Gaussian Mixture Model](phonology) if `useFlexiblePhonology` is `TRUE`), `nAccepted` (overall number of tokens that the agent has accepted and memorised), `nForgotten` (over number of exemplars that the agent has removed from memory)
+- `agentID`: numeric column indicating the ID of the agent
+- `name`: character column with one of `nFeatures` (number of acoustic features), `qda` (quadratic discriminant analysis for [posterior probability](#perception-1) memorisation criteria), `GMM` ([Gaussian Mixture Model](#phonology) if `useFlexiblePhonology` is `TRUE`), `nAccepted` (total number of tokens that the agent has accepted and memorised), `nForgotten` (total number of exemplars that the agent has removed from memory)
 - `value`: list of values corresponding to the cached object indicated by `name`
-- `valid`: logical column indicating whether the cached object is valid
+- `valid`: logical column indicating whether the cached object is valid, i.e. used at the given `snapshot` during the simulation
 
 ## Managing Simulations
 
@@ -451,3 +454,13 @@ The function `purge_uncompleted_simulations()` only takes the root logging direc
 ```{r, eval=FALSE}
 purge_uncompleted_simulations(rootLogDir = "./logDir")
 ```
+
+# Literature
+
+Gubian, M., Cronenberg, J., and Harrington, J. (in prep.): Simulating the merger of /I@/ and /e@/ in New Zealand English using an agent-based model.
+
+Cronenberg, J. (in prep.): New Approaches to the Study of Sound Change: The Case of Aspiration in Andalusian Spanish. Dissertation, LMU Munich.
+
+Harrington, J., Kleber, F., Reubold, U., Schiel, F., and Stevens, M. (2018): [Linking Cognitive and Social Aspects of Sound Change Using Agent-Based Modeling.](https://www.phonetik.uni-muenchen.de/~jmh/papers/harringtontopics18.pdf) Topics in Cognitive Science, pp. 1-22.
+
+Harrington, J., and Schiel, F. (2017): [/u/-fronting and agent-based modeling: The relationship between the origin and spread of sound change.](https://www.phonetik.uni-muenchen.de/~jmh/papers/harringtonschiel.pdf) Language 93 (2), pp. 414-445.
