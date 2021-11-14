@@ -134,14 +134,23 @@ For `elwi`, *food* is associated with the blue phonemic class. `elwi` can either
 
 ## Phonology
 
-There are two ways of linking the exemplars and word classes through a phonemic level. Either the phonemic classes are fixed and immutable throughout the simulation (like in the [demo simulation](#demo)) or they are agent-specific, regularly updated, and computed using unsupervised learning mechanisms (see [useFlexiblePhonology](#phonology-1)). The latter option consists of a two-step process: First, Gaussian Mixture Models (GMM) are used to create acoustic clusters of exemplars. This step relies exclusively on information about the location of exemplars in the acoustic space (and no information about word classes etc.). Second, non-negative matrix factorisation (NMF) is used to identify sets of acoustic clusters that contain exemplars of the same distinct word classes. This step neglects any information on the location of exemplars and clusters in the acoustic space, and instead uses information on the association between exemplars and word classes. The resulting sets of acoustic clusters are called sub-phonemes. If this option is used to derive phonemic knowledge, the memorisation criteria are computed with respect to these sub-phonemes.
+There are two ways of linking the exemplars and word classes through a phonemic level. Either the phonemic classes are fixed and immutable throughout the simulation (like in the [demo simulation](#demo)) or they are agent-specific, regularly updated, and computed using unsupervised learning mechanisms (see [useFlexiblePhonology](#phonology-1)). The latter option consists of a two-step process: First, Gaussian Mixture Models (GMM) are used to create acoustic clusters of exemplars. This step relies exclusively on information about the location of exemplars in the acoustic space (and no information about word classes etc.). 
 
-The effects of the GMMs and NMF can be observed in the following example for the speaker `albr` from the `u_fronting` dataset.
+The plot below shows the components of the GMM for the speaker `phfo` from the `u_fronting` dataset. Every black dot is an exemplar in `phfo`'s memory. At this first stage of deriving phonemic knowledge, the exemplars' association to word classes is irrelevant, thus only the acoustic information is used to form clusters. The GMM has determined that there are four acoustic clusters (*a1* to *a4*) as shown by the labelled ellipses.
 
-```{r, echo=FALSE}
-
+```{r cluster, fig.align="center", out.width = "685px", echo=FALSE}
+knitr::include_graphics("./img/cluster.png")
 ```
 
+In the second step, non-negative matrix factorisation (NMF) is used to identify sets of acoustic clusters that contain exemplars of the same distinct word classes. These sets are called sub-phonemes. This step neglects any information on the location of exemplars and acoustic clusters in the acoustic space, and instead uses information on the association between exemplars and word classes. 
+
+Therefore, every exemplar from the previous plot is now represented by the associated word label. In total, NMF has determined that there are three sub-phonemes as shown by the different colours. Acoustic clusters *a1* and *a4* both contain mostly exemplars of the same four word classes: *queued*, *feud*, *hewed*, and *soup*. That is why *a1* and *a4* are grouped together into the red sub-phoneme. Most exemplars of the words *cooed*, *food*, and *who'd* are contained in acoustic cluster *a3* and no other cluster, hence *a3* becomes the green sub-phoneme. However, two exemplars of *cooed* and one exemplar of *who'd* were originally part of acoustic cluster *a1*. These exemplars are so-called impurities in the red sub-phoneme (with which cluster *a1* is associated). Since it is unlikely that acoustic clusters can be grouped precisely according to the word classes they contain , a [purity threshold](#perception-1) is set, i.e. the fraction of exemplars in a sub-phoneme belonging to a designated set of words. Finally, acoustic cluster *a2* exclusively contains exemplars of the words *feed*, *heed*, *keyed* and *seep* and is hence identified as the blue sub-phoneme.
+
+```{r sub-phonemes, fig.align="center", out.width = "685px", echo=FALSE}
+knitr::include_graphics("./img/sub-phon.png")
+```
+
+If this flexible phonology module is used to derive phonemic knowledge, the memorisation criteria are computed with respect to these sub-phonemes. 
 
 ## Memory Management
 
