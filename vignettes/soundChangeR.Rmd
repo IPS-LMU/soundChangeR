@@ -22,8 +22,6 @@ knitr::opts_chunk$set(
 ```
 
 ```{r, include=FALSE}
-library(ggplot2)
-library(gridExtra)
 library(dplyr, warn.conflicts = FALSE)
 ```
 
@@ -66,28 +64,10 @@ DCT0 is linearly related to the mean of the F2 trajectory, i.e. the higher DCT0,
 
 The agent speaker randomly chooses a word class, then builds a Gaussian model over all memorised exemplars associated with that word, and samples a new token from it. This process is word-based in order to ensure that possible coarticulatory effects can be carried over into the new token.
 
-Say, `albr` is the agent speaker and has chosen to produce a token of the word *food*. Then `albr` gathers all exemplars of *food* (as shown by the `food` labels in the plots below) and estimates a Gaussian model over them in the three-dimensional DCT space (as exemplified by the ellipses). A new token of *food*, shown in orange, is then sampled from the Gaussian distribution:
+Say, `albr` is the agent speaker and has chosen to produce a token of the word *food*. Then `albr` gathers all exemplars of *food* (as shown by the `food` labels in the plots below) and estimates a Gaussian model over them (as exemplified by the ellipses) in the three-dimensional DCT space (here broken down into two 2D plots for reasons of legibility). A new token of *food*, shown in orange, is then sampled from the Gaussian distribution:
 
-```{r, echo=FALSE}
-p1 <- u_fronting %>% 
-  filter(speaker == "albr" & word == "food") %>% 
-  ggplot() + 
-  aes(x = DCT0, y = DCT1, label = word) + 
-  geom_text() + 
-  stat_ellipse() + 
-  geom_text(data = data.frame(DCT0 = 1268.7, DCT1 = -6.6, word = "food"), 
-            color = "darkorange2", fontface = "bold") +
-  theme_light()
-p2 <- u_fronting %>% 
-  filter(speaker == "albr" & word == "food") %>% 
-  ggplot() + 
-  aes(x = DCT0, y = DCT2, label = word) + 
-  geom_text() + 
-  stat_ellipse() + 
-  geom_text(data = data.frame(DCT0 = 1268.7, DCT2 = -7.1, word = "food"), 
-            color = "darkorange2", fontface = "bold") +
-  theme_light()
-grid.arrange(p1, p2, nrow = 1)
+```{r production, fig.align="center", out.width = "685px", echo=FALSE}
+knitr::include_graphics("./img/prod.png")
 ```
 
 The new token consists of the values for the three DCT coefficients as well as the label of the word class, *food*. 
@@ -98,45 +78,17 @@ The agent listener receives the token together with its associated word class. T
 
 Continuing with the example above, say, `elwi` is the agent listener who has to decide whether or not to memorise the perceived token of *food*. `elwi`'s acoustic space with the phonemic categories colour-coded is shown in the following plot. The perceived token of *food* is again in orange.
 
-```{r, echo=FALSE}
-p1 <- u_fronting %>% 
-  filter(speaker == "elwi") %>% 
-  mutate(phoneme = case_when(word %in% c("seep", "heed", "keyed", "feed") ~ 1,
-                             word %in% c("soup", "hewed", "queued", "feud") ~ 2,
-                             TRUE ~ 3),
-         phoneme = as.factor(phoneme)) %>%
-  ggplot() + 
-  aes(x = DCT0, y = DCT1, col = phoneme, label = word) + 
-  geom_text() + 
-  stat_ellipse() + 
-  geom_text(mapping = aes(x = DCT0, y = DCT1, label = word), 
-            data = data.frame(DCT0 = 1268.7, DCT1 = -6.6, word = "food"), 
-            color = "darkorange2", fontface = "bold") + 
-  theme_light() + theme(legend.position = "none")
-p2 <- u_fronting %>% 
-  filter(speaker == "elwi") %>% 
-  mutate(phoneme = case_when(word %in% c("seep", "heed", "keyed", "feed") ~ 1,
-                             word %in% c("soup", "hewed", "queued", "feud") ~ 2,
-                             TRUE ~ 3),
-         phoneme = as.factor(phoneme)) %>%
-  ggplot() + 
-  aes(x = DCT0, y = DCT2, col = phoneme, label = word) + 
-  geom_text() + 
-  stat_ellipse() + 
-  geom_text(mapping = aes(x = DCT0, y = DCT2, label = word), 
-            data = data.frame(DCT0 = 1268.7, DCT2 = -7.1, word = "food"), 
-            color = "darkorange2", fontface = "bold") + 
-  theme_light() + theme(legend.position = "none")
-grid.arrange(p1, p2, nrow = 1)
+```{r perception, fig.align="center", out.width = "685px", echo=FALSE}
+knitr::include_graphics("./img/perc.png")
 ```
 
-For `elwi`, *food* is associated with the blue phonemic class. `elwi` can either accept the token without any constraint, or use different probabilistic decisions (also see [memoryIntakeStrategy](#perception-1)). One of them tests whether the token of *food* is close enough to its intended phonemic class without taking any other phonemic classes into account. If, according to the mahalanobis distance, the token is too far from the blue phonemic class, `elwi` rejects the token. The other decision metric is the maximum posterior probability criterion which takes all phonemic classes into account. The new token of *food* must be probabilistically closer to the blue than to all other phonemic classes. If this is the case, `elwi` accepts and memorises the token. In the given example, both probabilistic decisions would lead to a rejection of the token.
+For `elwi`, *food* is associated with the blue phonemic class. `elwi` can either accept the token without any constraint, or use different probabilistic decisions (also see [memoryIntakeStrategy](#perception-1)). One of them tests whether the token of *food* is close enough to its intended phonemic class without taking any other phonemic classes into account. If, according to the mahalanobis distance, the token is too far from the blue phonemic class, `elwi` rejects the token. The other default decision metric is the maximum posterior probability criterion which takes all phonemic classes into account. The new token of *food* must be probabilistically closer to the blue than to all other phonemic classes. If this is the case, `elwi` accepts and memorises the token. In the given example, both probabilistic decisions would lead to a rejection of the token.
 
 ## Phonology
 
 There are two ways of linking the exemplars and word classes through a phonemic level. Either the phonemic classes are fixed and immutable throughout the simulation (like in the [demo simulation](#demo)) or they are agent-specific, regularly updated, and computed using unsupervised learning mechanisms (see [useFlexiblePhonology](#phonology-1)). The latter option consists of a two-step process: First, Gaussian Mixture Models (GMM) are used to create acoustic clusters of exemplars. This step relies exclusively on information about the location of exemplars in the acoustic space (and no information about word classes etc.). 
 
-The plot below shows the components of the GMM for the speaker `phfo` from the `u_fronting` dataset. Every black dot is an exemplar in `phfo`'s memory. At this first stage of deriving phonemic knowledge, the exemplars' association to word classes is irrelevant, thus only the acoustic information is used to form clusters. The GMM has determined that there are four acoustic clusters (*a1* to *a4*) as shown by the labelled ellipses.
+The plot below shows the components of the GMM for the speaker `phfo` from a simulation with the `u_fronting` dataset after 100,000 interactions. Every black dot is an exemplar in `phfo`'s memory at that point in the simulation. At this first stage of deriving phonemic knowledge, the exemplars' association to word classes is irrelevant, thus only the acoustic information is used to form clusters. The GMM has determined that there are four acoustic clusters (*a1* to *a4*) as shown by the labelled ellipses.
 
 ```{r cluster, fig.align="center", out.width = "685px", echo=FALSE}
 knitr::include_graphics("./img/cluster.png")
@@ -144,13 +96,19 @@ knitr::include_graphics("./img/cluster.png")
 
 In the second step, non-negative matrix factorisation (NMF) is used to identify sets of acoustic clusters that contain exemplars of the same distinct word classes. These sets are called sub-phonemes. This step neglects any information on the location of exemplars and acoustic clusters in the acoustic space, and instead uses information on the association between exemplars and word classes. 
 
-Therefore, every exemplar from the previous plot is now represented by the associated word label. In total, NMF has determined that there are three sub-phonemes as shown by the different colours. Acoustic clusters *a1* and *a4* both contain mostly exemplars of the same four word classes: *queued*, *feud*, *hewed*, and *soup*. That is why *a1* and *a4* are grouped together into the red sub-phoneme. Most exemplars of the words *cooed*, *food*, and *who'd* are contained in acoustic cluster *a3* and no other cluster, hence *a3* becomes the green sub-phoneme. However, two exemplars of *cooed* and one exemplar of *who'd* were originally part of acoustic cluster *a1*. These exemplars are so-called impurities in the red sub-phoneme (with which cluster *a1* is associated). Since it is unlikely that acoustic clusters can be grouped precisely according to the word classes they contain , a [purity threshold](#perception-1) is set, i.e. the fraction of exemplars in a sub-phoneme belonging to a designated set of words. Finally, acoustic cluster *a2* exclusively contains exemplars of the words *feed*, *heed*, *keyed* and *seep* and is hence identified as the blue sub-phoneme.
-
 ```{r sub-phonemes, fig.align="center", out.width = "685px", echo=FALSE}
 knitr::include_graphics("./img/sub-phon.png")
 ```
 
-If this flexible phonology module is used to derive phonemic knowledge, the memorisation criteria are computed with respect to these sub-phonemes. 
+Therefore, every exemplar from the previous plot is now represented by the associated word label. In total, NMF has determined that there are three sub-phonemes as shown by the different colours. Acoustic clusters *a1* and *a4* both contain mostly exemplars of the same four word classes: *queued*, *feud*, *hewed*, and *soup*. That is why *a1* and *a4* are grouped together into the red sub-phoneme. Most exemplars of the words *cooed*, *food*, and *who'd* are contained in acoustic cluster *a3* and no other cluster, hence *a3* becomes the green sub-phoneme. However, two exemplars of *cooed* and one exemplar of *who'd* were originally part of acoustic cluster *a1*. These exemplars are so-called impurities in the red sub-phoneme (with which cluster *a1* is associated). Sub-phonemes can contain impurities as long as the overall [purity](#perception-1) of the sub-phoneme surpasses a given threshold. Purity is computed as the fraction of exemplars in a sub-phoneme belonging to a designated set of words. So if the red sub-phoneme consists of a total of 27 exemplars, 24 of which are associated with the word classes *queued*, *feud*, *hewed*, and *soup*, then the purity is
+
+```{r}
+24/27
+```
+
+which is higher than the default purity threshold of 0.75. Finally, acoustic cluster *a2* exclusively contains exemplars of the words *feed*, *heed*, *keyed*, and *seep* and is hence identified as the blue sub-phoneme.
+
+The sub-phonemic classes are recomputed at regular [intervals](#perception-1). Importantly, previous results from GMM and NMF are disregarded and play no role in the recomputation of the sub-phonemes. If this flexible phonology module is used to derive phonemic knowledge, the memorisation criteria are computed with respect to these sub-phonemes.
 
 ## Memory Management
 
@@ -158,11 +116,11 @@ There are two scenarios to be avoided in terms of memory size: When there are to
 
 The second issue (i.e. too many exemplars) can be avoided by having the agent listeners forget exemplars, i.e. remove an exemplar from memory that belongs to the same word class as the memorised token. The only restriction on forgetting is that word classes cannot be diminished, so if the deletion of an exemplar would leave the word class with less exemplars than it was initialised with, forgetting is blocked.
 
-Let's assume that `elwi` has decided to memorise the perceived token of *food* in the example above. Depending on the model's settings, a random exemplar of *food* can be removed unless the result is that there are less than 10 exemplars of *food* left afterwards. This is because `elwi` was initialised with 10 exemplars of "food".
+Let's assume that `elwi` has decided to memorise the perceived token of *food* in the example above. Depending on the model's settings, a random exemplar of *food* can be removed unless the result is that there are less than 10 exemplars of *food* left afterwards. This is because `elwi` was initialised with 10 exemplars of *food*.
 
 # Parameters of the Model
 
-The following is a comprehensive list of all parameters of the model that are arguments of `run_simulation()`. Short explanations of the arguments are available on the function's help page:
+The function which starts a simulation is called `run_simulation()`. The following is a comprehensive list of all parameters of the model that are arguments of `run_simulation()`. Short explanations of the arguments are also available on the function's help page:
 
 ```{r, eval=FALSE}
 ?run_simulation
@@ -179,7 +137,7 @@ phoneme = NULL
 features = NULL
 ```
 
-The first five arguments all take strings or a vector of strings. `inputDataFile` is the relative or absolute path to your data file, which can be a `.csv` or simple `.txt` file. When running the simulation, it will be loaded as a `data.table`. The argument `speaker` indicates the column in `inputDataFile` which contains the speaker codes. The argument `group` can be used if there are two or more agent groups, based on e.g. age or regional origin. If there are no groups, this argument can remain `NULL`, otherwise it is the name of the respective column in `inputDataFile`. The argument `word` indicates the column in `inputDataFile` which contains the lexical labels. If you are not using the flexible phonology algorithm (i.e. if `useFlexiblePhonology = FALSE`), the argument `phoneme` has to be specified and must point to the column in `inputDataFile` that contains the canonical phonemic labels. Otherwise, `phoneme` can remain `NULL`. For argument `features`, please indicate the name(s) of the column(s) that contain the acoustic parameter(s) (formant values, DCT coefficients, PC scores, etc.) of the sounds under investigation. The indicated column(s) must contain numbers. There can be more columns in `inputDataFile` than needed for the simulation (they will be ignored).
+The first five arguments all take strings or a vector of strings. `inputDataFile` is the relative or absolute path to a data file, which can be a `.csv` or simple `.txt` file. When running the simulation, it will be loaded as a `data.table`. The argument `speaker` indicates the column in `inputDataFile` which contains the speaker codes. The argument `group` can be used if there are two or more agent groups, based on e.g. age or regional origin. If there are no groups, this argument can remain `NULL`, otherwise it is the name of the respective column in `inputDataFile`. The argument `word` indicates the column in `inputDataFile` which contains the lexical labels. If you are not using the flexible phonology algorithm (i.e. if `useFlexiblePhonology = FALSE`), the argument `phoneme` has to be specified and must point to the column in `inputDataFile` that contains the canonical phonemic labels. Otherwise, `phoneme` can remain `NULL`. For argument `features`, please indicate the name(s) of the column(s) that contain the acoustic parameter(s) (formant values, DCT coefficients, PC scores, etc.) of the sounds under investigation. The indicated column(s) must contain numbers. There can be more columns in `inputDataFile` than needed for the simulation (they will be ignored).
 
 An example for these arguments can be given using the data frame `u_fronting` again. This dataset is also used in the [demo](#demo) of this model for which the arguments above are set as follows:
 
@@ -257,7 +215,7 @@ The agent listener has several options for deciding whether or not to memorise t
 - `"mahalanobisDistance"`: The distance between the token and the corresponding phonemic class in the agent listener's memory has to be smaller than the `mahalanobisProbThreshold` which takes a value between 0 and 1. This approach does not take into account any of the other phonemic categories.
 - `"maxPosteriorProb"`: Maximum posterior probability decision, i.e. the token is only memorised if its probability of belonging to the listener's corresponding phonemic category is higher than that of belonging to any of the other categories.
 - `"posteriorProbThr"`: The produced token is memorised if its posterior probability of belonging to the phonemic category is higher than the threshold indicated by the argument `posteriorProbThreshold`.
-- `acceptAll`: All perceived tokens are also memorised, i.e. there is no constraint on memorisation.
+- `"acceptAll"`: All perceived tokens are also memorised, i.e. there is no constraint on memorisation.
 
 The two possible combinations of values for `memoryIntakeStrategy` are:
 
@@ -268,7 +226,7 @@ memoryIntakeStrategy = c("mahalanobisDistance", "posteriorProbThr")
 
 If the perceived token is associated with a word that is unknown to an agent listener, a word label will be assigned to the token based on a majority vote among `perceptionOOVNN` nearest neighbours. This argument therefore has to be an uneven full positive number.
 
-If the perceived token has been memorised, the agent listener can forget an exemplar of the same word class if a value sampled from a uniform distribution is below `forgettingRate`. In effect, the agent listener will always remove an exemplar if `forgettingRate = 1` and never remove one if `forgettingRate = 0`.
+If the perceived token has been memorised, the agent listener can forget an exemplar of the same word class if a value sampled from a uniform distribution is below `forgettingRate`. So the agent listener will always remove an exemplar if `forgettingRate = 1`, never remove one if `forgettingRate = 0`, and remove a token some of the time if `forgettingRate` is set to a value between 0 and 1.
 
 ## Phonology
 
@@ -279,7 +237,9 @@ purityRepetitions = 5
 purityThreshold = 0.75
 ```
 
+As described [before](#perception), phonemic classes can either be fixed and immutable if `useFlexiblePhonology = FALSE` (in this case, `phoneme` must be set) or they can be computed using unsupervised learning algorithms (GMM and NMF) if `useFlexiblePhonology = TRUE`. In the latter case, three arguments are used to configure GMM and NMF. `computeGMMsInterval` takes a full positive number and defines after how many memorised tokens an agent recomputes their sub-phonemic classes. Be aware that this way of generating phonemic classes is computationally expensive and may lead to long computation times if the interval is set to a relatively low value.
 
+Sub-phonemes must surpass the `purityThreshold`, i.e. the fraction of exemplars in a sub-phoneme belonging to a designated set of words, in order to be identified as a sub-phoneme. This threshold is a number between 0 and 1. Since there is an element of stochasticity to the NMF algorithm, the optimal number of sub-phonemes is determined by running NMF `purityRepetitions` times.
 
 ## Interactions
 
