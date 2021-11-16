@@ -31,7 +31,7 @@ load_input_data <- function(params) {
     if (grepl("between[groups]?", params[["interactionPartners"]], ignore.case = T)) {
       stop("Please indicate an existing column in inputDataFile for argument 'group' if you want to do betweenGroups interactions.")
     } else {
-      input.df$group <- base::as.character()
+      input.df$group <- "none"
     }
   }
   
