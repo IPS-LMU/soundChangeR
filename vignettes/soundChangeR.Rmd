@@ -67,7 +67,7 @@ The agent speaker randomly chooses a word class, then builds a Gaussian model ov
 Say, `albr` is the agent speaker and has chosen to produce a token of the word *food*. Then `albr` gathers all exemplars of *food* (as shown by the `food` labels in the plots below) and estimates a Gaussian model over them (as exemplified by the ellipses) in the three-dimensional DCT space (here broken down into two 2D plots for reasons of legibility). A new token of *food*, shown in orange, is then sampled from the Gaussian distribution:
 
 ```{r production, fig.align="center", out.width = "685px", echo=FALSE}
-knitr::include_graphics("./img/prod.png")
+knitr::include_graphics("./prod.png")
 ```
 
 The new token consists of the values for the three DCT coefficients as well as the label of the word class, *food*. 
@@ -79,7 +79,7 @@ The agent listener receives the token together with its associated word class. T
 Continuing with the example above, say, `elwi` is the agent listener who has to decide whether or not to memorise the perceived token of *food*. `elwi`'s acoustic space with the phonemic categories colour-coded is shown in the following plot. The perceived token of *food* is again in orange.
 
 ```{r perception, fig.align="center", out.width = "685px", echo=FALSE}
-knitr::include_graphics("./img/perc.png")
+knitr::include_graphics("./perc.png")
 ```
 
 For `elwi`, *food* is associated with the blue phonemic class. `elwi` can either accept the token without any constraint, or use different probabilistic decisions (also see [memoryIntakeStrategy](#perception-1)). One of them tests whether the token of *food* is close enough to its intended phonemic class without taking any other phonemic classes into account. If, according to the mahalanobis distance, the token is too far from the blue phonemic class, `elwi` rejects the token. The other default decision metric is the maximum posterior probability criterion which takes all phonemic classes into account. The new token of *food* must be probabilistically closer to the blue than to all other phonemic classes. If this is the case, `elwi` accepts and memorises the token. In the given example, both probabilistic decisions would lead to a rejection of the token.
@@ -91,13 +91,13 @@ There are two ways of linking the exemplars and word classes through a phonemic 
 The plot below shows the components of the GMM for the speaker `phfo` from a simulation with the `u_fronting` dataset after 100,000 interactions. Every black dot is an exemplar in `phfo`'s memory at that point in the simulation. At this first stage of deriving phonemic knowledge, the exemplars' association to word classes is irrelevant, thus only the acoustic information is used to form clusters. The GMM has determined that there are four acoustic clusters (*a1* to *a4*) as shown by the labelled ellipses.
 
 ```{r cluster, fig.align="center", out.width = "685px", echo=FALSE}
-knitr::include_graphics("./img/cluster.png")
+knitr::include_graphics("./cluster.png")
 ```
 
 In the second step, non-negative matrix factorisation (NMF) is used to identify sets of acoustic clusters that contain exemplars of the same distinct word classes. These sets are called sub-phonemes. This step neglects any information on the location of exemplars and acoustic clusters in the acoustic space, and instead uses information on the association between exemplars and word classes. 
 
 ```{r sub-phonemes, fig.align="center", out.width = "685px", echo=FALSE}
-knitr::include_graphics("./img/sub-phon.png")
+knitr::include_graphics("./sub-phon.png")
 ```
 
 Therefore, every exemplar from the previous plot is now represented by the associated word label. In total, NMF has determined that there are three sub-phonemes as shown by the different colours. Acoustic clusters *a1* and *a4* both contain mostly exemplars of the same four word classes: *queued*, *feud*, *hewed*, and *soup*. That is why *a1* and *a4* are grouped together into the red sub-phoneme. Most exemplars of the words *cooed*, *food*, and *who'd* are contained in acoustic cluster *a3* and no other cluster, hence *a3* becomes the green sub-phoneme. However, two exemplars of *cooed* and one exemplar of *who'd* were originally part of acoustic cluster *a1*. These exemplars are so-called impurities in the red sub-phoneme (with which cluster *a1* is associated). Sub-phonemes can contain impurities as long as the overall [purity](#perception-1) of the sub-phoneme surpasses a given threshold. Purity is computed as the fraction of exemplars in a sub-phoneme belonging to a designated set of words. So if the red sub-phoneme consists of a total of 27 exemplars, 24 of which are associated with the word classes *queued*, *feud*, *hewed*, and *soup*, then the purity is
