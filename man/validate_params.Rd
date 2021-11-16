@@ -4,12 +4,10 @@
 \alias{validate_params}
 \title{Check parameters for validity. Is automatically run during simulation.}
 \usage{
-validate_params(params, input.df)
+validate_params(params)
 }
 \arguments{
 \item{params}{list of parameters}
-
-\item{input.df}{input data frame}
 }
 \value{
 list of checked parameters and boolean on whether or not to run the simulation

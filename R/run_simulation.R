@@ -53,7 +53,7 @@ run_simulation <- function(inputDataFile = NULL,
                            createBootstrappedPopulation = FALSE,
                            bootstrapPopulationSize = 50,
                            expandMemory = FALSE,
-                           expandMemoryFactor = 2.0,
+                           expandMemoryFactor = 2,
                            removeOriginalExemplars = FALSE,
                            useSMOTE = TRUE,
                            fallBackOnPhoneme = TRUE,
@@ -85,16 +85,12 @@ run_simulation <- function(inputDataFile = NULL,
   params[["simulationName"]] <- generate_simulation_name()
   logDir <- base::file.path(params[["rootLogDir"]], params[["simulationName"]])
   base::dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
-
-  if (base::is.null(params[["inputDataFile"]]) || !base::file.exists(params[["inputDataFile"]])) {
-    stop("Your input data file does not exist. Please make sure you are entering a correct relative or absolute path to an existing data file with extension .csv or .txt.")
-  }
+  
   input.df <- load_input_data(params)
   base::saveRDS(input.df, base::file.path(logDir, "input.rds"))
-
-  check <- validate_params(params, input.df)
+  
+  check <- validate_params(params)
   params <- check[["params"]]
-
   register_simulation(params)
 
   if (check[["runSimulation"]]) {
@@ -128,5 +124,7 @@ run_simulation <- function(inputDataFile = NULL,
       parallel::stopCluster(cl)
     }
     set_completed(params[["rootLogDir"]], params[["simulationName"]])
+  } else {
+    stop("Oops, something went wrong! Please check the log.txt file in the simulation directory.")
   }
 }
