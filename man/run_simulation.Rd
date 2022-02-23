@@ -57,7 +57,7 @@ run_simulation(
 
 \item{subsetSpeakers}{vector of strings; speakers to be included in simulation}
 
-\item{subsetPhonemes}{string or vector of strings; canonical phonological label(s) to be included in the simulation}
+\item{subsetPhonemes}{string or vector of strings; canonical phonological label(s) to be included in the simulation (is automatically set to NULL if useFlexiblePhonology is TRUE)}
 
 \item{createBootstrappedPopulation}{boolean; whether to create an agent population using bootstrap or have every speaker represented by one agent}
 

@@ -19,6 +19,7 @@ load_input_data <- function(params) {
   
   if (params[["useFlexiblePhonology"]]) {
     input.df$phoneme <- base::as.character()
+    params[["subsetPhonemes"]] <- NULL
   } else if (!base::is.null(params[["phoneme"]]) && params[["phoneme"]] %in% base::colnames(input.df)) {
     input.df %>% data.table::setnames(params[["phoneme"]], "phoneme")
   } else {

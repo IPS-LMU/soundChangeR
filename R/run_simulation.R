@@ -7,7 +7,7 @@
 #' @param phoneme string; column name for canonical phonological labels (does not have to be specified if useFlexiblePhonology is TRUE)
 #' @param features string or vector of strings; column name(s) for acoustic features
 #' @param subsetSpeakers vector of strings; speakers to be included in simulation
-#' @param subsetPhonemes string or vector of strings; canonical phonological label(s) to be included in the simulation
+#' @param subsetPhonemes string or vector of strings; canonical phonological label(s) to be included in the simulation (is automatically set to NULL if useFlexiblePhonology is TRUE)
 #' @param createBootstrappedPopulation boolean; whether to create an agent population using bootstrap or have every speaker represented by one agent
 #' @param bootstrapPopulationSize full positive number or named vector of full positive numbers; amount of agents (per group) in bootstrap scenario
 #' @param expandMemory boolean; whether or not to increase number of tokens per word and agent before simulation start
