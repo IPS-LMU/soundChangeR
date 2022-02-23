@@ -1,0 +1,20 @@
+citHeader("To cite soundChangeR in publications use:")
+
+citEntry(
+  entry    = "unpublished",
+  title    = "soundChangeR: An Agent-Based Model of Sound Change",
+  author   = personList(
+  person("Johanna", "Cronenberg"),
+  person("Michele", "Gubian"),
+  person("Jonathan", "Harrington"),
+  person("Florian", "Schiel")
+  ),
+  note     = "R package version 1.0.0",
+  year     = 2022,
+  url      = "https://github.com/IPS-LMU/soundChangeR",
+  textVersion = 
+  paste("Johanna Cronenberg, Michele Gubian, Jonathan Harrington, Florian Schiel (2022).",
+        "soundChangeR: An Agent-Based Model of Sound Change.",
+        "R package version 1.0.0.",
+        "Available at https://github.com/IPS-LMU/soundChangeR.")
+)
