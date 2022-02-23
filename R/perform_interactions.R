@@ -7,7 +7,7 @@ perform_interactions <- function(pop, logDir, params) {
   pb <- utils::txtProgressBar(min = 0, max = params[["nrOfSnapshots"]], initial = 0, style = 3)
   for (snap in 1:params[["nrOfSnapshots"]]) {
     utils::setTxtProgressBar(pb, snap)
-    interactionsLog <- create_interactions_log(params[["interactionsPerSnapshot"]])
+    interactionsLog <- create_interactions_log(params)
     for (i in 1:params[["interactionsPerSnapshot"]]) {
       perform_single_interaction(pop, interactionsLog, snap, groupsInfo, params)
     }

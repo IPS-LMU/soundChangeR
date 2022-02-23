@@ -31,18 +31,14 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params)
 
   if (memorise) {
     rowToWrite <- row_to_write(agent, producedToken, params)
-
     write_memory(agent, params, producedToken, rowToWrite, perceiverPhoneme)
-    # write_features(agent, features, rowToWrite)
-
     set_cache_value(agent, "nAccepted", get_cache_value(agent, "nAccepted") + 1)
-
     if (base::any(params[["memoryIntakeStrategy"]] %in% c("maxPosteriorProb", "posteriorProbThr"))) {
       invalidate_cache(agent, "qda")
     }
   }
 
-  write_interactions_log(interactionsLog, producedToken, agent, perceiverPhoneme, memorise, strategy, nrSim)
+  write_interactions_log(interactionsLog, producedToken, agent, perceiverPhoneme, memorise, strategy, features, nrSim)
 
   if (get_cache_value(agent, "nAccepted") %% params[["computeGMMsInterval"]] == 0) {
     update_features(agent, compute_features(agent, params))

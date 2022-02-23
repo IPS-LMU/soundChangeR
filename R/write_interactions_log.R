@@ -1,4 +1,4 @@
-write_interactions_log <- function(interactionsLog, producedToken, perceiver, perceiverPhoneme_, memorise, strategy,  nrSim) {
+write_interactions_log <- function(interactionsLog, producedToken, perceiver, perceiverPhoneme_, memorise, strategy, features, nrSim) {
 
   rowToWrite <- base::which(interactionsLog$valid == FALSE)[1]
   interactionsLog[rowToWrite, `:=`(
@@ -18,5 +18,6 @@ write_interactions_log <- function(interactionsLog, producedToken, perceiver, pe
     accepted = memorise,
     rejectionCriterion = base::ifelse(memorise, NA_character_, strategy),
     valid = TRUE
-  )]
+  )] %>% 
+    .[rowToWrite, base::paste0("P", 1:base::ncol(features)) := base::as.list(features)]
 }

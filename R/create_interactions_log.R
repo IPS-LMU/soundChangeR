@@ -1,4 +1,4 @@
-create_interactions_log <- function(nrOfInteractions) {
+create_interactions_log <- function(params) {
 
   interactionsLog <- data.table::data.table(word = NA_character_, 
                                             producerID = NA_integer_, 
@@ -12,8 +12,9 @@ create_interactions_log <- function(nrOfInteractions) {
                                             valid = NA)[0]
 
   data.table::rbindlist(base::list(
-    interactionsLog, data.table::data.table(base::matrix(nrow = nrOfInteractions, ncol = ncol(interactionsLog)))
+    interactionsLog, data.table::data.table(base::matrix(nrow = params[["interactionsPerSnapshot"]], ncol = ncol(interactionsLog)))
   ), use.names = FALSE) %>%
     .[, valid := FALSE] %>%
+    .[, base::paste0("P", 1:base::length(params[["features"]])) := NA_real_] %>% 
     .[]
 }
