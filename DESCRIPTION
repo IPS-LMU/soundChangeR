@@ -20,6 +20,7 @@ Imports:
     dplyr,
     dtt,
     FNN,
+    ggplot2,
     Hmisc,
     magrittr,
     MASS,
@@ -32,6 +33,8 @@ Imports:
     rlist,
     smotefamily,
     tibble,
+    tidyr,
+    tidyselect,
     tools
 Suggests: 
     rmarkdown,

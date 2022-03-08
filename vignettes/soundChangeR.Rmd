@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 library(dplyr, warn.conflicts = FALSE)
 ```
 
-`soundChangeR` is an agent-based implementation of the interactive-phonetic (IP) model of sound change ([Harrington et al. 2018](https://www.phonetik.uni-muenchen.de/~jmh/papers/harringtontopics18.pdf)). The central entities in this model are agents and exemplars. Agents are artificial representations of real speakers, i.e. the agents are endowed with a memory filled with acoustic data from actual speakers. The agents also follow a set of rules in order to produce, perceive, and forget exemplars. Exemplars consist of acoustic parameters that capture essential characteristics of the speech sounds under investigation. Every exemplar is also associated to a fixed lexical class, i.e. the word in which the exemplar was produced. The phonemic level of this model links the acoustic exemplars and the word classes. Sound change may or may not emerge from the interactions between the agents as well as the mechnisms of their production-perception feedback loop.
+`soundChangeR` is an agent-based computational implementation of the interactive-phonetic (IP) model of sound change ([Harrington et al., 2018](https://www.phonetik.uni-muenchen.de/~jmh/papers/harringtontopics18.pdf)). The central entities in this model are agents and exemplars. Agents are artificial representations of real speakers, i.e. the agents are endowed with a memory filled with acoustic data from actual speakers. The agents also follow a set of rules in order to produce, perceive, and forget exemplars. Exemplars consist of acoustic parameters that capture essential characteristics of the speech sounds under investigation. Every exemplar is also associated to a fixed lexical class, i.e. the word in which the exemplar was produced. The phonemic level of this model links the acoustic exemplars and the word classes. Sound change may or may not emerge from the interactions between the agents as well as the mechanisms of their production-perception feedback loop.
 
 We will explain the ABM's mechanisms by means of the exemplary dataset which is provided with the package:
 
@@ -40,6 +40,8 @@ The dataset `u_fronting` contains data from 22 speakers of Standard Southern Bri
 ?u_fronting
 ```
 
+More detailed information on the data is provided by [Harrington & Schiel, 2017](https://www.phonetik.uni-muenchen.de/~jmh/papers/harringtonschiel.pdf).
+
 # Interactions
 
 During a simulation with `soundChangeR`, the agents exchange tokens for a given amount of interactions. An interaction always consists of an agent speaker who produces a new token of a word and an agent listener who decides whether or not to memorise the token. Agents can interact with each other either freely or they do so only within or only across predefined groups (such as older vs. younger, region A vs. region B, etc.). 
@@ -50,7 +52,7 @@ In `u_fronting`, the agent groups are based on the speakers' age:
 unique(u_fronting$age)
 ```
 
-This is because empirical studies have found that younger speakers of SSBE are further advanced in the change of /u/ to the front of the vowel space than older speakers. So, whereas younger speakers have a /u, ju/ close to /i/, older speakers still produce a retracted /u, ju/ most of the time. However, when /u/ appears in adjacency to coronal consonants, even older speakers are more likely to produce a fronted /u/ due to the high F2-locus of coronal consontants. This can be shown by calculating the mean first DCT coefficient by vowel and age group in `u_fronting`:
+This is because empirical studies have found that younger speakers of SSBE are further advanced in the change of /u/ to the front of the vowel space than older speakers. So, whereas younger speakers have a /u, ju/ close to /i/, older speakers still produce a retracted /u, ju/ most of the time. However, when /u/ appears in adjacency to coronal consonants, even older speakers are more likely to produce a fronted /u/ due to the high F2-locus of coronal consontants. This can be shown by calculating the mean DCT0 coefficient by vowel and age group in `u_fronting`:
 
 ```{r, echo=FALSE}
 u_fronting %>% 
@@ -58,7 +60,7 @@ u_fronting %>%
   summarise(mean_DCT0 = mean(DCT0), .groups = "drop")
 ```
 
-DCT0 is linearly related to the mean of the F2 trajectory, i.e. the higher DCT0, the higher F2. Whereas there is hardly any difference in the mean DCT0 of /i/ between older and younger speakers, older speakers have much lower DCT0 values for /u, ju/ than younger ones.
+DCT0 is linearly related to the mean of the F2 trajectory, i.e. the higher DCT0, the higher F2. While there is hardly any difference in the mean DCT0 of /i/ between older and younger speakers, older speakers have much lower DCT0 values for /u, ju/ than younger ones.
 
 ## Production
 
@@ -82,11 +84,11 @@ Continuing with the example above, say, `elwi` is the agent listener who has to 
 knitr::include_graphics("./perc.png")
 ```
 
-For `elwi`, *food* is associated with the blue phonemic class. `elwi` can either accept the token without any constraint, or use different probabilistic decisions (also see [memoryIntakeStrategy](#perception-1)). One of them tests whether the token of *food* is close enough to its intended phonemic class without taking any other phonemic classes into account. If, according to the mahalanobis distance, the token is too far from the blue phonemic class, `elwi` rejects the token. The other default decision metric is the maximum posterior probability criterion which takes all phonemic classes into account. The new token of *food* must be probabilistically closer to the blue than to all other phonemic classes. If this is the case, `elwi` accepts and memorises the token. In the given example, both probabilistic decisions would lead to a rejection of the token.
+For `elwi`, *food* is associated with the blue phonemic class. `elwi` can either accept the token without any constraint, or use different probabilistic decisions (also see [memoryIntakeStrategy](#perception-1)). One of them tests whether the token of *food* is close enough to its intended phonemic class without taking any other phonemic classes into account. If, according to the Mahalanobis distance, the token is too far from the blue phonemic class, `elwi` rejects the token. The other default decision metric is the maximum posterior probability criterion which takes all phonemic classes into account. The new token of *food* must be probabilistically closer to the blue than to all other phonemic classes. If this is the case, `elwi` accepts and memorises the token. In the given example, both probabilistic decisions would lead to a rejection of the token.
 
 ## Phonology
 
-There are two ways of linking the exemplars and word classes through a phonemic level. Either the phonemic classes are fixed and immutable throughout the simulation (like in the [demo simulation](#demo)) or they are agent-specific, regularly updated, and computed using unsupervised learning mechanisms (see [useFlexiblePhonology](#phonology-1)). The latter option consists of a two-step process: First, Gaussian Mixture Models (GMM) are used to create acoustic clusters of exemplars. This step relies exclusively on information about the location of exemplars in the acoustic space (and no information about word classes etc.). 
+There are two ways of linking the exemplars and word classes through a phonemic level. Either the phonemic classes are fixed and immutable throughout the simulation (like in the [demo simulation](#demo)) or they are agent-specific, regularly updated, and computed using unsupervised machine learning mechanisms (see [useFlexiblePhonology](#phonology-1)). The latter option consists of a two-step process: First, Gaussian Mixture Models (GMM) are used to create acoustic clusters of exemplars. This step relies exclusively on information about the location of exemplars in the acoustic space (and no information about word classes etc.). 
 
 The plot below shows the components of the GMM for the speaker `phfo` from a simulation with the `u_fronting` dataset after 100,000 interactions. Every black dot is an exemplar in `phfo`'s memory at that point in the simulation. At this first stage of deriving phonemic knowledge, the exemplars' association to word classes is irrelevant, thus only the acoustic information is used to form clusters. The GMM has determined that there are four acoustic clusters (*a1* to *a4*) as shown by the labelled ellipses.
 
@@ -169,7 +171,7 @@ removeOriginalExemplars = FALSE
 
 If only a subset of speakers or a subset of canonical phonemes should be used in the simulation, the arguments `subsetSpeakers` and `subsetPhonemes` can be set with vectors of strings containing the speaker codes or phonemes, respectively, that are to be part of the simulation. 
 
-Usually, every human speaker is represented by one agent which is achieved by initialising the agent with the acoustic data of the speaker (`createBootstrappedPopulation = FALSE`). However, there is the possibility to break this paradigm by applying [bootstrapping](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)). If so, the argument `bootstrapPopulationSize` must specify how many agents (per agent group) the new population should be comprised of (a full positive number). For example, the `u-fronting` dataset consists of data from 11 older and 11 younger speakers. If the bootstrapped population should consist of a total of 50 agents (irregardless of their age groups), the arguments need to be:
+Usually, every human speaker is represented by one agent which is achieved by initialising the agent with the acoustic data of the speaker (`createBootstrappedPopulation = FALSE`). However, there is the possibility to break this paradigm by applying [bootstrapping](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)). If so, the argument `bootstrapPopulationSize` must specify how many agents (per agent group) the new population should be comprised of (a full positive number). For example, the `u_fronting` dataset consists of data from 11 older and 11 younger speakers. If the bootstrapped population should consist of a total of 50 agents (irregardless of their age groups), the arguments need to be:
 
 ```{r, eval=FALSE}
 createBootstrappedPopulation = TRUE
@@ -289,7 +291,7 @@ There is a demo of this agent-based model available which uses the `u_fronting` 
 run_demo_simulation()
 ```
 
-## Data Structures and Analysis of Results
+## Data Structures
 
 Running a simulation causes multiple new directories and files to be created throughout the process. First of all, the root logging directory (as set by [rootLogDir](#other-options)) is created if it did not previously exist. In this directory, all simulations will be saved under a name that consists of "ABM" and the date and exact time when the simulation was started. An example of that is `ABM20211102135337`: a simulation that was started on November 11th, 2021, at 1:53pm and 37 seconds. The root logging directory also contains the simulations register which is saved as an `.rds` and updated automatically whenever a new simulation is saved in the same directory. The [next section](#managing-simulations) is concerned with how to manipulate the simulations register manually.
 
@@ -386,6 +388,136 @@ The cache contains the following columns:
 - `value`: list of values corresponding to the cached object indicated by `name`
 - `valid`: logical column indicating whether the cached object is valid, i.e. used at the given `snapshot` during the simulation
 
+## Analysis of Results
+
+Three functions were implemented to produce some basic plots of the simulation results. These are not exhaustive, i.e. there are certainly more metrics that might be interesting depending on the simulation settings and input data. However, the following plotting functions are a start to understanding whether any change emerged from the simulation and if so, why.
+
+A simulation was run on the `u_fronting` dataset, i.e. younger and older SSBE speakers interacted with one another, exchanging exemplars of 11 word classes in a three-dimensional DCT-based acoustic space. The settings of this simulation that differed from the default arguments of `run_simulation()` were:
+
+```{r, eval=FALSE}
+SMOTENN = 10.0
+useFlexiblePhonology = TRUE
+runSingleSimulation = FALSE
+multipleABMRuns = 5
+nrOfSnapshots = 250
+interactionsPerSnapshot = 1000
+```
+
+We use some of the functions described in the previous section to load the data from this simulation. The population data frame `pop` is altered to contain the canonical phonemes /i:, u:, ju:/. These canonical phonemes as well as the information on the agents' group membership is added from `pop` to the interactions log `intLog`.
+
+```{r, eval=FALSE}
+rootLogDir <- "./logDir"
+simulationName <- "ABM20211111100942"
+logDir <- file.path(rootLogDir, simulationName)
+params <- get_params(rootLogDir, simulationName)
+
+pop <- load_pop(logDir, 
+                runs = 1:5, 
+                snaps = seq(0, 250, by = 10)) %>% 
+  mutate(
+    canonical = 
+      case_when(word %in% c("seep", "heed", "keyed", "feed") ~ "i:",
+                word %in% c("soup", "who'd", "cooed", "food") ~ "u:",
+                word %in% c("hewed", "queued", "feud") ~ "ju:")
+    )
+Pcols <- get_Pcols(pop)
+intLog <- load_intLog(logDir, 
+                      runs = 1:5, 
+                      snaps = seq(1, 250, by = 10)) %>% 
+  left_join(
+    pop %>% 
+      select(speaker, group, word, canonical, agentID) %>% 
+      unique(),
+    by = c("perceiverID"="agentID", "word")
+  )
+```
+
+The first plotting function is called `plot_centroids()` and receives the population data frame `pop`, the columns with the acoustic features `Pcols`, grouping variables `groupVar`, and the parameter list `params`. The resulting plot shows the mean acoustic features over simulation time, i.e. over the course of the interactions. The default grouping variables are `snapshot` and `run`, of which `snapshot` is obligatory. If `run` is part of `groupVar`, it is always plotted as "group" in the aesthetic mappings, so that there is one line per run in each panel. Further grouping variables are either colour-coded or plotted in facets. More than four grouping variables cannot be plotted.
+
+```{r, eval=FALSE}
+plot_centroids(pop, Pcols, groupVar = c("snapshot", "run"), params)
+```
+
+```{r centroids1, fig.align="center", out.width = "685px", echo=FALSE}
+knitr::include_graphics("./centroids1.png")
+```
+
+This plot shows that P1 (i.e. DCT0) increased over simulation time when aggregated across the population and canonical phonemes in all five runs, and P2 and P3 (i.e. DCT1 and DCT2) decreased slightly in four out of five runs. Since there were two agent groups with markedly different starting points, let's differentiate the plot also by group:
+
+```{r, eval=FALSE}
+plot_centroids(pop, 
+               Pcols, 
+               groupVar = c("snapshot", "run", "group"), 
+               params)
+```
+
+```{r centroids2, fig.align="center", out.width = "685px", echo=FALSE}
+knitr::include_graphics("./centroids2.png")
+```
+
+This shows that older agents changed more than younger ones -- an important finding, given that in this case we would expect older agents to adapt to younger agents' vowel variants, rather than vice versa. Since /i:/ and /u:/ are still aggregated in the plot, the following plot colour-codes by the canonical phonemes.
+
+```{r, eval=FALSE}
+plot_centroids(pop, 
+               Pcols, 
+               groupVar = c("snapshot", "run", "group", "canonical"), 
+               params)
+```
+
+```{r centroids3, fig.align="center", out.width = "685px", echo=FALSE}
+knitr::include_graphics("./centroids3.png")
+```
+
+This plot shows that older agents' /u:/ shifts towards that of younger agents, especially in P1 (DCT0) and in all five runs. The same holds for /ju:/, although to a lesser degree. Younger agents' vowels and older agents' /i:/ does not change and therefore shows that change is not an inevitable outcome of the simulations.
+
+The second plotting function, called `plot_rejection()`, shows the rejection rate over simulation time. Rejection rate is calculated as $1-\frac{nr.~of~accepted}{nr.~of~perceived}$. The function takes the interactions log `intLog`, grouping variables `groupVar`, and the parameter list `params` as arguments. The constraints on the grouping variables are the same for `plot_rejection()` as they are for `plot_centroids()`.
+
+```{r, eval=FALSE}
+plot_rejection(intLog, groupVar = c("snapshot", "run"), params)
+```
+
+```{r rejection1, fig.align="center", out.width = "685px", echo=FALSE}
+knitr::include_graphics("./rejection1.png")
+```
+
+The rejection rate can range between 0 and 1. In this plot, it can be seen that the rejection rate decreases over simulation time in all five runs. This means that the agents adapt to each other since they start to accept more and more tokens. A separation by agent group might be interesting, but in this case, there does not seem to be a big difference in rejection rate between the two:
+
+```{r, eval=FALSE}
+plot_rejection(intLog, groupVar = c("snapshot", "run", "group"), params)
+```
+
+```{r rejection2, fig.align="center", out.width = "685px", echo=FALSE}
+knitr::include_graphics("./rejection2.png")
+```
+
+When we differentiate the same plot also by canonical phoneme, it can be seen that the rejection rate is lower for /i:/ than for /u:, ju:/. This is because the agent groups are very similar in how they pronounce /i:/, so they mostly accept each others exemplars.
+
+```{r, eval=FALSE}
+plot_rejection(intLog, 
+               groupVar = c("snapshot", "run", "group", "canonical"), 
+               params)
+```
+
+```{r rejection3, fig.align="center", out.width = "685px", echo=FALSE}
+knitr::include_graphics("./rejection3.png")
+```
+
+Finally, the function `plot_phonology()` creates a plot of two metrics that need to be interpreted together and only make sense when `useFlexiblePhonology = TRUE`. The first metric is the number of sub-phonemic classes over simulation time. The second is a measurement of the agreement of the sub-phonemic classes with the canonical phonemes. In order to compute this measure, the user must add the canonical phonemes to the `pop` data frame as shown above and give the column's name to `plot_phonology()` as argument `canonical`. The other two arguments to the function are `pop` (the population data frame) and `params` (the parameter list). If there were agent groups, they are automatically plotted in different columns. Runs are grouped per panel, as shown below for the five runs of this simulation.
+
+```{r, eval=FALSE}
+plot_phonology(pop, canonical = "canonical", params)
+```
+
+```{r phonology1, fig.align="center", out.width = "685px", echo=FALSE}
+knitr::include_graphics("./phonology1.png")
+```
+
+Using the `purity()` function from the `NMF` package, the agreement between sub-phonemes and canonical phonemes is calculated as $\frac{1}{N_w} \cdot \sum_p N_{\textrm{majority}}(p)$. $N_w$ is the total number of word classes (e.g. 11 in case of the `u_fronting` data frame) and $N_{\textrm{majority}}(p)$ is the number of unique word classes in a sub-phoneme $p$ that belong to the majority canonical phoneme, i.e. the canonical phoneme which is associated with the largest number of unique word classes in $p$. The `u_fronting` data frame contains 4 /i/-words, 4 /u/-words, and 3 /ju/-words. So if an agent had three sub-phonemes, $p1$ containing exemplars of the 4 /i/-words, $p2$ containing exemplars of the 3 /ju/-words as well as 1 /u/-word, and $p3$ containing exemplars of the remaining 3 /u/-words, the agreement is $\frac{4 + 3 + 3}{11} \approx 0.91$. If an agent had two sub-phonemes, $p1$ containing exemplars of 3 /i/-words, 2 /ju/-words, and 1 /u/-word and $p2$ containing exemplars of the remaining 1 /i/-word, 1 /ju/-word/, and 3 /u/-words, the agreement is $\frac{3 + 3}{11} \approx 0.55$.
+
+It is important to take into account both the number of sub-phonemes and the agreement, because on their own you may draw the wrong conclusions. For instance, if many sub-phonemes (e.g. 10 or so) have developed over the course of the simulation, it may look like a phonological split has occured; however, if the overall agreement is low this actually indicates that the sub-phonemes contain a balanced mixutre of exemplars from all canonical phonemes, which might rather point to a merger. On the other hand, if all sub-phonemes contain exemplars of only one word class each, the agreement is 1; so looking only at the agreement would indicate that the sub-phonemes are in perfect agreement with the canonical phonemes when actually this is due to the over-formation of sub-phonemes.
+
+For the exemplary simulation on the `u_fronting` simulation, the plot above shows the agreement and number of sub-phonemes over simulation time for older and younger speakers. From the scale of the top row, it can be seen that the overall agreement between sub-phonemes and canonical /i, u, ju/ is higher than 0.8 throughout the simulation. For older agents, the agreement is even higher than 0.9 and remains stable, for younger agents it increases over time. The number of sub-phonemes circle around 3, with older agents starting on average with a little more sub-phonemes than younger agents and then decreasing their number of sub-phonemes. From this plot, we can conclude that both agent groups' phonology becomes more similar to the canonical phoneme separation into /i/, /u/, and /ju/: older agents' sub-phonemes separate /i/-, /u/-, and /ju/-words nicely from the start and over the course of the interactions they additionally decrease the number of sub-phonemes to approx. 3; younger agents have the expected three sub-phonemes which, at simulation start, are not exactly in agreement with the canonical phonemes, but come to be over time.
+
 ## Managing Simulations
 
 There are four functions in `soundChangeR` which help to manage simulations that are listed in `simulations_register.rds`. The first is `filter_simulations()` which goes through the registered simulation and returns the simulation names of all simulations that match the given filters. These filters must be arguments from `run_simulation()` and their desired values. Here are three examples:
@@ -424,11 +556,11 @@ The function `purge_uncompleted_simulations()` only takes the root logging direc
 purge_uncompleted_simulations(rootLogDir = "./logDir")
 ```
 
-# Literature
+# Recommended Literature
 
-Gubian, M., Cronenberg, J., and Harrington, J. (in prep.): Simulating the merger of /I@/ and /e@/ in New Zealand English using an agent-based model.
+Gubian, M., Cronenberg, J., and Harrington, J. (under review): Phonetic and Phonological Sound Changes in an Agent-Based Model. Speech Communication.
 
-Cronenberg, J. (in prep.): New Approaches to the Study of Sound Change: The Case of Aspiration in Andalusian Spanish. Dissertation, LMU Munich.
+Cronenberg, J. (in prep.): New Approaches to the Study of Sound Change: The Case of Aspiration in Andalusian Spanish. Dissertation, LMU Munich, chapter 3.
 
 Harrington, J., Kleber, F., Reubold, U., Schiel, F., and Stevens, M. (2018): [Linking Cognitive and Social Aspects of Sound Change Using Agent-Based Modeling.](https://www.phonetik.uni-muenchen.de/~jmh/papers/harringtontopics18.pdf) Topics in Cognitive Science, pp. 1-22.
 
