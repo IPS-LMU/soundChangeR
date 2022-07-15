@@ -34,16 +34,15 @@ run_simulation(
   interactionPartners = "betweenGroups",
   speakerProb = NULL,
   listenerProb = NULL,
-  runSingleSimulation = TRUE,
-  multipleABMRuns = 3,
-  nrOfSnapshots = 1,
-  interactionsPerSnapshot = 10,
+  runs = 1,
+  nrOfSnapshots = 10,
+  interactionsPerSnapshot = 100,
   rootLogDir = "./logDir",
   notes = ""
 )
 }
 \arguments{
-\item{inputDataFile}{string; path to data file}
+\item{inputDataFile}{string; absolute or relative path to data file}
 
 \item{speaker}{string; column name for speaker code}
 
@@ -71,7 +70,7 @@ run_simulation(
 
 \item{useSMOTE}{boolean; whether or not to use SMOTE in production to make computation of Gaussians more stable}
 
-\item{fallBackOnPhoneme}{boolean;}
+\item{fallBackOnPhoneme}{boolean; before using SMOTE to increase number of exemplars, test whether the exemplars of the word plus the exemplars associated with the same phoneme reach minTokens; if so, use these additional tokens and do not apply SMOTE}
 
 \item{minTokens}{full positive number; minimum of tokens to be used to compute a Gaussian to sample from in production as well as number of tokens per word class and agent not to be undercut through forgetting}
 
@@ -101,13 +100,11 @@ run_simulation(
 
 \item{listenerProb}{NULL or vector of numbers; one number per agent to indicate how likely the agent is to become agent listener}
 
-\item{runSingleSimulation}{boolean; whether to run a single simulation or multiple runs of the same simulation}
+\item{runs}{full positive number, 1 or higher; how many (parallel) runs of the simulation to compute}
 
-\item{multipleABMRuns}{full positive number; number of runs if runSingleSimulation is FALSE}
+\item{nrOfSnapshots}{full positive number, 1 or higher; number of snapshots, i.e. how often the state of the population shall be saved}
 
-\item{nrOfSnapshots}{full positive number; number of snapshots, i.e. how often the state of the population shall be saved}
-
-\item{interactionsPerSnapshot}{full positive number; number of interactions per snapshot}
+\item{interactionsPerSnapshot}{full positive number, 0 or higher; number of interactions per snapshot}
 
 \item{rootLogDir}{string; path to logging directory (will be created if it does not exist yet)}
 

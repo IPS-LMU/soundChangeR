@@ -1,6 +1,6 @@
 #' Run simulation
 #'
-#' @param inputDataFile string; path to data file
+#' @param inputDataFile string; absolute or relative path to data file
 #' @param speaker string; column name for speaker code
 #' @param group string; column name for agent group
 #' @param word string; column name for word labels
@@ -14,7 +14,7 @@
 #' @param expandMemoryFactor full positive number; factor by which to increase the agents' memories before the simulation if expandMemory is TRUE
 #' @param removeOriginalExemplars boolean; whether or not to remove original exemplars after memory expansion if expandMemory is TRUE
 #' @param useSMOTE boolean; whether or not to use SMOTE in production to make computation of Gaussians more stable
-#' @param fallBackOnPhoneme boolean;
+#' @param fallBackOnPhoneme boolean; before using SMOTE to increase number of exemplars, test whether the exemplars of the word plus the exemplars associated with the same phoneme reach minTokens; if so, use these additional tokens and do not apply SMOTE
 #' @param minTokens full positive number; minimum of tokens to be used to compute a Gaussian to sample from in production as well as number of tokens per word class and agent not to be undercut through forgetting
 #' @param SMOTENN full positive number; number of nearest neighbours to use for SMOTE
 #' @param memoryIntakeStrategy "acceptAll" or "mahalanobisDistance" and/or "maxPosteriorProb" or "posteriorProbThr"; decision criteria for memorisation
@@ -29,10 +29,9 @@
 #' @param interactionPartners "random" or "betweenGroups" or "withinGroups"; whether interacting agents should come from same or different groups or be randomly chosen
 #' @param speakerProb NULL or vector of numbers; one number per agent to indicate how likely the agent is to become agent speaker
 #' @param listenerProb NULL or vector of numbers; one number per agent to indicate how likely the agent is to become agent listener
-#' @param runSingleSimulation boolean; whether to run a single simulation or multiple runs of the same simulation
-#' @param multipleABMRuns full positive number; number of runs if runSingleSimulation is FALSE
-#' @param nrOfSnapshots full positive number; number of snapshots, i.e. how often the state of the population shall be saved
-#' @param interactionsPerSnapshot full positive number; number of interactions per snapshot
+#' @param runs full positive number, 1 or higher; how many (parallel) runs of the simulation to compute
+#' @param nrOfSnapshots full positive number, 1 or higher; number of snapshots, i.e. how often the state of the population shall be saved
+#' @param interactionsPerSnapshot full positive number, 0 or higher; number of interactions per snapshot
 #' @param rootLogDir string; path to logging directory (will be created if it does not exist yet)
 #' @param notes string; optional notes on the simulation
 #'
@@ -71,10 +70,9 @@ run_simulation <- function(inputDataFile = NULL,
                            interactionPartners = "betweenGroups",
                            speakerProb = NULL,
                            listenerProb = NULL,
-                           runSingleSimulation = TRUE,
-                           multipleABMRuns = 3,
-                           nrOfSnapshots = 1,
-                           interactionsPerSnapshot = 10,
+                           runs = 1,
+                           nrOfSnapshots = 10,
+                           interactionsPerSnapshot = 100,
                            rootLogDir = "./logDir",
                            notes = "") {
   
@@ -94,7 +92,7 @@ run_simulation <- function(inputDataFile = NULL,
   register_simulation(params)
 
   if (check[["runSimulation"]]) {
-    if (params[["runSingleSimulation"]]) {
+    if (params[["runs"]] == 1) {
       params[["logDir"]] <- base::file.path(logDir, "1")
       pop <- create_population(input.df = input.df, params = params)
       save_population(pop, extraCols = base::list(snapshot = 0), logDir = params[["logDir"]])
@@ -106,14 +104,11 @@ run_simulation <- function(inputDataFile = NULL,
       if (base::Sys.info()[["sysname"]] == "Windows") {
         cl <- parallel::makeCluster(numCores, type = "PSOCK")
         parallel::clusterExport(cl, base::c("input.df", "params", "logDir"))
-        # parallel::clusterEvalQ(cl, {
-        #   source(file.path("Rcmd", "loadLibraries.R"))
-        # })
       } else {
         cl <- parallel::makeCluster(numCores, type = "FORK")
       }
       parallel::clusterSetRNGStream(cl)
-      parallel::parLapply(cl, base::seq_len(params[["multipleABMRuns"]]), function(abmName) {
+      parallel::parLapply(cl, base::seq_len(params[["runs"]]), function(abmName) {
         params[["logDir"]] <- base::file.path(logDir, abmName)
         pop <- create_population(input.df = input.df, params = params)
         save_population(pop, extraCols = base::list(snapshot = 0), logDir = params[["logDir"]])

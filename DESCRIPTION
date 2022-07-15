@@ -1,6 +1,6 @@
 Package: soundChangeR
 Title: Agent-Based Model of Sound Change
-Version: 0.0.0.9000
+Version: 1.0.0
 Authors@R: c(
     person("Johanna", "Cronenberg", , "johanna.cronenberg@phonetik.uni-muenchen.de", role = c("aut", "cre")),
     person("Michele", "Gubian", , "m.gubian@phonetik.uni-muenchen.de", role = c("aut")),
@@ -12,16 +12,12 @@ License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0
 Imports: 
-    abind,
-    cluster,
     data.table,
     dplyr,
-    dtt,
     FNN,
     ggplot2,
-    Hmisc,
     magrittr,
     MASS,
     matrixcalc,
@@ -34,8 +30,7 @@ Imports:
     smotefamily,
     tibble,
     tidyr,
-    tidyselect,
-    tools
+    tidyselect
 Suggests: 
     rmarkdown,
     knitr

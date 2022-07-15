@@ -262,13 +262,12 @@ The arguments `speakerProb` and `listenerProb` can be used to introduce an imbal
 ## Runs
 
 ```{r, eval=FALSE}
-runSingleSimulation = TRUE
-multipleABMRuns = 3
-nrOfSnapshots = 1
-interactionsPerSnapshot = 10
+runs = 1
+nrOfSnapshots = 10
+interactionsPerSnapshot = 100
 ```
 
-The model offers two ways of performing simulations: either as single runs (`runSingleSimulation = TRUE`) or as multiple, parallel runs (`runSingleSimulation = FALSE`). Multiple runs of the same simulation can offer insights into the stability or robustness of the results. `multipleABMRuns` specifies how many parallel runs are computed.
+The model offers two ways of performing simulations: either as single runs or as multiple, parallel runs. Multiple runs of the same simulation can offer insights into the stability or robustness of the results. The argument `runs` specifies how many runs are computed, the default being a single run.
 
 A simulation is a sequence of `nrOfSnapshots * interactionsPerSnapshot` interactions. At every `interactionsPerSnapshot` interactions, a snapshot of all agents' memories is saved.
 
@@ -360,6 +359,7 @@ intLog <- load_intLog(logDir = "./logDir/ABM20211102135337",
 In this case, the snapshots start at 1 (i.e. when the first [nrOfInteractions](#runs) interactions have taken place), not at 0 (i.e. before the first interactions). The interactions log contains the following columns:
 
 - `run`: character column indicating the run
+- `P1` etc.: all numeric columns starting with `P` are the acoustic [features](#input-data)
 - `snapshot`: character column indicating the snapshot
 - `word`: character column indicating the word class of the given exemplar
 - `producerID`: numeric column indicating the ID of the agent who produced the given exemplar
@@ -397,8 +397,7 @@ A simulation was run on the `u_fronting` dataset, i.e. younger and older SSBE sp
 ```{r, eval=FALSE}
 SMOTENN = 10.0
 useFlexiblePhonology = TRUE
-runSingleSimulation = FALSE
-multipleABMRuns = 5
+runs = 5
 nrOfSnapshots = 250
 interactionsPerSnapshot = 1000
 ```
@@ -526,11 +525,11 @@ There are four functions in `soundChangeR` which help to manage simulations that
 filter_simulations(rootLogDir = "./logDir", 
                    forgettingRate == 1)
 filter_simulations(rootLogDir = "./logDir", 
-                   forgettingRate == 1 & runSingleSimulation == TRUE)
+                   forgettingRate == 1 & useFlexiblePhonology == TRUE)
 filter_simulations(rootLogDir = "./logDir",
                    condList = list(
                      forgettingRate = 1,
-                     runSingleSimulation = TRUE
+                     useFlexiblePhonology = TRUE
                    ))
 ```
 

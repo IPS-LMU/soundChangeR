@@ -118,22 +118,18 @@ validate_params <- function(params) {
     params[["interactionPartners"]] <- "random"
   }
   
-  if (base::is.null(params[["runSingleSimulation"]])) {
-    params[["runSingleSimulation"]] <- TRUE
-  }
-  
-  if (!params[["runSingleSimulation"]] && params[["multipleABMRuns"]] <= 0) {
-    write_log("Please set argument multipleABMRuns correctly (number higher than zero).", params)
+  if (params[["runs"]] <= 0) {
+    write_log("Please set argument runs correctly (full positive number, 1 or higher).", params)
     runSimulation <- FALSE
   }
   
   if (params[["nrOfSnapshots"]] <= 0) {
-    write_log("Please set argument nrOfSnapshots correctly (number higher than zero).", params)
+    write_log("Please set argument nrOfSnapshots correctly (full positive number, 1 or higher).", params)
     runSimulation <- FALSE
   }
   
   if (params[["interactionsPerSnapshot"]] < 0) {
-    write_log("Please set argument interactionsPerSnapshot correctly (number equal to or higher than zero).", params)
+    write_log("Please set argument interactionsPerSnapshot correctly (full number equal to or higher than zero).", params)
     runSimulation <- FALSE
   }
   
