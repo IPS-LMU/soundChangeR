@@ -4,14 +4,14 @@
 \alias{plot_centroids}
 \title{Plot the mean of the acoustic features over simulation time}
 \usage{
-plot_centroids(pop, Pcols, groupVar = c("snapshot", "run"), params)
+plot_centroids(pop, Pcols, groupVar = NULL, params)
 }
 \arguments{
 \item{pop}{population data frame as loaded by load_pop()}
 
 \item{Pcols}{string vector of columns in pop with acoustic features as identified by get_Pcols()}
 
-\item{groupVar}{string vector (max. length: 4) of columns in pop which are used to group the data and plot it. Default is c("snapshot", "run"). Further variables are colour-coded or plotted in facets.}
+\item{groupVar}{string vector (max. length: 4) of columns in pop which are used to group the data and plot it, e.g. agent group, phoneme, etc. If run is included here, it is supplied to the \code{group} argument in \code{aes()}. Other variables are colour-coded or plotted in facets.}
 
 \item{params}{list of parameters as loaded by get_params()}
 }

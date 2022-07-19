@@ -4,7 +4,7 @@
 \alias{plot_phonology}
 \title{Plot number of sub-phonemes and agreement with canonical phonemes over simulation time}
 \usage{
-plot_phonology(pop, canonical = "canonical", params)
+plot_phonology(pop, canonical, params)
 }
 \arguments{
 \item{pop}{population data frame as loaded by load_pop()}
