@@ -5,7 +5,7 @@
 #' @param params list of parameters as loaded by get_params()
 #'
 #' @export
-plot_phonology <- function(pop, canonical = "canonical", params) {
+plot_phonology <- function(pop, canonical, params) {
   
   if (params$useFlexiblePhonology == FALSE) {
     stop("Use this plot only when useFlexiblePhonology is TRUE.")
@@ -13,7 +13,7 @@ plot_phonology <- function(pop, canonical = "canonical", params) {
   
   groupVar <- base::c("speaker", "group", "run", "snapshot")
   if (base::is.data.frame(pop) && 
-      tidyselect::all_of(groupVar) %in% base::colnames(pop)) {
+      base::all(tidyselect::all_of(groupVar) %in% base::colnames(pop))) {
     
     nPhon <- pop %>% 
       dplyr::group_by_at(tidyselect::all_of(groupVar)) %>% 
