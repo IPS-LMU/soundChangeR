@@ -25,11 +25,15 @@ BiocManager::install("NMF")
 devtools::install_github("https://github.com/IPS-LMU/soundChangeR", build_vignettes = T)
 ```
 
-- If you receive error messages, you might have to install further dependencies to `soundChangeR` 
+- If you receive error messages, you might have to install further dependencies to `soundChangeR`. All dependencies are listed in the file called DESCRIPTION in this repository.
+
+## Updates
+
+Updates of `soundChangeR` can be checked for and installed by repeating the `install_github()` command as shown above.
 
 ## Citation & Reading Material
 
-If you use `soundChangeR`, please cite the package:
+When you use `soundChangeR` in published work, please cite the package:
 
 ```
 citation("soundChangeR")
