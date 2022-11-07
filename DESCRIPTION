@@ -5,6 +5,7 @@ Authors@R: c(
     person("Johanna", "Cronenberg", , "johanna.cronenberg@phonetik.uni-muenchen.de", role = c("aut", "cre")),
     person("Michele", "Gubian", , "m.gubian@phonetik.uni-muenchen.de", role = c("aut")),
     person("Jonathan", "Harrington", , "jmh@phonetik.uni-muenchen.de", role = c("ctb")),
+    person("Vanessa", "Reichel", , "vanessa.reichel@phonetik.uni-muenchen.de", role = c("ctb"),
     person("Florian", "Schiel", , "schiel@phonetik.uni-muenchen.de", role = c("ctb"))
     )
 Description: This package provides an implementation of an agent-based model (ABM) of sound change. It supports research conducted at the Institute of Phonetics and Speech Processing (IPS) at the University of Munich. 
