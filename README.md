@@ -1,8 +1,8 @@
 # Agent-based Modelling of Sound Change
 
 This software is an implementation of an agent-based model (ABM) aimed at simulating sound changes. It supports the research conducted at the Institute of Phonetics and Speech Processing, LMU Munich, Germany. 
-We are funded by European Research Council Grant No. 742289 ["Human interaction and the evolution of spoken accent"](https://www.phonetik.uni-muenchen.de/Forschung/interaccent/interAccent.html) (2017–2022) awarded to Jonathan Harrington. 
-The ABM was initially developed by Florian Schiel and Jonathan Harrington, and further restructured, modified and documented by Johanna Cronenberg and Michele Gubian, the latter being currently the main developer and maintainer. 
+We are funded by European Research Council Grant No. 742289 ["Human interaction and the evolution of spoken accent"](https://www.phonetik.uni-muenchen.de/Forschung/interaccent/interAccent.html) (2017–2023) awarded to Jonathan Harrington. 
+The ABM was initially developed by Florian Schiel and Jonathan Harrington, and further restructured, modified and documented by Johanna Cronenberg and Michele Gubian. 
 
 The ABM is now available as an R package called **soundChangeR**. 
 
@@ -10,12 +10,17 @@ The ABM is now available as an R package called **soundChangeR**.
 
 - Make sure you are using R version 4.0 or higher
 - Make sure that all of your packages are up-to-date
+- Make sure that you have installed:
+	- Linux: ```sudo apt-get install r-base-dev```
+	- iOS: [Xcode](https://mac.install.guide/commandlinetools/4.html)
+	- Windows: [Rtools](https://cran.r-project.org/bin/windows/Rtools/)
 - Install [pandoc](https://pandoc.org/installing.html)
-- Install `devtools`, `BiocManager`, and `NMF`:
+- Install the following packages:
 
 ```
 install.packages("devtools")
 install.packages("BiocManager")
+BiocManager::install("Biobase")
 BiocManager::install("NMF")
 ```
 
