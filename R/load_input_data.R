@@ -43,6 +43,10 @@ load_input_data <- function(params) {
     input.df <- input.df[phoneme %in% params[["subsetPhonemes"]]]
   }
   
+  if (base::length(base::unique(input.df$speaker)) <= 1) {
+    stop("Please only run simulations with two or more agents.")
+  }
+  
   set_feature_names(input.df, params[["features"]])
   input.df[, exemplar := matrix2exemplar(.SD), .SDcols = base::names(input.df) %like% "^P[[:digit:]]"]
   return(input.df)
