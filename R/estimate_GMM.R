@@ -4,8 +4,8 @@ estimate_GMM <- function(agent, params) {
   rawGMM <- estimate_raw_clusters(agent, params)
   fullWordClusters <- get_full_word_clusters(rawGMM, agent, params)
   reducedWordClustersIncidenceMatrix <- estimate_reduced_clusters_incidence_matrix(
-    fullWordClusters, params[["purityRepetitions"]], params[["purityThreshold"]])
-  reducedWordClusters <- get_reduced_clusters(fullWordClusters, reducedWordClustersIncidenceMatrix)
+    fullWordClusters, params[["purityThreshold"]], params)
+  reducedWordClusters <- get_reduced_clusters(fullWordClusters, reducedWordClustersIncidenceMatrix) # hier passiert ein Fehler
   excludedClass <- reducedWordClusters %>% base::apply(2, base::sum)
   excludedClassIdx <- (excludedClass < rawGMM$d) %>% base::which()
   if (base::length(excludedClassIdx) > 0) {

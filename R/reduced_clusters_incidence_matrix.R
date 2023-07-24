@@ -6,14 +6,17 @@ reduced_clusters_incidence_matrix <- function(fullClusters, rank) {
   if (rank > base::ncol(fullClusters) - base::sum(zeroCols)) {stop("reduced_clusters_incidence_matrix: too many zero columns")}
   if (base::sum(zeroCols) > 0) {fullClusters <- fullClusters[, !zeroCols]}
   if (rank == 1) {
-    incidenceMatrix <- base::matrix(TRUE, nrow = 1, ncol = base::ncol(fullClusters))
-  } else {
+    incidenceMatrix <- base::matrix(TRUE, nrow = 1, ncol = base::ncol(fullClusters))}
+  if (rank == ncol(fullClusters)){
+    incidenceMatrix = matrix(as.logical(diag(ncol(fullClusters))), ncol(fullClusters))
+  }else {
     nmfObj <- NMF::nmf(x = fullClusters, rank = rank, method = "nsNMF")
     incidenceMatrix <- nmfObj %>% NMF::coef() %>% base::apply(2, logical_max)
   }
   if (base::sum(zeroCols) == 0) {
     return(incidenceMatrix)
   } else {
+    print("zero cols in word matrix")
     incidenceMatrixZeroCols <- base::matrix(FALSE, nrow = rank, ncol = base::length(zeroCols))
     incidenceMatrixZeroCols[, !zeroCols] <- incidenceMatrix
     return(incidenceMatrixZeroCols)

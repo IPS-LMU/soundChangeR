@@ -123,3 +123,5 @@ run_simulation <- function(inputDataFile = NULL,
     stop("Oops, something went wrong! Please check the log.txt file in the simulation directory.")
   }
 }
+
+
