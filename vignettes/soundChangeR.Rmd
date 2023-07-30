@@ -559,7 +559,7 @@ purge_uncompleted_simulations(rootLogDir = "./logDir")
 
 Gubian, M., Cronenberg, J., and Harrington, J. (under review): Phonetic and Phonological Sound Changes in an Agent-Based Model. Speech Communication.
 
-Cronenberg, J. (in prep.): New Approaches to the Study of Sound Change: The Case of Aspiration in Andalusian Spanish. Dissertation, LMU Munich, chapter 3.
+Cronenberg, J. (in prep.): A Cognitive and Computational Model of the Sound Change from Pre- to Post-Aspiration in Andalusian Spanish. Dissertation, LMU Munich, chapter 3.
 
 Harrington, J., Kleber, F., Reubold, U., Schiel, F., and Stevens, M. (2018): [Linking Cognitive and Social Aspects of Sound Change Using Agent-Based Modeling.](https://www.phonetik.uni-muenchen.de/~jmh/papers/harringtontopics18.pdf) Topics in Cognitive Science, pp. 1-22.
 

@@ -32,6 +32,16 @@ devtools::install_github("https://github.com/IPS-LMU/soundChangeR", build_vignet
 
 - If you receive error messages, you might have to install further dependencies to `soundChangeR`. All dependencies are listed in the file called DESCRIPTION in this repository.
 
+## Usage
+
+Information on how to run a simulation and helpful functions for analyzing the results can be found in the vignette:
+
+```
+vignette("soundChangeR")
+```
+
+Furthermore the vignette provides detailed explanations of all parameters to this model. 
+
 ## Updates
 
 Updates of `soundChangeR` can be checked for and installed by repeating the `install_github()` command as shown above.
@@ -42,12 +52,6 @@ When you use `soundChangeR` in published work, please cite the package:
 
 ```
 citation("soundChangeR")
-```
-
-There is a vignette to this R package with detailed explanations of all parameters to this model:
-
-```
-vignette("soundChangeR")
 ```
 
 In the vignette, you will find further links to reading material about the ABM.

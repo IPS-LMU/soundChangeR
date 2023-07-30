@@ -15,5 +15,6 @@ get_method_register <- function() {
       cacheEntries = base::list(NA_character_)
     )
   )) %>% data.table::setkey(method)
+  
   return(methodReg)
 }

@@ -1,5 +1,4 @@
 create_population <- function(input.df, params) {
-
   data.table::setDT(input.df)
   sortedSpeakers <- input.df$speaker %>% base::unique() %>% base::sort()
 
@@ -41,6 +40,7 @@ create_population <- function(input.df, params) {
     }
     population[[id]] <- create_agent(id, input.df, selectedSpeaker, maxMemorySize, params)
     if (params[["expandMemory"]]) {
+      # das hab ich mir noch nicht angeschaut
       apply_resampling(population[[id]], initialMemorySize, params)
     }
   }

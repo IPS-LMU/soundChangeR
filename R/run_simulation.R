@@ -4,8 +4,10 @@
 #' @param speaker string; column name for speaker code
 #' @param group string; column name for agent group
 #' @param word string; column name for word labels
-#' @param phoneme string; column name for canonical phonological labels (does not have to be specified if useFlexiblePhonology is TRUE)
-#' @param features string or vector of strings; column name(s) for acoustic features
+#' @param phoneme_set1 string; column name for canonical phonological labels of feature_set1 (does not have to be specified if useFlexiblePhonology is TRUE)
+#' @param phoneme_set2 string; column name for canonical phonological labels of feature_set2 (does not have to be specified if useFlexiblePhonology is TRUE)
+#' @param feature_set1 string or vector of strings; column name(s) for acoustic features of one cue_sub_space
+#' @param feature_set2 string or vector of strings; column name(s) for acoustic features of another cue_sub_space
 #' @param subsetSpeakers vector of strings; speakers to be included in simulation
 #' @param subsetPhonemes string or vector of strings; canonical phonological label(s) to be included in the simulation (is automatically set to NULL if useFlexiblePhonology is TRUE)
 #' @param createBootstrappedPopulation boolean; whether to create an agent population using bootstrap or have every speaker represented by one agent
@@ -22,7 +24,7 @@
 #' @param posteriorProbThreshold number between 0 and 1; probability threshold if memoryIntakeStrategy contains "posteriorProbThr"
 #' @param perceptionOOVNN full positive number; amount of nearest neighbours to use to assign a phonological label to token of unknown word class
 #' @param forgettingRate number between 0 and 1; if a number generated from a uniform distribution is smaller than this threshold, the agent listener removes a token from memory
-#' @param useFlexiblePhonology boolean; whether to use GMM and NMF to autonomously compute and update phonological classes or use fixed phonological labels (as given by argument "phoneme")
+#' @param useFlexiblePhonology boolean; whether to use GMM and NMF to autonomously compute and update phonological classes or use fixed phonological labels (as given by argument "phoneme_set1" and/or "phoneme_set2")
 #' @param computeGMMsInterval full positive number; after how many accepted new tokens to re-compute GMM and NMF if useFlexiblePhonology is TRUE
 #' @param purityRepetitions positive full number; how often to recompute the purity calculation to make sure it is robust if useFlexiblePhonology is TRUE
 #' @param purityThreshold number between 0 and 1; how pure a phonological class has to be at the least if useFlexiblePhonology is TRUE
@@ -45,10 +47,13 @@ run_simulation <- function(inputDataFile = NULL,
                            speaker = NULL,
                            group = NULL,
                            word = NULL,
-                           phoneme = NULL,
-                           features = NULL,
+                           phoneme_set1 = NULL,
+                           phoneme_set2 = NULL,
+                           feature_set1 = NULL,
+                           feature_set2 = NULL,
                            subsetSpeakers = NULL,
-                           subsetPhonemes = NULL,
+                           subsetPhonemes_set1 = NULL,
+                           subsetPhonemes_set2 = NULL,
                            createBootstrappedPopulation = FALSE,
                            bootstrapPopulationSize = 50,
                            expandMemory = FALSE,
@@ -76,23 +81,46 @@ run_simulation <- function(inputDataFile = NULL,
                            rootLogDir = "./logDir",
                            notes = "") {
   
-  params <- base::as.list(base::environment())
+  
+  params <- base::as.list(base::environment()) # environment gibt alle gesetzten Variablen zurück: in diesem Fall die Argumente aus run_simulation()
   base::dir.create(params[["rootLogDir"]], showWarnings = FALSE, recursive = TRUE)
   create_simulation_register(params[["rootLogDir"]])
-
   params[["simulationName"]] <- generate_simulation_name()
   logDir <- base::file.path(params[["rootLogDir"]], params[["simulationName"]])
   base::dir.create(logDir, showWarnings = FALSE, recursive = TRUE)
+
+
+  # TODO: Diese if-else Konstrukt muss geändert werden:
+  # für load_input werden dim_cuespace benötigt, aber hier wird noch gar nicht überprüft, ob das File existiert...
+  # Das ist jetzt fürs entwickeln ok, aber muss später unbdingt geändert werden!
+  if(params[["useFlexiblePhonology"]] == FALSE){
+    params = check_space_compatibility(params)
+  } else{ 
+    #names_of_feature_sets = list(names(params))[[1]][startsWith(list(names(params))[[1]], "feature_set")]
+    if (is.null(feature_set1)){
+      stop("Please provide the columname of the features")
+    } else if(is.null(feature_set2)){
+      params = set_number_of_cue_spaces(params, 1)
+    }else{
+      params = set_number_of_cue_spaces(params, 2)
+    }
+  }
   
-  input.df <- load_input_data(params)
+  input.df <- load_input_data(params) # load_input_data ist fertig angepasst
   base::saveRDS(input.df, base::file.path(logDir, "input.rds"))
   
-  check <- validate_params(params)
+  check <- validate_params(params) # wenn der Input nicht stimmt, wird run_simulation auf FALSE gesetzt
+  # warum brauche ich check? Wo ist der Unterschied zwischen check und Params?
+  
   params <- check[["params"]]
   register_simulation(params)
+  
+
+
+
 
   if (check[["runSimulation"]]) {
-    if (params[["runs"]] == 1) {
+    if (params[["runs"]] == 1) { # Code dieser if-Bedingung ist noch nicht überprüft
       params[["logDir"]] <- base::file.path(logDir, "1")
       pop <- create_population(input.df = input.df, params = params)
       save_population(pop, extraCols = base::list(snapshot = 0), logDir = params[["logDir"]])
@@ -111,7 +139,10 @@ run_simulation <- function(inputDataFile = NULL,
       parallel::parLapply(cl, base::seq_len(params[["runs"]]), function(abmName) {
         params[["logDir"]] <- base::file.path(logDir, abmName)
         pop <- create_population(input.df = input.df, params = params)
+        
         save_population(pop, extraCols = base::list(snapshot = 0), logDir = params[["logDir"]])
+        #stop("nach save_population gestoppt")
+        #TODO: hier weitermachen
         if (params[["nrOfInteractions"]] > 0) {
           perform_interactions(pop, params[["logDir"]], params)
         }
@@ -123,3 +154,11 @@ run_simulation <- function(inputDataFile = NULL,
     stop("Oops, something went wrong! Please check the log.txt file in the simulation directory.")
   }
 }
+
+
+# zum Testen:
+
+# 1 Space:
+#run_simulation(inputDataFile = "../../ABM/fake_data_kl.csv",speaker = "speaker",group = "group",word = "word",interactionPartners = "random",feature_set1 = c("P1", "P2", "P3"),runs = 2,nrOfSnapshots = 250,interactionsPerSnapshot = 1000, useFlexiblePhonology = TRUE, phoneme_set1 = "initial")
+# 2 Spaces: 
+#run_simulation(inputDataFile = "../../ABM/fake_data_kl.csv",speaker = "speaker",group = "group",word = "word",interactionPartners = "random",feature_set1 = c("P1", "P2", "P3"),runs = 2,nrOfSnapshots = 250,interactionsPerSnapshot = 1000, useFlexiblePhonology = TRUE, phoneme_set1 = "initial", phoneme_set2 = "initial2", feature_set2 = c("B1", "B2", "B3"))
