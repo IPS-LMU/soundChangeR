@@ -9,6 +9,11 @@ load_input_data <- function(params) {
     stop("Your input data file does not exist. Please make sure you are entering a correct relative or absolute path to an existing data file with extension .csv or .txt.")
   }
   input.df <- base::suppressWarnings(data.table::fread(params[["inputDataFile"]], stringsAsFactors = F))
+  
+  if (base::length(base::unique(input.df$speaker)) <= 1) {
+    stop("Please only run simulations with two or more agents.")
+  }
+  
  
   if(params[["dim_cuespace"]] == 1){
     cols <- base::list(params$feature_set1, params$word, params$speaker)
