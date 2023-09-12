@@ -5,7 +5,7 @@ compute_mahal_distance <- function(agent, features, phoneme, params) {
                        base::apply(base::as.matrix(agent$features)[agent$memory$valid == TRUE & 
                                                                      agent$memory$phoneme == phoneme, , drop = FALSE], 2, base::mean),
                        stats::cov(base::as.matrix(agent$features)[agent$memory$valid == TRUE &
-                                                                    agent$memory$phoneme == phoneme, , drop = FALSE]), tol = 1e-30)
+                                                                    agent$memory$phoneme == phoneme, , drop = FALSE]), tol = 1e-100)
 
   } else {
     GMM <- get_cache_value(agent, "GMM")
