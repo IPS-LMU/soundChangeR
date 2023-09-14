@@ -1,6 +1,6 @@
 Package: soundChangeR
 Title: Agent-Based Model of Sound Change
-Version: 1.0.2
+Version: 1.0.3
 Authors@R: c(
     person("Johanna", "Cronenberg", , "johanna.cronenberg@phonetik.uni-muenchen.de", role = c("aut", "cre")),
     person("Michele", "Gubian", , "m.gubian@phonetik.uni-muenchen.de", role = c("aut")),
