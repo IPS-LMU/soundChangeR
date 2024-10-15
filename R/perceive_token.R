@@ -17,13 +17,10 @@ perceive_token <- function(agent, producedToken, interactionsLog, nrSim, params)
   memorise <- TRUE
   for (strategy in params[["memoryIntakeStrategy"]]) {
     memorise <- memory_intake_strategy(strategy, producedToken$exemplar, features, perceiverPhoneme, agent, params)
-    print(paste0("memory decision based on ", strategy, ": ", memorise))
     if (!memorise) break
   }
-  print(paste0("after loop: ", memorise))
-
+  
   if (memorise) {
-    print("I am in memorise condition and checking for forgetting")
     if (stats::runif(1) < params[["forgettingRate"]]) {
       candidateRow <- base::sample(base::which(agent$memory$valid == TRUE), 1)
       candidateWord <- agent$memory$word[candidateRow]
