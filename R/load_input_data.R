@@ -10,12 +10,14 @@ load_input_data <- function(params) {
   }
   input.df <- base::suppressWarnings(data.table::fread(params[["inputDataFile"]], stringsAsFactors = F))
   
-  cols <- base::list(params$features, params$word, params$speaker)
+  cols <- base::list(params$features, params$word, params$speaker, params$stem)  #modification !!!! 
   if (base::any(base::vapply(cols, base::is.null, TRUE)) ||
       base::length(base::setdiff(base::unlist(cols), base::colnames(input.df))) != 0) {
-    stop("Some of the columns you have chosen as features, word, and/or speaker do not exist in the inputDataFile.")
+    stop("Some of the columns you have chosen as features, word, stem, and/or speaker do not exist in the inputDataFile.") ###modification
   }
-  input.df %>% data.table::setnames(base::c(params[["word"]], params[["speaker"]]), base::c("word", "speaker"))
+  input.df %>% data.table::setnames(base::c(params[["word"]], params[["speaker"]], params[["stem"]]),
+                                    base::c("word", "speaker", "stem")) #### #modification !!!! 
+  
   
   if (params[["useFlexiblePhonology"]]) {
     input.df$phoneme <- NA_character_

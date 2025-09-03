@@ -7,13 +7,15 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   agent$speaker <- input.df[speaker == selectedSpeaker, speaker][1]
   
   methodReg <- get_method_register()
-  cacheNames <- base::c("nFeatures", "qda", "GMM", "nAccepted", "nForgotten", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!base::is.na(.)])
+  cacheNames <- base::c("nFeatures", "qda", "GMM", "nAccepted", "nForgotten", "nGMMUpdates", methodReg[params[["featureExtractionMethod"]], cacheEntries][[1]] %>% .[!base::is.na(.)])
   agent$cache <- data.table::data.table(name = cacheNames, value = base::list(), valid = FALSE)
   set_cache_value(agent, "nAccepted", 0)
   set_cache_value(agent, "nForgotten", 0)
+  set_cache_value (agent, "nGMMUpdates", 0) ### this is an adjustemt of mine
 
   agent$memory <- data.table::data.table(word = base::character(),
                                          phoneme = base::character(),
+                                         stem = base::character(),             ############## HERE WE ADD "Stem"  
                                          valid = base::logical(),
                                          nrOfTimesHeard = base::integer(),
                                          producerID = base::integer()
@@ -26,7 +28,7 @@ create_agent <- function(id, input.df, selectedSpeaker, maxMemorySize, params) {
   samples <- input.df[speaker == selectedSpeaker]
 
   agent$memory %>%
-    .[1:nInput, base::c("word", "phoneme", "exemplar") := samples[, .(word, phoneme, exemplar)]] %>%
+    .[1:nInput, base::c("word", "phoneme", "exemplar", "stem") := samples[, .(word, phoneme, exemplar, stem)]] %>%   ############## HERE WE ADD "Stem"   
     .[1:nInput, `:=`(valid = TRUE, nrOfTimesHeard = 1, producerID = id)]
 
   agent$features <- data.table::data.table(P1 = base::double()) %>% .[1:maxMemorySize]

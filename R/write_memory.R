@@ -1,4 +1,4 @@
-write_memory <- function(agent, params, producedToken, rowToWrite, phoneme_) {
+write_memory <- function(agent, params, producedToken, rowToWrite, phoneme_ ) {
 
   updatedNrOfTimesHeard <- 1 + base::max(0, agent$memory$nrOfTimesHeard[
     agent$memory$word == producedToken$word & agent$memory$valid == TRUE
@@ -8,6 +8,7 @@ write_memory <- function(agent, params, producedToken, rowToWrite, phoneme_) {
     word = producedToken$word,
     exemplar = producedToken$exemplar,
     phoneme = phoneme_,
+    stem = producedToken$stem, ### Here we memorise the stem as well 
     valid = TRUE,
     producerID = producedToken$producerID
   )]

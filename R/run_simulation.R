@@ -5,6 +5,7 @@
 #' @param group string; column name for agent group
 #' @param word string; column name for word labels
 #' @param phoneme string; column name for canonical phonological labels (does not have to be specified if useFlexiblePhonology is TRUE)
+#' @param stem   string; column name for filtering the preception (does not have to be specified if useFlexiblePhonology is TRUE)
 #' @param features string or vector of strings; column name(s) for acoustic features
 #' @param subsetSpeakers vector of strings; speakers to be included in simulation
 #' @param subsetPhonemes string or vector of strings; canonical phonological label(s) to be included in the simulation (is automatically set to NULL if useFlexiblePhonology is TRUE)
@@ -46,6 +47,7 @@ run_simulation <- function(inputDataFile = NULL,
                            group = NULL,
                            word = NULL,
                            phoneme = NULL,
+                           stem = NULL,
                            features = NULL,
                            subsetSpeakers = NULL,
                            subsetPhonemes = NULL,
@@ -94,10 +96,16 @@ run_simulation <- function(inputDataFile = NULL,
   if (check[["runSimulation"]]) {
     if (params[["runs"]] == 1) {
       params[["logDir"]] <- base::file.path(logDir, "1")
-      pop <- create_population(input.df = input.df, params = params)
+      pop <- create_population(input.df = input.df, params = params) 
       save_population(pop, extraCols = base::list(snapshot = 0), logDir = params[["logDir"]])
+      
+      # Create the sub-population
+      sub_pop <- create_sub_population(pop, params)
+      save_sub_population(sub_pop, extraCols = base::list(snapshot = 0), logDir = params[["logDir"]]) ### this is an adjustment
+      
+      
       if (params[["nrOfInteractions"]] > 0) {
-        perform_interactions(pop, params[["logDir"]], params)
+        perform_interactions(pop, sub_pop, params[["logDir"]], params)
       }
     } else {
       numCores <- parallel::detectCores() - 1
@@ -112,8 +120,15 @@ run_simulation <- function(inputDataFile = NULL,
         params[["logDir"]] <- base::file.path(logDir, abmName)
         pop <- create_population(input.df = input.df, params = params)
         save_population(pop, extraCols = base::list(snapshot = 0), logDir = params[["logDir"]])
+        
+        # Create the sub-population
+        sub_pop <- create_sub_population(pop, params)
+        save_sub_population(sub_pop, extraCols = base::list(snapshot = 0), logDir = params[["logDir"]]) ### this is an adjustment
+        
+      
+        
         if (params[["nrOfInteractions"]] > 0) {
-          perform_interactions(pop, params[["logDir"]], params)
+          perform_interactions(pop, sub_pop, params[["logDir"]], params)
         }
       })
       parallel::stopCluster(cl)
