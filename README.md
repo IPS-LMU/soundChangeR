@@ -35,6 +35,7 @@ devtools::install_github("https://github.com/IPS-LMU/soundChangeR", build_vignet
 ## Updates
 
 Updates of `soundChangeR` can be checked for and installed by repeating the `install_github()` command as shown above.
+This version allowes for property-specific phonologisation; e.g. on a specific stem. 
 
 ## Citation & Reading Material
 
@@ -56,6 +57,7 @@ In the vignette, you will find further links to reading material about the ABM.
 
 If all the reading material doesn't help you solve problems with `soundChangeR` or you have questions about the ABM's concepts and functionalities, please contact me:
 
+l.bressensdorf at mail.phonetik.uni-muenchen.de
 johanna.cronenberg at campus.lmu.de
 
 
