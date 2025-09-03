@@ -2,7 +2,7 @@
 
 This software is an implementation of an agent-based model (ABM) aimed at simulating sound changes. It supports the research conducted at the Institute of Phonetics and Speech Processing, LMU Munich, Germany. 
 We are funded by European Research Council Grant No. 742289 ["Human interaction and the evolution of spoken accent"](https://www.phonetik.uni-muenchen.de/Forschung/interaccent/interAccent.html) (2017–2023) awarded to Jonathan Harrington. 
-The ABM was initially developed by Florian Schiel and Jonathan Harrington, and further restructured, modified and documented by Johanna Cronenberg and Michele Gubian. 
+The ABM was initially developed by Florian Schiel and Jonathan Harrington, and further restructured, modified and documented by Johanna Cronenberg and Michele Gubian. This version allowes for property-specific phonologisation; e.g. on a specific stem. 
 
 The ABM is now available as an R package called **soundChangeR**. 
 
@@ -35,7 +35,7 @@ devtools::install_github("https://github.com/IPS-LMU/soundChangeR", build_vignet
 ## Updates
 
 Updates of `soundChangeR` can be checked for and installed by repeating the `install_github()` command as shown above.
-This version allowes for property-specific phonologisation; e.g. on a specific stem. 
+ 
 
 ## Citation & Reading Material
 
