@@ -58,6 +58,7 @@ In the vignette, you will find further links to reading material about the ABM.
 If all the reading material doesn't help you solve problems with `soundChangeR` or you have questions about the ABM's concepts and functionalities, please contact me:
 
 l.bressensdorf at mail.phonetik.uni-muenchen.de
+```
 johanna.cronenberg at campus.lmu.de
 
 
